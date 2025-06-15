@@ -10,7 +10,6 @@ const corsHeaders = {
 interface ChatRequest {
   question: string;
   userId?: string;
-  apiKey: string;
 }
 
 Deno.serve(async (req) => {
@@ -24,7 +23,7 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
 
-    const { question, userId, apiKey }: ChatRequest = await req.json()
+    const { question, userId }: ChatRequest = await req.json()
 
     if (!question?.trim()) {
       return new Response(
@@ -36,15 +35,8 @@ Deno.serve(async (req) => {
       )
     }
 
-    if (!apiKey?.trim()) {
-      return new Response(
-        JSON.stringify({ error: 'Google Gemini API key is required' }),
-        { 
-          status: 400, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-        }
-      )
-    }
+    // Use your provided Gemini API key
+    const apiKey = 'AIzaSyDWUUDdsrO0Ms2U4_y1jhYH4a5XJs8U1pc'
 
     // Initialize Gemini client
     const genAI = new GoogleGenerativeAI(apiKey)

@@ -196,8 +196,7 @@ export function createAIPage(onNavigateBack: () => void): HTMLElement {
         },
         body: JSON.stringify({
           question,
-          userId: authState.currentUser?.id,
-          apiKey: 'AIzaSyDWUUDdsrO0Ms2U4_y1jhYH4a5XJs8U1pc' // Your Gemini API key
+          userId: authState.currentUser?.id
         })
       });
 
