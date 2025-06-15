@@ -58,7 +58,7 @@ class TravelSocialApp {
 
       if (testError) {
         console.error('Supabase connection test failed:', testError);
-        this.showConnectionError('Unable to connect to the database. Please check your internet connection and try again.');
+        this.handleSupabaseError(testError);
         return;
       }
 
@@ -101,7 +101,7 @@ class TravelSocialApp {
 
       if (error) {
         console.error('Error fetching posts:', error);
-        this.showConnectionError('Failed to load posts. Please try refreshing the page.');
+        this.handleSupabaseError(error);
         return;
       }
 
@@ -130,20 +130,67 @@ class TravelSocialApp {
       }
     } catch (error) {
       console.error('Error loading posts:', error);
-      
-      // Provide more specific error messages based on error type
-      if (error instanceof TypeError && error.message.includes('fetch')) {
-        this.showConnectionError(
-          'Connection failed. This might be due to:\n' +
-          '• Network connectivity issues\n' +
-          '• CORS configuration in Supabase\n' +
-          '• Invalid Supabase URL or API key\n\n' +
-          'Please check your Supabase project settings and ensure your local development URL is added to the allowed origins.'
-        );
-      } else {
-        this.showConnectionError('An unexpected error occurred while loading posts. Please try again.');
-      }
+      this.handleNetworkError(error);
     }
+  }
+
+  private handleSupabaseError(error: any) {
+    let message = 'Unable to connect to the database.';
+    
+    if (error.message?.includes('Failed to fetch') || error.message?.includes('fetch')) {
+      message = `
+        <strong>Connection Failed</strong><br><br>
+        This appears to be a CORS (Cross-Origin Resource Sharing) configuration issue.<br><br>
+        <strong>To fix this:</strong><br>
+        1. Go to your <a href="https://supabase.com/dashboard" target="_blank" rel="noopener">Supabase Dashboard</a><br>
+        2. Navigate to <strong>Settings → Authentication</strong><br>
+        3. Add <code>http://localhost:5173</code> to the <strong>Site URL</strong> field<br>
+        4. Go to <strong>Settings → API</strong><br>
+        5. Add <code>http://localhost:5173</code> to the <strong>CORS origins</strong><br><br>
+        <strong>Also verify:</strong><br>
+        • Your Supabase URL and API key are correct<br>
+        • Your internet connection is stable<br>
+        • The Supabase service is operational
+      `;
+    } else if (error.message?.includes('Invalid API key') || error.message?.includes('unauthorized')) {
+      message = `
+        <strong>Authentication Error</strong><br><br>
+        Your Supabase API key appears to be invalid or expired.<br><br>
+        <strong>To fix this:</strong><br>
+        1. Go to your <a href="https://supabase.com/dashboard" target="_blank" rel="noopener">Supabase Dashboard</a><br>
+        2. Navigate to <strong>Settings → API</strong><br>
+        3. Copy the <strong>anon public</strong> key<br>
+        4. Update your <code>.env</code> file with the correct key<br>
+        5. Restart your development server
+      `;
+    } else {
+      message = `Database connection error: ${error.message || 'Unknown error'}`;
+    }
+    
+    this.showConnectionError(message);
+  }
+
+  private handleNetworkError(error: any) {
+    let message = 'An unexpected error occurred while loading posts.';
+    
+    if (error instanceof TypeError && error.message.includes('fetch')) {
+      message = `
+        <strong>Network Connection Failed</strong><br><br>
+        This might be due to:<br>
+        • Network connectivity issues<br>
+        • CORS configuration in Supabase<br>
+        • Invalid Supabase URL or API key<br><br>
+        <strong>Quick fixes:</strong><br>
+        1. Check your internet connection<br>
+        2. Verify your Supabase project settings<br>
+        3. Ensure <code>http://localhost:5173</code> is added to allowed origins in Supabase<br>
+        4. Restart your development server
+      `;
+    } else {
+      message = `Network error: ${error.message || 'Please try again.'}`;
+    }
+    
+    this.showConnectionError(message);
   }
 
   private showConnectionError(message: string) {
@@ -154,15 +201,26 @@ class TravelSocialApp {
           <div class="error-content">
             <div class="error-icon">⚠️</div>
             <h3>Connection Error</h3>
-            <p>${message.replace(/\n/g, '<br>')}</p>
-            <button class="retry-btn">Try Again</button>
+            <div class="error-details">${message}</div>
+            <div class="error-actions">
+              <button class="retry-btn">Try Again</button>
+              <button class="help-btn">View Setup Guide</button>
+            </div>
           </div>
         </div>
       `;
       
       const retryBtn = feedSection.querySelector('.retry-btn') as HTMLButtonElement;
+      const helpBtn = feedSection.querySelector('.help-btn') as HTMLButtonElement;
+      
       if (retryBtn) {
         retryBtn.addEventListener('click', () => this.loadPosts());
+      }
+      
+      if (helpBtn) {
+        helpBtn.addEventListener('click', () => {
+          window.open('https://supabase.com/docs/guides/getting-started/local-development#cors', '_blank');
+        });
       }
     }
   }
