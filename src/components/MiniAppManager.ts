@@ -6,7 +6,7 @@ export function createMiniAppManager(onClose: () => void): HTMLElement {
   const container = document.createElement('div');
   container.className = 'mini-app-manager-modal';
   
-  // Add component styles
+  // Add component styles directly to the component
   const style = document.createElement('style');
   style.textContent = `
     .mini-app-manager-modal {
@@ -23,7 +23,7 @@ export function createMiniAppManager(onClose: () => void): HTMLElement {
       padding: 1rem;
     }
 
-    .modal-backdrop {
+    .mini-app-manager-modal .modal-backdrop {
       position: absolute;
       top: 0;
       left: 0;
@@ -59,7 +59,7 @@ export function createMiniAppManager(onClose: () => void): HTMLElement {
       color: #374151;
     }
 
-    .modal-close {
+    .mini-app-manager-modal .modal-close {
       background: none;
       border: none;
       font-size: 1.5rem;
@@ -70,7 +70,7 @@ export function createMiniAppManager(onClose: () => void): HTMLElement {
       transition: all 0.2s;
     }
 
-    .modal-close:hover {
+    .mini-app-manager-modal .modal-close:hover {
       background: #f3f4f6;
       color: #374151;
     }
@@ -319,9 +319,6 @@ export function createMiniAppManager(onClose: () => void): HTMLElement {
     .status-text {
       font-size: 0.875rem;
       font-weight: 500;
-    }
-
-    .status-text {
       color: #374151;
     }
 
@@ -486,27 +483,28 @@ export function createMiniAppManager(onClose: () => void): HTMLElement {
       padding: 1.5rem;
     }
 
-    .form-group {
+    .mini-app-manager-modal .form-group {
       margin-bottom: 1.5rem;
     }
 
-    .form-group label {
+    .mini-app-manager-modal .form-group label {
       display: block;
       font-weight: 600;
       color: #374151;
       margin-bottom: 0.5rem;
     }
 
-    .form-input {
+    .mini-app-manager-modal .form-input {
       width: 100%;
       padding: 0.75rem;
       border: 1px solid #d1d5db;
       border-radius: 0.5rem;
       font-size: 1rem;
       transition: border-color 0.2s;
+      box-sizing: border-box;
     }
 
-    .form-input:focus {
+    .mini-app-manager-modal .form-input:focus {
       outline: none;
       border-color: #667eea;
       box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
@@ -555,7 +553,7 @@ export function createMiniAppManager(onClose: () => void): HTMLElement {
       font-weight: bold;
     }
 
-    .form-error {
+    .mini-app-manager-modal .form-error {
       color: #dc2626;
       font-size: 0.875rem;
       margin-bottom: 1rem;
@@ -607,6 +605,7 @@ export function createMiniAppManager(onClose: () => void): HTMLElement {
     }
   `;
   
+  // Append styles to document head if not already present
   if (!document.head.querySelector('#mini-app-manager-styles')) {
     style.id = 'mini-app-manager-styles';
     document.head.appendChild(style);

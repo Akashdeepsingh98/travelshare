@@ -15,25 +15,13 @@ class AuthManager {
   }
 
   private async init() {
-    // Get initial session
-    const { data: { session } } = await supabase.auth.getSession();
-    
-    if (session?.user) {
-      await this.setCurrentUser(session.user.id);
-    } else {
-      this.authState = {
-        isAuthenticated: false,
-        currentUser: null,
-        loading: false
-      };
-      this.notifyListeners();
-    }
-
-    // Listen for auth changes
-    supabase.auth.onAuthStateChange(async (event, session) => {
-      if (event === 'SIGNED_IN' && session?.user) {
+    try {
+      // Get initial session
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (session?.user) {
         await this.setCurrentUser(session.user.id);
-      } else if (event === 'SIGNED_OUT') {
+      } else {
         this.authState = {
           isAuthenticated: false,
           currentUser: null,
@@ -41,7 +29,29 @@ class AuthManager {
         };
         this.notifyListeners();
       }
-    });
+
+      // Listen for auth changes
+      supabase.auth.onAuthStateChange(async (event, session) => {
+        if (event === 'SIGNED_IN' && session?.user) {
+          await this.setCurrentUser(session.user.id);
+        } else if (event === 'SIGNED_OUT') {
+          this.authState = {
+            isAuthenticated: false,
+            currentUser: null,
+            loading: false
+          };
+          this.notifyListeners();
+        }
+      });
+    } catch (error) {
+      console.error('Error initializing auth:', error);
+      this.authState = {
+        isAuthenticated: false,
+        currentUser: null,
+        loading: false
+      };
+      this.notifyListeners();
+    }
   }
 
   private async setCurrentUser(userId: string) {
@@ -52,7 +62,10 @@ class AuthManager {
         .eq('id', userId)
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching user profile:', error);
+        throw error;
+      }
 
       this.authState = {
         isAuthenticated: true,
@@ -65,6 +78,12 @@ class AuthManager {
       };
     } catch (error) {
       console.error('Error fetching user profile:', error);
+      
+      // Check if it's a network/CORS error
+      if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
+        console.error('Network error - this might be a CORS issue. Please check your Supabase project settings.');
+      }
+      
       this.authState = {
         isAuthenticated: false,
         currentUser: null,
@@ -106,6 +125,7 @@ class AuthManager {
 
       return { success: true };
     } catch (error) {
+      console.error('Login error:', error);
       return { success: false, error: 'An unexpected error occurred' };
     }
   }
@@ -128,12 +148,17 @@ class AuthManager {
 
       return { success: true };
     } catch (error) {
+      console.error('Signup error:', error);
       return { success: false, error: 'An unexpected error occurred' };
     }
   }
 
   async logout(): Promise<void> {
-    await supabase.auth.signOut();
+    try {
+      await supabase.auth.signOut();
+    } catch (error) {
+      console.error('Logout error:', error);
+    }
   }
 
   onAuthChange(callback: (authState: AuthState) => void): void {
