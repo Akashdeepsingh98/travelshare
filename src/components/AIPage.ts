@@ -214,20 +214,30 @@ export function createAIPage(onNavigateBack: () => void): HTMLElement {
       if (!response.ok) {
         console.error('API Error Response:', data);
         
-        // Handle specific error cases
+        // Handle specific error cases with improved error detection
         if (data.error) {
-          if (data.error.includes('Gemini API key not configured')) {
+          const errorMsg = data.error.toLowerCase();
+          const errorDetails = data.details?.toLowerCase() || '';
+          
+          if (errorMsg.includes('gemini api key not configured') || errorMsg.includes('api key not configured')) {
             throw new Error('GEMINI_API_KEY_NOT_CONFIGURED');
-          } else if (data.error.includes('Invalid Google Gemini API key')) {
+          } else if (errorMsg.includes('invalid google gemini api key') || errorMsg.includes('invalid api key') || 
+                     errorMsg.includes('api_key_invalid') || errorDetails.includes('invalid api key')) {
             throw new Error('GEMINI_API_KEY_INVALID');
-          } else if (data.error.includes('quota exceeded')) {
+          } else if (errorMsg.includes('quota exceeded') || errorDetails.includes('quota exceeded')) {
             throw new Error('GEMINI_QUOTA_EXCEEDED');
-          } else if (data.error.includes('rate limit exceeded')) {
+          } else if (errorMsg.includes('rate limit exceeded') || errorDetails.includes('rate limit')) {
             throw new Error('GEMINI_RATE_LIMIT');
+          } else if (errorMsg.includes('permission denied') || errorDetails.includes('permission')) {
+            throw new Error('GEMINI_PERMISSION_DENIED');
+          } else if (errorMsg.includes('network error') || errorDetails.includes('network')) {
+            throw new Error('GEMINI_NETWORK_ERROR');
           }
         }
         
-        throw new Error(data.error || `HTTP ${response.status}: ${response.statusText}`);
+        // Include more details in the error
+        const errorDetails = data.details ? ` (${data.details})` : '';
+        throw new Error(data.error + errorDetails || `HTTP ${response.status}: ${response.statusText}`);
       }
       
       if (!data.answer) {
@@ -287,6 +297,28 @@ Try again later when your quota resets.`;
 You're sending requests too quickly. Please wait a moment and try again.
 
 The Google Gemini API has rate limits to ensure fair usage.`;
+
+      } else if (error.message === 'GEMINI_PERMISSION_DENIED') {
+        errorMessage = `🚫 **Permission Denied**
+
+Your Google Gemini API key doesn't have the necessary permissions. Please:
+
+1. Check your API key permissions in [Google AI Studio](https://makersuite.google.com/)
+2. Ensure the key is enabled for the Gemini Pro model
+3. Verify your Google Cloud project settings
+
+Contact your administrator if you need additional permissions.`;
+
+      } else if (error.message === 'GEMINI_NETWORK_ERROR') {
+        errorMessage = `🌐 **Network Connection Error**
+
+Unable to connect to the Google Gemini API. This could be due to:
+
+1. Network connectivity issues
+2. Google API service temporarily unavailable
+3. Firewall or proxy blocking the connection
+
+Please check your internet connection and try again in a few moments.`;
 
       } else if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
         errorMessage = `🌐 **Connection Error**
