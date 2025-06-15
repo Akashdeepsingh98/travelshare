@@ -14,6 +14,516 @@ export function createProfilePage(
   const container = document.createElement('div');
   container.className = 'profile-page';
   
+  // Add component styles
+  const style = document.createElement('style');
+  style.textContent = `
+    .profile-page {
+      min-height: 100vh;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      padding: 2rem 1rem;
+    }
+
+    .profile-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 2rem;
+      background: rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(10px);
+      padding: 1rem 1.5rem;
+      border-radius: 1rem;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .profile-header h1 {
+      color: white;
+      font-size: 1.5rem;
+      font-weight: 600;
+      margin: 0;
+    }
+
+    .back-btn {
+      background: rgba(255, 255, 255, 0.2);
+      color: white;
+      border: none;
+      padding: 0.5rem 1rem;
+      border-radius: 0.5rem;
+      cursor: pointer;
+      font-weight: 500;
+      transition: all 0.2s;
+    }
+
+    .back-btn:hover {
+      background: rgba(255, 255, 255, 0.3);
+      transform: translateY(-1px);
+    }
+
+    .profile-actions {
+      display: flex;
+      gap: 0.5rem;
+    }
+
+    .edit-profile-btn, .profile-follow-btn {
+      background: rgba(255, 255, 255, 0.2);
+      color: white;
+      border: none;
+      padding: 0.5rem 1rem;
+      border-radius: 0.5rem;
+      cursor: pointer;
+      font-weight: 500;
+      transition: all 0.2s;
+    }
+
+    .edit-profile-btn:hover, .profile-follow-btn:hover {
+      background: rgba(255, 255, 255, 0.3);
+      transform: translateY(-1px);
+    }
+
+    .profile-follow-btn.following {
+      background: rgba(34, 197, 94, 0.8);
+    }
+
+    .profile-content {
+      background: white;
+      border-radius: 1rem;
+      padding: 2rem;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+    }
+
+    .profile-avatar-section {
+      text-align: center;
+      margin-bottom: 2rem;
+    }
+
+    .profile-avatar-large {
+      width: 120px;
+      height: 120px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 4px solid #667eea;
+      margin-bottom: 1rem;
+    }
+
+    .profile-field {
+      margin-bottom: 1.5rem;
+    }
+
+    .profile-field label {
+      display: block;
+      font-weight: 600;
+      color: #374151;
+      margin-bottom: 0.5rem;
+    }
+
+    .profile-value {
+      color: #6b7280;
+      font-size: 1rem;
+    }
+
+    .profile-stats {
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 2rem;
+      justify-content: center;
+    }
+
+    .stat-item {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border: none;
+      padding: 1rem;
+      border-radius: 0.75rem;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s;
+      min-width: 80px;
+    }
+
+    .stat-item:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(102, 126, 234, 0.3);
+    }
+
+    .stat-item:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    .stat-number {
+      display: block;
+      font-size: 1.5rem;
+      font-weight: 700;
+    }
+
+    .stat-label {
+      display: block;
+      font-size: 0.875rem;
+      opacity: 0.9;
+    }
+
+    .mini-apps-section {
+      margin-bottom: 2rem;
+    }
+
+    .mini-apps-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1rem;
+    }
+
+    .mini-apps-header h3 {
+      color: #374151;
+      font-size: 1.25rem;
+      font-weight: 600;
+      margin: 0;
+    }
+
+    .manage-apps-btn {
+      background: #667eea;
+      color: white;
+      border: none;
+      padding: 0.5rem 1rem;
+      border-radius: 0.5rem;
+      cursor: pointer;
+      font-size: 0.875rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      transition: all 0.2s;
+    }
+
+    .manage-apps-btn:hover {
+      background: #5a67d8;
+      transform: translateY(-1px);
+    }
+
+    .mini-apps-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 1rem;
+    }
+
+    .mini-app-card {
+      background: white;
+      border: 1px solid #e5e7eb;
+      border-radius: 0.75rem;
+      padding: 1.5rem;
+      transition: all 0.2s;
+      cursor: pointer;
+    }
+
+    .mini-app-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+      border-color: #667eea;
+    }
+
+    .mini-app-icon {
+      width: 48px;
+      height: 48px;
+      margin-bottom: 1rem;
+      position: relative;
+    }
+
+    .mini-app-icon img {
+      width: 100%;
+      height: 100%;
+      border-radius: 0.5rem;
+      object-fit: cover;
+    }
+
+    .app-icon-fallback {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      border-radius: 0.5rem;
+      font-size: 1.5rem;
+    }
+
+    .mini-app-info {
+      margin-bottom: 1rem;
+    }
+
+    .mini-app-name {
+      font-size: 1.125rem;
+      font-weight: 600;
+      color: #374151;
+      margin: 0 0 0.5rem 0;
+    }
+
+    .mini-app-description {
+      color: #6b7280;
+      font-size: 0.875rem;
+      margin: 0 0 0.5rem 0;
+      line-height: 1.4;
+    }
+
+    .mini-app-category {
+      display: inline-block;
+      background: #f3f4f6;
+      color: #6b7280;
+      padding: 0.25rem 0.5rem;
+      border-radius: 0.25rem;
+      font-size: 0.75rem;
+      text-transform: capitalize;
+    }
+
+    .mini-app-launch {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border: none;
+      padding: 0.75rem 1rem;
+      border-radius: 0.5rem;
+      cursor: pointer;
+      font-weight: 500;
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      transition: all 0.2s;
+    }
+
+    .mini-app-launch:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+    }
+
+    .mini-apps-empty {
+      text-align: center;
+      padding: 3rem 1rem;
+      background: #f9fafb;
+      border-radius: 0.75rem;
+      border: 2px dashed #d1d5db;
+    }
+
+    .empty-apps-content {
+      max-width: 400px;
+      margin: 0 auto;
+    }
+
+    .empty-apps-icon {
+      font-size: 3rem;
+      margin-bottom: 1rem;
+    }
+
+    .empty-apps-content h3 {
+      color: #374151;
+      font-size: 1.25rem;
+      font-weight: 600;
+      margin: 0 0 0.5rem 0;
+    }
+
+    .empty-apps-content p {
+      color: #6b7280;
+      margin: 0 0 1.5rem 0;
+      line-height: 1.5;
+    }
+
+    .add-first-app-btn {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border: none;
+      padding: 0.75rem 1.5rem;
+      border-radius: 0.5rem;
+      cursor: pointer;
+      font-weight: 500;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      transition: all 0.2s;
+    }
+
+    .add-first-app-btn:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+    }
+
+    .business-section {
+      background: #f9fafb;
+      padding: 1.5rem;
+      border-radius: 0.75rem;
+      margin-bottom: 2rem;
+    }
+
+    .business-section h3 {
+      color: #374151;
+      font-size: 1.125rem;
+      font-weight: 600;
+      margin: 0 0 0.5rem 0;
+    }
+
+    .business-description {
+      color: #6b7280;
+      margin: 0 0 1rem 0;
+      line-height: 1.5;
+    }
+
+    .manage-mcp-btn {
+      background: #667eea;
+      color: white;
+      border: none;
+      padding: 0.75rem 1rem;
+      border-radius: 0.5rem;
+      cursor: pointer;
+      font-weight: 500;
+      transition: all 0.2s;
+    }
+
+    .manage-mcp-btn:hover {
+      background: #5a67d8;
+      transform: translateY(-1px);
+    }
+
+    .profile-loading, .profile-error {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 50vh;
+      text-align: center;
+    }
+
+    .loading-spinner {
+      color: white;
+      font-size: 1.125rem;
+    }
+
+    .profile-error p {
+      color: white;
+      font-size: 1.125rem;
+      margin-bottom: 1rem;
+    }
+
+    /* Edit Profile Styles */
+    .profile-edit-mode {
+      background: white;
+      border-radius: 1rem;
+      padding: 2rem;
+    }
+
+    .profile-avatar-edit-section {
+      text-align: center;
+      margin-bottom: 2rem;
+    }
+
+    .avatar-preview-container {
+      position: relative;
+      display: inline-block;
+      margin-bottom: 1rem;
+    }
+
+    .change-avatar-btn {
+      position: absolute;
+      bottom: 0;
+      right: 0;
+      background: #667eea;
+      color: white;
+      border: none;
+      padding: 0.5rem;
+      border-radius: 50%;
+      cursor: pointer;
+      width: 40px;
+      height: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .avatar-url-section {
+      margin-top: 1rem;
+    }
+
+    .avatar-url-input {
+      width: 100%;
+      max-width: 400px;
+      padding: 0.75rem;
+      border: 1px solid #d1d5db;
+      border-radius: 0.5rem;
+      font-size: 0.875rem;
+    }
+
+    .profile-form-fields {
+      max-width: 500px;
+      margin: 0 auto;
+    }
+
+    .form-group {
+      margin-bottom: 1.5rem;
+    }
+
+    .form-group label {
+      display: block;
+      font-weight: 600;
+      color: #374151;
+      margin-bottom: 0.5rem;
+    }
+
+    .form-input {
+      width: 100%;
+      padding: 0.75rem;
+      border: 1px solid #d1d5db;
+      border-radius: 0.5rem;
+      font-size: 1rem;
+      transition: border-color 0.2s;
+    }
+
+    .form-input:focus {
+      outline: none;
+      border-color: #667eea;
+      box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+
+    .form-error {
+      color: #dc2626;
+      font-size: 0.875rem;
+      margin-top: 0.5rem;
+    }
+
+    .form-actions {
+      display: flex;
+      gap: 1rem;
+      justify-content: flex-end;
+    }
+
+    .cancel-edit-btn {
+      background: #6b7280;
+      color: white;
+      border: none;
+      padding: 0.75rem 1.5rem;
+      border-radius: 0.5rem;
+      cursor: pointer;
+      font-weight: 500;
+    }
+
+    .save-profile-btn {
+      background: #667eea;
+      color: white;
+      border: none;
+      padding: 0.75rem 1.5rem;
+      border-radius: 0.5rem;
+      cursor: pointer;
+      font-weight: 500;
+    }
+
+    .save-profile-btn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    .btn-loading {
+      display: none;
+    }
+  `;
+  
+  if (!document.head.querySelector('#profile-page-styles')) {
+    style.id = 'profile-page-styles';
+    document.head.appendChild(style);
+  }
+  
   let profileUser: User | null = null;
   let followStats = { followers: 0, following: 0 };
   let mcpServerCount = 0;
@@ -254,7 +764,6 @@ export function createProfilePage(
                   <img src="${avatarUrl}" alt="${profileUser.name}" class="profile-avatar-large" id="avatar-preview">
                   <button type="button" class="change-avatar-btn">
                     <span class="camera-icon">📷</span>
-                    Change Photo
                   </button>
                 </div>
                 <input type="file" accept="image/*" class="avatar-file-input" style="display: none;">
@@ -432,7 +941,9 @@ export function createProfilePage(
   }
   
   function showMiniAppManager() {
+    console.log('Creating mini app manager...');
     const miniAppManager = createMiniAppManager(() => {
+      console.log('Closing mini app manager...');
       // Close mini app manager and refresh apps
       const appModal = document.querySelector('.mini-app-manager-modal');
       if (appModal) {
@@ -448,8 +959,24 @@ export function createProfilePage(
       }
     });
     
+    console.log('Appending mini app manager to body...');
     document.body.appendChild(miniAppManager);
     document.body.style.overflow = 'hidden';
+    
+    // Force the modal to be visible
+    setTimeout(() => {
+      const modal = document.querySelector('.mini-app-manager-modal') as HTMLElement;
+      if (modal) {
+        modal.style.display = 'flex';
+        modal.style.position = 'fixed';
+        modal.style.top = '0';
+        modal.style.left = '0';
+        modal.style.width = '100%';
+        modal.style.height = '100%';
+        modal.style.zIndex = '9999';
+        console.log('Modal should now be visible');
+      }
+    }, 100);
   }
   
   function showMiniAppViewer(app: MiniApp) {

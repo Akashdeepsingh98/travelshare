@@ -6,6 +6,612 @@ export function createMiniAppManager(onClose: () => void): HTMLElement {
   const container = document.createElement('div');
   container.className = 'mini-app-manager-modal';
   
+  // Add component styles
+  const style = document.createElement('style');
+  style.textContent = `
+    .mini-app-manager-modal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+      padding: 1rem;
+    }
+
+    .modal-backdrop {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.5);
+      z-index: -1;
+    }
+
+    .mini-app-manager-content {
+      background: white;
+      border-radius: 1rem;
+      width: 100%;
+      max-width: 800px;
+      max-height: 90vh;
+      overflow-y: auto;
+      position: relative;
+      z-index: 1;
+    }
+
+    .mini-app-manager-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 1.5rem;
+      border-bottom: 1px solid #e5e7eb;
+    }
+
+    .mini-app-manager-header h2 {
+      margin: 0;
+      font-size: 1.5rem;
+      font-weight: 600;
+      color: #374151;
+    }
+
+    .modal-close {
+      background: none;
+      border: none;
+      font-size: 1.5rem;
+      cursor: pointer;
+      color: #6b7280;
+      padding: 0.5rem;
+      border-radius: 0.5rem;
+      transition: all 0.2s;
+    }
+
+    .modal-close:hover {
+      background: #f3f4f6;
+      color: #374151;
+    }
+
+    .mini-app-manager-body {
+      padding: 1.5rem;
+    }
+
+    .mini-app-intro {
+      margin-bottom: 2rem;
+      text-align: center;
+    }
+
+    .mini-app-intro p {
+      color: #6b7280;
+      margin-bottom: 1rem;
+      line-height: 1.6;
+    }
+
+    .mini-app-benefits {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1rem;
+      margin-top: 1rem;
+    }
+
+    .benefit-item {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.75rem;
+      background: #f9fafb;
+      border-radius: 0.5rem;
+      font-size: 0.875rem;
+      color: #374151;
+    }
+
+    .benefit-icon {
+      font-size: 1.25rem;
+    }
+
+    .mini-apps-section {
+      margin-top: 2rem;
+    }
+
+    .section-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1.5rem;
+    }
+
+    .section-header h3 {
+      margin: 0;
+      font-size: 1.25rem;
+      font-weight: 600;
+      color: #374151;
+    }
+
+    .add-app-btn {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border: none;
+      padding: 0.75rem 1rem;
+      border-radius: 0.5rem;
+      cursor: pointer;
+      font-weight: 500;
+      transition: all 0.2s;
+    }
+
+    .add-app-btn:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+    }
+
+    .mini-apps-list {
+      min-height: 200px;
+    }
+
+    .loading-state {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 3rem;
+      color: #6b7280;
+    }
+
+    .loading-spinner {
+      width: 40px;
+      height: 40px;
+      border: 3px solid #f3f4f6;
+      border-top: 3px solid #667eea;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin-bottom: 1rem;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    .empty-apps {
+      text-align: center;
+      padding: 3rem 1rem;
+      background: #f9fafb;
+      border-radius: 0.75rem;
+      border: 2px dashed #d1d5db;
+    }
+
+    .empty-icon {
+      font-size: 3rem;
+      margin-bottom: 1rem;
+    }
+
+    .empty-apps h4 {
+      color: #374151;
+      font-size: 1.25rem;
+      font-weight: 600;
+      margin: 0 0 0.5rem 0;
+    }
+
+    .empty-apps p {
+      color: #6b7280;
+      margin: 0 0 1.5rem 0;
+      line-height: 1.5;
+    }
+
+    .add-first-app-btn {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border: none;
+      padding: 0.75rem 1.5rem;
+      border-radius: 0.5rem;
+      cursor: pointer;
+      font-weight: 500;
+      transition: all 0.2s;
+    }
+
+    .add-first-app-btn:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+    }
+
+    .app-card {
+      background: white;
+      border: 1px solid #e5e7eb;
+      border-radius: 0.75rem;
+      padding: 1.5rem;
+      margin-bottom: 1rem;
+      transition: all 0.2s;
+    }
+
+    .app-card:hover {
+      border-color: #667eea;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+
+    .app-card.active {
+      border-color: #10b981;
+      background: #f0fdf4;
+    }
+
+    .app-card.inactive {
+      border-color: #f59e0b;
+      background: #fffbeb;
+    }
+
+    .app-card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 1rem;
+    }
+
+    .app-info {
+      display: flex;
+      gap: 1rem;
+      flex: 1;
+    }
+
+    .app-icon {
+      width: 48px;
+      height: 48px;
+      position: relative;
+    }
+
+    .app-icon img {
+      width: 100%;
+      height: 100%;
+      border-radius: 0.5rem;
+      object-fit: cover;
+    }
+
+    .app-icon-fallback {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      border-radius: 0.5rem;
+      font-size: 1.5rem;
+      color: white;
+    }
+
+    .app-details {
+      flex: 1;
+    }
+
+    .app-name {
+      font-size: 1.125rem;
+      font-weight: 600;
+      color: #374151;
+      margin: 0 0 0.25rem 0;
+    }
+
+    .app-description {
+      color: #6b7280;
+      font-size: 0.875rem;
+      margin: 0;
+      line-height: 1.4;
+    }
+
+    .app-status {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .status-indicator {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+    }
+
+    .status-indicator.active {
+      background: #10b981;
+    }
+
+    .status-indicator.inactive {
+      background: #f59e0b;
+    }
+
+    .status-text {
+      font-size: 0.875rem;
+      font-weight: 500;
+    }
+
+    .status-text {
+      color: #374151;
+    }
+
+    .app-card-body {
+      margin-bottom: 1rem;
+    }
+
+    .app-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1rem;
+      margin-bottom: 1rem;
+    }
+
+    .meta-item {
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+    }
+
+    .meta-label {
+      font-size: 0.75rem;
+      color: #6b7280;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .meta-value {
+      font-size: 0.875rem;
+      color: #374151;
+      word-break: break-all;
+    }
+
+    .app-card-actions {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+
+    .preview-app-btn, .edit-app-btn, .toggle-app-btn, .delete-app-btn {
+      padding: 0.5rem 0.75rem;
+      border-radius: 0.375rem;
+      font-size: 0.875rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+      border: 1px solid;
+    }
+
+    .preview-app-btn {
+      background: #667eea;
+      color: white;
+      border-color: #667eea;
+    }
+
+    .preview-app-btn:hover {
+      background: #5a67d8;
+      border-color: #5a67d8;
+    }
+
+    .edit-app-btn {
+      background: white;
+      color: #374151;
+      border-color: #d1d5db;
+    }
+
+    .edit-app-btn:hover {
+      background: #f9fafb;
+      border-color: #9ca3af;
+    }
+
+    .toggle-app-btn {
+      background: #10b981;
+      color: white;
+      border-color: #10b981;
+    }
+
+    .toggle-app-btn:hover {
+      background: #059669;
+      border-color: #059669;
+    }
+
+    .delete-app-btn {
+      background: #ef4444;
+      color: white;
+      border-color: #ef4444;
+    }
+
+    .delete-app-btn:hover {
+      background: #dc2626;
+      border-color: #dc2626;
+    }
+
+    /* App Form Modal */
+    .app-form-modal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.5);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 10000;
+      padding: 1rem;
+    }
+
+    .app-form-backdrop {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.5);
+    }
+
+    .app-form-content {
+      background: white;
+      border-radius: 1rem;
+      width: 100%;
+      max-width: 500px;
+      max-height: 90vh;
+      overflow-y: auto;
+      position: relative;
+      z-index: 1;
+    }
+
+    .app-form-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 1.5rem;
+      border-bottom: 1px solid #e5e7eb;
+    }
+
+    .app-form-header h3 {
+      margin: 0;
+      font-size: 1.25rem;
+      font-weight: 600;
+      color: #374151;
+    }
+
+    .app-form-close {
+      background: none;
+      border: none;
+      font-size: 1.5rem;
+      cursor: pointer;
+      color: #6b7280;
+      padding: 0.5rem;
+      border-radius: 0.5rem;
+      transition: all 0.2s;
+    }
+
+    .app-form-close:hover {
+      background: #f3f4f6;
+      color: #374151;
+    }
+
+    .app-form {
+      padding: 1.5rem;
+    }
+
+    .form-group {
+      margin-bottom: 1.5rem;
+    }
+
+    .form-group label {
+      display: block;
+      font-weight: 600;
+      color: #374151;
+      margin-bottom: 0.5rem;
+    }
+
+    .form-input {
+      width: 100%;
+      padding: 0.75rem;
+      border: 1px solid #d1d5db;
+      border-radius: 0.5rem;
+      font-size: 1rem;
+      transition: border-color 0.2s;
+    }
+
+    .form-input:focus {
+      outline: none;
+      border-color: #667eea;
+      box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+
+    .form-help {
+      display: block;
+      margin-top: 0.25rem;
+      font-size: 0.875rem;
+      color: #6b7280;
+    }
+
+    .checkbox-label {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      cursor: pointer;
+    }
+
+    .checkbox-custom {
+      width: 20px;
+      height: 20px;
+      border: 2px solid #d1d5db;
+      border-radius: 0.25rem;
+      position: relative;
+      transition: all 0.2s;
+    }
+
+    .checkbox-label input[type="checkbox"] {
+      display: none;
+    }
+
+    .checkbox-label input[type="checkbox"]:checked + .checkbox-custom {
+      background: #667eea;
+      border-color: #667eea;
+    }
+
+    .checkbox-label input[type="checkbox"]:checked + .checkbox-custom::after {
+      content: '✓';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      color: white;
+      font-size: 0.875rem;
+      font-weight: bold;
+    }
+
+    .form-error {
+      color: #dc2626;
+      font-size: 0.875rem;
+      margin-bottom: 1rem;
+    }
+
+    .form-actions {
+      display: flex;
+      gap: 1rem;
+      justify-content: flex-end;
+    }
+
+    .cancel-btn {
+      background: #6b7280;
+      color: white;
+      border: none;
+      padding: 0.75rem 1.5rem;
+      border-radius: 0.5rem;
+      cursor: pointer;
+      font-weight: 500;
+      transition: all 0.2s;
+    }
+
+    .cancel-btn:hover {
+      background: #4b5563;
+    }
+
+    .save-btn {
+      background: #667eea;
+      color: white;
+      border: none;
+      padding: 0.75rem 1.5rem;
+      border-radius: 0.5rem;
+      cursor: pointer;
+      font-weight: 500;
+      transition: all 0.2s;
+    }
+
+    .save-btn:hover {
+      background: #5a67d8;
+    }
+
+    .save-btn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    .btn-loading {
+      display: none;
+    }
+  `;
+  
+  if (!document.head.querySelector('#mini-app-manager-styles')) {
+    style.id = 'mini-app-manager-styles';
+    document.head.appendChild(style);
+  }
+  
   let miniApps: MiniApp[] = [];
   let isLoading = false;
   
@@ -91,7 +697,7 @@ export function createMiniAppManager(onClose: () => void): HTMLElement {
         </div>
         
         <!-- Add/Edit App Form -->
-        <div class="app-form-modal" style="display: none;">
+        <div class="app-form-modal">
           <div class="app-form-backdrop"></div>
           <div class="app-form-content">
             <div class="app-form-header">
@@ -197,15 +803,15 @@ export function createMiniAppManager(onClose: () => void): HTMLElement {
         <div class="app-card-body">
           <div class="app-meta">
             <span class="meta-item">
-              <span class="meta-label">Category:</span>
+              <span class="meta-label">Category</span>
               <span class="meta-value">${app.category}</span>
             </span>
             <span class="meta-item">
-              <span class="meta-label">URL:</span>
+              <span class="meta-label">URL</span>
               <span class="meta-value">${app.app_url}</span>
             </span>
             <span class="meta-item">
-              <span class="meta-label">Added:</span>
+              <span class="meta-label">Added</span>
               <span class="meta-value">${new Date(app.created_at).toLocaleDateString()}</span>
             </span>
           </div>
@@ -289,13 +895,11 @@ export function createMiniAppManager(onClose: () => void): HTMLElement {
     }
     
     formModal.style.display = 'flex';
-    document.body.style.overflow = 'hidden';
   }
   
   function hideAppForm() {
     const formModal = container.querySelector('.app-form-modal') as HTMLElement;
     formModal.style.display = 'none';
-    document.body.style.overflow = '';
     
     // Clear form
     const form = container.querySelector('#app-form') as HTMLFormElement;
