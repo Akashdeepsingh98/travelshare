@@ -28,8 +28,72 @@ export function createAIPage(onNavigateBack: () => void): HTMLElement {
     };
     
     chatMessages.push(message);
-    renderMessages();
+    updateChatMessages();
     scrollToBottom();
+  }
+  
+  function updateChatMessages() {
+    const messagesContainer = container.querySelector('#chat-messages') as HTMLElement;
+    if (!messagesContainer) return;
+    
+    if (chatMessages.length === 0) {
+      messagesContainer.innerHTML = `
+        <div class="welcome-message">
+          <div class="ai-avatar">🤖</div>
+          <div class="welcome-content">
+            <h3>Welcome to TravelShare AI!</h3>
+            <p>I'm powered by Google Gemini and have access to real travel experiences from your community. I can help you discover amazing destinations, get travel tips, and find hidden gems based on actual traveler posts!</p>
+            <div class="suggestion-chips">
+              <button class="suggestion-chip" data-question="What are the most popular travel destinations in our community?">Most popular destinations</button>
+              <button class="suggestion-chip" data-question="Tell me about travel experiences in Japan">Japan experiences</button>
+              <button class="suggestion-chip" data-question="What are some hidden gems for travel?">Hidden gems</button>
+              <button class="suggestion-chip" data-question="Best places for photography based on community posts?">Photography spots</button>
+              <button class="suggestion-chip" data-question="What should I know before traveling to Europe?">Europe travel tips</button>
+              <button class="suggestion-chip" data-question="Budget travel advice from the community">Budget travel tips</button>
+            </div>
+          </div>
+        </div>
+      `;
+      
+      // Re-attach suggestion chip listeners
+      const suggestionChips = messagesContainer.querySelectorAll('.suggestion-chip') as NodeListOf<HTMLButtonElement>;
+      suggestionChips.forEach(chip => {
+        chip.addEventListener('click', () => {
+          const question = chip.dataset.question!;
+          const chatInput = container.querySelector('#chat-input') as HTMLInputElement;
+          if (chatInput) {
+            chatInput.value = question;
+            handleSendMessage();
+          }
+        });
+      });
+    } else {
+      messagesContainer.innerHTML = chatMessages.map(message => {
+        const timeStr = message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        
+        if (message.type === 'user') {
+          return `
+            <div class="message user-message">
+              <div class="message-content">
+                <div class="message-text">${escapeHtml(message.content)}</div>
+                <div class="message-time">${timeStr}</div>
+              </div>
+              <div class="message-avatar user-avatar-msg">👤</div>
+            </div>
+          `;
+        } else {
+          return `
+            <div class="message ai-message">
+              <div class="message-avatar ai-avatar-msg">🤖</div>
+              <div class="message-content">
+                <div class="message-text">${formatAIResponse(message.content)}</div>
+                <div class="message-time">${timeStr}</div>
+              </div>
+            </div>
+          `;
+        }
+      }).join('');
+    }
   }
   
   function renderAIPage() {
@@ -72,23 +136,7 @@ export function createAIPage(onNavigateBack: () => void): HTMLElement {
 
           <div class="chat-container">
             <div class="chat-messages" id="chat-messages">
-              ${chatMessages.length === 0 ? `
-                <div class="welcome-message">
-                  <div class="ai-avatar">🤖</div>
-                  <div class="welcome-content">
-                    <h3>Welcome to TravelShare AI!</h3>
-                    <p>I'm powered by Google Gemini and have access to real travel experiences from your community. I can help you discover amazing destinations, get travel tips, and find hidden gems based on actual traveler posts!</p>
-                    <div class="suggestion-chips">
-                      <button class="suggestion-chip" data-question="What are the most popular travel destinations in our community?">Most popular destinations</button>
-                      <button class="suggestion-chip" data-question="Tell me about travel experiences in Japan">Japan experiences</button>
-                      <button class="suggestion-chip" data-question="What are some hidden gems for travel?">Hidden gems</button>
-                      <button class="suggestion-chip" data-question="Best places for photography based on community posts?">Photography spots</button>
-                      <button class="suggestion-chip" data-question="What should I know before traveling to Europe?">Europe travel tips</button>
-                      <button class="suggestion-chip" data-question="Budget travel advice from the community">Budget travel tips</button>
-                    </div>
-                  </div>
-                </div>
-              ` : ''}
+              <!-- Messages will be rendered here -->
             </div>
             
             <div class="chat-input-container">
@@ -124,6 +172,11 @@ export function createAIPage(onNavigateBack: () => void): HTMLElement {
       </div>
     `;
     
+    // Update chat messages after rendering
+    if (authState.isAuthenticated) {
+      updateChatMessages();
+    }
+    
     setupEventListeners();
   }
   
@@ -145,18 +198,6 @@ export function createAIPage(onNavigateBack: () => void): HTMLElement {
     const chatInput = container.querySelector('#chat-input') as HTMLInputElement;
     const sendBtn = container.querySelector('#send-btn') as HTMLButtonElement;
     
-    // Suggestion chips
-    const suggestionChips = container.querySelectorAll('.suggestion-chip') as NodeListOf<HTMLButtonElement>;
-    suggestionChips.forEach(chip => {
-      chip.addEventListener('click', () => {
-        const question = chip.dataset.question!;
-        if (chatInput) {
-          chatInput.value = question;
-          handleSendMessage();
-        }
-      });
-    });
-    
     // Send message handlers
     sendBtn?.addEventListener('click', handleSendMessage);
     
@@ -177,13 +218,13 @@ export function createAIPage(onNavigateBack: () => void): HTMLElement {
     
     if (!question || isLoading) return;
     
-    // Add user message
+    // Add user message immediately
     addMessage('user', question);
     chatInput.value = '';
     
-    // Set loading state
+    // Set loading state and update UI
     isLoading = true;
-    renderAIPage();
+    updateSendButton();
     
     try {
       const authState = authManager.getAuthState();
@@ -340,39 +381,30 @@ Please check your internet connection and try again.`;
       addMessage('ai', errorMessage);
     } finally {
       isLoading = false;
-      renderAIPage();
+      updateSendButton();
     }
   }
   
-  function renderMessages() {
-    const messagesContainer = container.querySelector('#chat-messages') as HTMLElement;
-    if (!messagesContainer || chatMessages.length === 0) return;
+  function updateSendButton() {
+    const sendBtn = container.querySelector('#send-btn') as HTMLButtonElement;
+    const chatInput = container.querySelector('#chat-input') as HTMLInputElement;
     
-    messagesContainer.innerHTML = chatMessages.map(message => {
-      const timeStr = message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    if (sendBtn && chatInput) {
+      sendBtn.disabled = isLoading;
+      chatInput.disabled = isLoading;
       
-      if (message.type === 'user') {
-        return `
-          <div class="message user-message">
-            <div class="message-content">
-              <div class="message-text">${escapeHtml(message.content)}</div>
-              <div class="message-time">${timeStr}</div>
-            </div>
-            <div class="message-avatar user-avatar-msg">👤</div>
-          </div>
+      if (isLoading) {
+        sendBtn.innerHTML = `
+          <span class="loading-dots">
+            <span></span>
+            <span></span>
+            <span></span>
+          </span>
         `;
       } else {
-        return `
-          <div class="message ai-message">
-            <div class="message-avatar ai-avatar-msg">🤖</div>
-            <div class="message-content">
-              <div class="message-text">${formatAIResponse(message.content)}</div>
-              <div class="message-time">${timeStr}</div>
-            </div>
-          </div>
-        `;
+        sendBtn.innerHTML = '<span class="send-icon">➤</span>';
       }
-    }).join('');
+    }
   }
   
   function formatAIResponse(content: string): string {
