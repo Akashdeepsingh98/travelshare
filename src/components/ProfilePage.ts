@@ -1,7 +1,9 @@
-import { User } from '../types';
+import { User, MiniApp } from '../types';
 import { authManager } from '../auth';
 import { supabase } from '../lib/supabase';
 import { createMCPManager } from './MCPManager';
+import { createMiniAppManager } from './MiniAppManager';
+import { createMiniAppViewer } from './MiniAppViewer';
 
 export function createProfilePage(
   onNavigateBack: () => void,
@@ -15,6 +17,7 @@ export function createProfilePage(
   let profileUser: User | null = null;
   let followStats = { followers: 0, following: 0 };
   let mcpServerCount = 0;
+  let miniApps: MiniApp[] = [];
   let isFollowing = false;
   let isOwnProfile = false;
   
@@ -53,6 +56,9 @@ export function createProfilePage(
       if (isOwnProfile) {
         await loadMCPServerCount(targetUserId);
       }
+      
+      // Load mini apps
+      await loadMiniApps(targetUserId);
       
       // Load follow status if viewing another user's profile
       if (!isOwnProfile) {
@@ -101,6 +107,24 @@ export function createProfilePage(
     } catch (error) {
       console.error('Error loading MCP server count:', error);
       mcpServerCount = 0;
+    }
+  }
+  
+  async function loadMiniApps(userId: string) {
+    try {
+      const { data, error } = await supabase
+        .from('mini_apps')
+        .select('*')
+        .eq('user_id', userId)
+        .eq('is_active', true)
+        .order('created_at', { ascending: false });
+      
+      if (error) throw error;
+      
+      miniApps = data || [];
+    } catch (error) {
+      console.error('Error loading mini apps:', error);
+      miniApps = [];
     }
   }
   
@@ -175,11 +199,28 @@ export function createProfilePage(
               <div class="business-section">
                 <h3>Business Integration</h3>
                 <p class="business-description">
-                  Connect your business data through MCP (Model Context Protocol) to provide real-time information to AI chat users.
+                  Connect your business data through MCP (Model Context Protocol) to provide real-time information to AI chat.
                 </p>
                 <button class="manage-mcp-btn">
                   🔌 Manage MCP Servers
                 </button>
+              </div>
+              
+              <div class="mini-apps-section">
+                <h3>Mini Apps</h3>
+                <p class="mini-apps-description">
+                  Share your business apps and services directly on your profile for easy access by travelers.
+                </p>
+                <button class="manage-apps-btn">
+                  📱 Manage Mini Apps
+                </button>
+              </div>
+            ` : miniApps.length > 0 ? `
+              <div class="mini-apps-section">
+                <h3>${profileUser.name}'s Services</h3>
+                <div class="mini-apps-grid">
+                  ${miniApps.map(app => createMiniAppCard(app)).join('')}
+                </div>
               </div>
             ` : ''}
             
@@ -233,6 +274,37 @@ export function createProfilePage(
     setupEventListeners();
   }
   
+  function createMiniAppCard(app: MiniApp): string {
+    const categoryIcons = {
+      transportation: '🚗',
+      food: '🍽️',
+      shopping: '🛍️',
+      entertainment: '🎬',
+      travel: '✈️',
+      business: '💼',
+      other: '📋'
+    };
+    
+    const defaultIcon = categoryIcons[app.category] || '📱';
+    
+    return `
+      <div class="mini-app-card" data-app-id="${app.id}">
+        <div class="mini-app-icon">
+          ${app.icon_url ? `<img src="${app.icon_url}" alt="${app.name}" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">` : ''}
+          <span class="app-icon-fallback" ${app.icon_url ? 'style="display: none;"' : ''}>${defaultIcon}</span>
+        </div>
+        <div class="mini-app-info">
+          <h4 class="mini-app-name">${app.name}</h4>
+          <p class="mini-app-description">${app.description || 'No description'}</p>
+          <span class="mini-app-category">${app.category}</span>
+        </div>
+        <button class="mini-app-launch" data-app-id="${app.id}">
+          Launch
+        </button>
+      </div>
+    `;
+  }
+  
   function setupEventListeners() {
     if (!profileUser) return;
     
@@ -257,15 +329,6 @@ export function createProfilePage(
       followingBtn.addEventListener('click', () => {
         onNavigateToFollowing(profileUser!.id, profileUser!.name);
       });
-    }
-    
-    // MCP servers navigation (only for own profile)
-    if (isOwnProfile) {
-      const mcpServersBtn = container.querySelector('.mcp-servers-btn') as HTMLButtonElement;
-      const manageMcpBtn = container.querySelector('.manage-mcp-btn') as HTMLButtonElement;
-      
-      mcpServersBtn?.addEventListener('click', showMCPManager);
-      manageMcpBtn?.addEventListener('click', showMCPManager);
     }
     
     // Follow button for other users' profiles
@@ -303,10 +366,31 @@ export function createProfilePage(
       });
     }
     
-    // Edit profile functionality (only for own profile)
+    // MCP servers navigation (only for own profile)
     if (isOwnProfile) {
+      const mcpServersBtn = container.querySelector('.mcp-servers-btn') as HTMLButtonElement;
+      const manageMcpBtn = container.querySelector('.manage-mcp-btn') as HTMLButtonElement;
+      const manageAppsBtn = container.querySelector('.manage-apps-btn') as HTMLButtonElement;
+      
+      mcpServersBtn?.addEventListener('click', showMCPManager);
+      manageMcpBtn?.addEventListener('click', showMCPManager);
+      manageAppsBtn?.addEventListener('click', showMiniAppManager);
+      
+      // Edit profile functionality
       setupEditProfileFunctionality();
     }
+    
+    // Mini app launch buttons
+    const launchBtns = container.querySelectorAll('.mini-app-launch') as NodeListOf<HTMLButtonElement>;
+    launchBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        const appId = btn.dataset.appId!;
+        const app = miniApps.find(a => a.id === appId);
+        if (app) {
+          showMiniAppViewer(app);
+        }
+      });
+    });
   }
   
   function showMCPManager() {
@@ -326,6 +410,36 @@ export function createProfilePage(
     });
     
     document.body.appendChild(mcpManager);
+  }
+  
+  function showMiniAppManager() {
+    const miniAppManager = createMiniAppManager(() => {
+      // Close mini app manager and refresh apps
+      const appModal = document.querySelector('.mini-app-manager-modal');
+      if (appModal) {
+        appModal.remove();
+      }
+      
+      // Refresh mini apps
+      if (profileUser) {
+        loadMiniApps(profileUser.id).then(() => {
+          renderProfilePage();
+        });
+      }
+    });
+    
+    document.body.appendChild(miniAppManager);
+  }
+  
+  function showMiniAppViewer(app: MiniApp) {
+    const viewer = createMiniAppViewer(app, () => {
+      const viewerModal = document.querySelector('.mini-app-viewer-modal');
+      if (viewerModal) {
+        viewerModal.remove();
+      }
+    });
+    
+    document.body.appendChild(viewer);
   }
   
   function setupEditProfileFunctionality() {

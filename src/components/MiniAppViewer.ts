@@ -1,0 +1,148 @@
+import { MiniApp } from '../types';
+
+export function createMiniAppViewer(app: MiniApp, onClose: () => void): HTMLElement {
+  const container = document.createElement('div');
+  container.className = 'mini-app-viewer-modal';
+  
+  const categoryIcons = {
+    transportation: '🚗',
+    food: '🍽️',
+    shopping: '🛍️',
+    entertainment: '🎬',
+    travel: '✈️',
+    business: '💼',
+    other: '📋'
+  };
+  
+  const defaultIcon = categoryIcons[app.category] || '📱';
+  
+  container.innerHTML = `
+    <div class="mini-app-viewer-backdrop"></div>
+    <div class="mini-app-viewer-content">
+      <div class="mini-app-viewer-header">
+        <div class="app-header-info">
+          <div class="app-header-icon">
+            ${app.icon_url ? `<img src="${app.icon_url}" alt="${app.name}" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">` : ''}
+            <span class="app-icon-fallback" ${app.icon_url ? 'style="display: none;"' : ''}>${defaultIcon}</span>
+          </div>
+          <div class="app-header-details">
+            <h2 class="app-header-name">${app.name}</h2>
+            <p class="app-header-description">${app.description || 'No description available'}</p>
+            <span class="app-header-category">${app.category}</span>
+          </div>
+        </div>
+        <div class="app-header-actions">
+          <button class="open-app-btn">Open App</button>
+          <button class="close-viewer-btn">✕</button>
+        </div>
+      </div>
+      
+      <div class="mini-app-viewer-body">
+        <div class="app-iframe-container">
+          <iframe 
+            src="${app.app_url}" 
+            class="app-iframe"
+            title="${app.name}"
+            sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox"
+            loading="lazy">
+          </iframe>
+          <div class="iframe-overlay">
+            <div class="iframe-message">
+              <div class="iframe-icon">${defaultIcon}</div>
+              <h3>Loading ${app.name}...</h3>
+              <p>If the app doesn't load, you can open it in a new tab.</p>
+              <button class="open-new-tab-btn">Open in New Tab</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="mini-app-viewer-footer">
+        <div class="app-footer-info">
+          <span class="app-url">🔗 ${app.app_url}</span>
+        </div>
+        <div class="app-footer-actions">
+          <button class="share-app-btn">Share</button>
+          <button class="open-external-btn">Open External</button>
+        </div>
+      </div>
+    </div>
+  `;
+  
+  setupViewerEventListeners();
+  
+  function setupViewerEventListeners() {
+    const backdrop = container.querySelector('.mini-app-viewer-backdrop') as HTMLElement;
+    const closeBtn = container.querySelector('.close-viewer-btn') as HTMLButtonElement;
+    const openAppBtn = container.querySelector('.open-app-btn') as HTMLButtonElement;
+    const openNewTabBtn = container.querySelector('.open-new-tab-btn') as HTMLButtonElement;
+    const openExternalBtn = container.querySelector('.open-external-btn') as HTMLButtonElement;
+    const shareBtn = container.querySelector('.share-app-btn') as HTMLButtonElement;
+    const iframe = container.querySelector('.app-iframe') as HTMLIFrameElement;
+    const overlay = container.querySelector('.iframe-overlay') as HTMLElement;
+    
+    // Close modal
+    backdrop.addEventListener('click', onClose);
+    closeBtn.addEventListener('click', onClose);
+    
+    // Open app actions
+    openAppBtn.addEventListener('click', () => openInNewTab());
+    openNewTabBtn.addEventListener('click', () => openInNewTab());
+    openExternalBtn.addEventListener('click', () => openInNewTab());
+    
+    // Share app
+    shareBtn.addEventListener('click', () => shareApp());
+    
+    // Handle iframe loading
+    iframe.addEventListener('load', () => {
+      setTimeout(() => {
+        overlay.style.display = 'none';
+      }, 1000);
+    });
+    
+    iframe.addEventListener('error', () => {
+      overlay.innerHTML = `
+        <div class="iframe-message">
+          <div class="iframe-icon">⚠️</div>
+          <h3>Unable to load ${app.name}</h3>
+          <p>This app cannot be displayed in an embedded frame.</p>
+          <button class="open-new-tab-btn">Open in New Tab</button>
+        </div>
+      `;
+      
+      const newOpenBtn = overlay.querySelector('.open-new-tab-btn') as HTMLButtonElement;
+      newOpenBtn.addEventListener('click', () => openInNewTab());
+    });
+    
+    // Hide overlay after timeout
+    setTimeout(() => {
+      if (overlay.style.display !== 'none') {
+        overlay.style.display = 'none';
+      }
+    }, 5000);
+  }
+  
+  function openInNewTab() {
+    window.open(app.app_url, '_blank', 'noopener,noreferrer');
+  }
+  
+  function shareApp() {
+    if (navigator.share) {
+      navigator.share({
+        title: app.name,
+        text: app.description || `Check out ${app.name}`,
+        url: app.app_url
+      }).catch(console.error);
+    } else {
+      // Fallback: copy to clipboard
+      navigator.clipboard.writeText(app.app_url).then(() => {
+        alert('App URL copied to clipboard!');
+      }).catch(() => {
+        // Fallback: show URL
+        prompt('Copy this URL to share:', app.app_url);
+      });
+    }
+  }
+  
+  return container;
+}

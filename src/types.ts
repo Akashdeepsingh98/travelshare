@@ -92,3 +92,24 @@ export interface MCPResponse {
     data?: any;
   };
 }
+
+// Mini App Types
+export interface MiniApp {
+  id: string;
+  user_id: string;
+  name: string;
+  description: string;
+  app_url: string;
+  icon_url: string;
+  category: 'transportation' | 'food' | 'shopping' | 'entertainment' | 'travel' | 'business' | 'other';
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface AppCategory {
+  id: string;
+  name: string;
+  icon: string;
+  description: string;
+}
