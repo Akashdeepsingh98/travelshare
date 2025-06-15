@@ -35,8 +35,19 @@ Deno.serve(async (req) => {
       )
     }
 
-    // Use your provided Gemini API key
-    const apiKey = 'AIzaSyDWUUDdsrO0Ms2U4_y1jhYH4a5XJs8U1pc'
+    // Get Gemini API key from environment variable
+    const apiKey = Deno.env.get('GEMINI_API_KEY')
+    
+    if (!apiKey) {
+      console.error('GEMINI_API_KEY environment variable is not set')
+      return new Response(
+        JSON.stringify({ error: 'Gemini API key not configured' }),
+        { 
+          status: 500, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      )
+    }
 
     // Initialize Gemini client
     const genAI = new GoogleGenerativeAI(apiKey)
