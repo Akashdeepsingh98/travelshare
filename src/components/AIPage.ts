@@ -200,12 +200,35 @@ export function createAIPage(onNavigateBack: () => void): HTMLElement {
         })
       });
 
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ error: 'Unknown error occurred' }));
-        throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
+      // Get response text for better error handling
+      const responseText = await response.text();
+      let data;
+      
+      try {
+        data = JSON.parse(responseText);
+      } catch (parseError) {
+        console.error('Failed to parse response:', responseText);
+        throw new Error(`Invalid response format: ${responseText.substring(0, 200)}`);
       }
 
-      const data = await response.json();
+      if (!response.ok) {
+        console.error('API Error Response:', data);
+        
+        // Handle specific error cases
+        if (data.error) {
+          if (data.error.includes('Gemini API key not configured')) {
+            throw new Error('GEMINI_API_KEY_NOT_CONFIGURED');
+          } else if (data.error.includes('Invalid Google Gemini API key')) {
+            throw new Error('GEMINI_API_KEY_INVALID');
+          } else if (data.error.includes('quota exceeded')) {
+            throw new Error('GEMINI_QUOTA_EXCEEDED');
+          } else if (data.error.includes('rate limit exceeded')) {
+            throw new Error('GEMINI_RATE_LIMIT');
+          }
+        }
+        
+        throw new Error(data.error || `HTTP ${response.status}: ${response.statusText}`);
+      }
       
       if (!data.answer) {
         throw new Error('No response received from AI service');
@@ -219,14 +242,67 @@ export function createAIPage(onNavigateBack: () => void): HTMLElement {
       
       let errorMessage = "I'm sorry, I'm having trouble processing your question right now. ";
       
-      if (error.message.includes('Invalid') && error.message.includes('API key')) {
-        errorMessage = "🔑 **Invalid API Key**\n\nThe Google Gemini API key appears to be invalid. Please check that the API key is correct and has the necessary permissions.";
-      } else if (error.message.includes('quota') || error.message.includes('limit')) {
-        errorMessage = "📊 **API Quota Exceeded**\n\nIt looks like you've reached your API usage limit. Please try again later.";
-      } else if (error.message.includes('403') || error.message.includes('Forbidden')) {
-        errorMessage = "🚫 **Access Denied**\n\nThe API key doesn't have permission to access the Gemini service.";
+      // Handle specific error types with detailed instructions
+      if (error.message === 'GEMINI_API_KEY_NOT_CONFIGURED') {
+        errorMessage = `🔧 **Configuration Required**
+
+The Google Gemini API key needs to be configured in your Supabase project. Here's how to fix this:
+
+1. Go to your [Supabase Dashboard](https://supabase.com/dashboard)
+2. Select your project
+3. Navigate to **Edge Functions** in the sidebar
+4. Find the **ai-chat-gemini** function
+5. Click on **Settings** or **Secrets**
+6. Add a new secret:
+   - **Name:** \`GEMINI_API_KEY\`
+   - **Value:** Your Google Gemini API key
+
+After adding the secret, the AI chat should work properly!`;
+
+      } else if (error.message === 'GEMINI_API_KEY_INVALID') {
+        errorMessage = `🔑 **Invalid API Key**
+
+The Google Gemini API key appears to be invalid. Please:
+
+1. Check that your API key is correct
+2. Ensure the API key has the necessary permissions
+3. Verify the key is properly set in your Supabase Edge Function secrets
+
+You can get a valid API key from the [Google AI Studio](https://makersuite.google.com/app/apikey).`;
+
+      } else if (error.message === 'GEMINI_QUOTA_EXCEEDED') {
+        errorMessage = `📊 **API Quota Exceeded**
+
+You've reached your Google Gemini API usage limit. Please:
+
+1. Check your usage in [Google AI Studio](https://makersuite.google.com/)
+2. Wait for your quota to reset
+3. Consider upgrading your API plan if needed
+
+Try again later when your quota resets.`;
+
+      } else if (error.message === 'GEMINI_RATE_LIMIT') {
+        errorMessage = `⏱️ **Rate Limit Exceeded**
+
+You're sending requests too quickly. Please wait a moment and try again.
+
+The Google Gemini API has rate limits to ensure fair usage.`;
+
+      } else if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
+        errorMessage = `🌐 **Connection Error**
+
+Unable to connect to the AI service. This could be due to:
+
+1. Network connectivity issues
+2. Supabase Edge Function not deployed
+3. CORS configuration problems
+
+Please check your internet connection and try again.`;
+
       } else {
-        errorMessage += "Please try again later or ask a different question.\n\n**Error details:** " + error.message;
+        errorMessage += `Please try again later or ask a different question.
+
+**Technical details:** ${error.message}`;
       }
       
       addMessage('ai', errorMessage);
