@@ -274,26 +274,6 @@ body {
   font-size: 0.875rem;
 }
 
-.mcp-manager-btn {
-  background: rgba(59, 130, 246, 0.1);
-  color: var(--primary-color);
-  border: 1px solid rgba(59, 130, 246, 0.2);
-  padding: 0.5rem 1rem;
-  border-radius: var(--radius-md);
-  font-size: 0.875rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.mcp-manager-btn:hover {
-  background: rgba(59, 130, 246, 0.2);
-  border-color: rgba(59, 130, 246, 0.3);
-}
-
 .ai-page-content {
   flex: 1;
   max-width: 1000px;
@@ -2743,6 +2723,67 @@ input[type="checkbox"] {
   color: var(--text-secondary);
 }
 
+/* Business Section */
+.business-section {
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.05) 0%, rgba(16, 185, 129, 0.05) 100%);
+  border: 1px solid rgba(59, 130, 246, 0.1);
+  border-radius: var(--radius-lg);
+  padding: 1.5rem;
+  text-align: center;
+}
+
+.business-section h3 {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 0.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.business-section h3::before {
+  content: '🔌';
+  font-size: 1.25rem;
+}
+
+.business-description {
+  color: var(--text-secondary);
+  line-height: 1.6;
+  margin-bottom: 1.5rem;
+  font-size: 0.875rem;
+}
+
+.manage-mcp-btn {
+  background: linear-gradient(135deg, var(--primary-color) 0%, var(--success-color) 100%);
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: var(--radius-md);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 0.875rem;
+  box-shadow: var(--shadow-sm);
+}
+
+.manage-mcp-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+/* MCP Servers Button */
+.mcp-servers-btn {
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(16, 185, 129, 0.1) 100%);
+  border: 1px solid rgba(59, 130, 246, 0.2);
+}
+
+.mcp-servers-btn:hover:not(:disabled) {
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.2) 0%, rgba(16, 185, 129, 0.2) 100%);
+  border-color: rgba(59, 130, 246, 0.3);
+}
+
 /* Profile Edit Mode */
 .profile-edit-mode {
   display: none;
@@ -3354,6 +3395,14 @@ input[type="checkbox"] {
     margin: 0.5rem;
     max-height: 95vh;
   }
+
+  .business-section {
+    padding: 1rem;
+  }
+
+  .business-description {
+    font-size: 0.8rem;
+  }
 }
 
 @media (max-width: 480px) {
@@ -3453,6 +3502,26 @@ input[type="checkbox"] {
 
   .server-form {
     padding: 1rem;
+  }
+
+  .business-section {
+    padding: 1rem;
+    text-align: left;
+  }
+
+  .business-section h3 {
+    font-size: 1rem;
+    justify-content: flex-start;
+  }
+
+  .business-description {
+    font-size: 0.8rem;
+    margin-bottom: 1rem;
+  }
+
+  .manage-mcp-btn {
+    width: 100%;
+    padding: 0.75rem;
   }
 }
 
