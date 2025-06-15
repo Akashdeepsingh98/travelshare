@@ -416,6 +416,7 @@ export function createProfilePage(
       const mcpModal = document.querySelector('.mcp-manager-modal');
       if (mcpModal) {
         mcpModal.remove();
+        document.body.style.overflow = '';
       }
       
       // Refresh MCP server count
@@ -427,6 +428,7 @@ export function createProfilePage(
     });
     
     document.body.appendChild(mcpManager);
+    document.body.style.overflow = 'hidden';
   }
   
   function showMiniAppManager() {
@@ -435,6 +437,7 @@ export function createProfilePage(
       const appModal = document.querySelector('.mini-app-manager-modal');
       if (appModal) {
         appModal.remove();
+        document.body.style.overflow = '';
       }
       
       // Refresh mini apps
@@ -446,6 +449,7 @@ export function createProfilePage(
     });
     
     document.body.appendChild(miniAppManager);
+    document.body.style.overflow = 'hidden';
   }
   
   function showMiniAppViewer(app: MiniApp) {
@@ -453,10 +457,12 @@ export function createProfilePage(
       const viewerModal = document.querySelector('.mini-app-viewer-modal');
       if (viewerModal) {
         viewerModal.remove();
+        document.body.style.overflow = '';
       }
     });
     
     document.body.appendChild(viewer);
+    document.body.style.overflow = 'hidden';
   }
   
   function setupEditProfileFunctionality() {

@@ -289,11 +289,13 @@ export function createMiniAppManager(onClose: () => void): HTMLElement {
     }
     
     formModal.style.display = 'flex';
+    document.body.style.overflow = 'hidden';
   }
   
   function hideAppForm() {
     const formModal = container.querySelector('.app-form-modal') as HTMLElement;
     formModal.style.display = 'none';
+    document.body.style.overflow = '';
     
     // Clear form
     const form = container.querySelector('#app-form') as HTMLFormElement;
@@ -312,15 +314,14 @@ export function createMiniAppManager(onClose: () => void): HTMLElement {
     if (!authState.isAuthenticated || !authState.currentUser) return;
     
     const form = e.target as HTMLFormElement;
-    const formData = new FormData(form);
     const isEdit = !!form.dataset.appId;
     
     const appData = {
-      name: formData.get('app-name') as string,
-      description: formData.get('app-description') as string,
-      category: formData.get('app-category') as string,
-      app_url: formData.get('app-url') as string,
-      icon_url: formData.get('app-icon') as string || null,
+      name: (container.querySelector('#app-name') as HTMLInputElement).value,
+      description: (container.querySelector('#app-description') as HTMLTextAreaElement).value,
+      category: (container.querySelector('#app-category') as HTMLSelectElement).value,
+      app_url: (container.querySelector('#app-url') as HTMLInputElement).value,
+      icon_url: (container.querySelector('#app-icon') as HTMLInputElement).value || null,
       is_active: (container.querySelector('#app-active') as HTMLInputElement).checked,
       user_id: authState.currentUser.id
     };
