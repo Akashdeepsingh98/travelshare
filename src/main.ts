@@ -49,6 +49,18 @@ class TravelSocialApp {
 
   private async loadPosts() {
     try {
+      // Test Supabase connection first
+      const { data: testData, error: testError } = await supabase
+        .from('posts')
+        .select('count')
+        .limit(1);
+
+      if (testError) {
+        console.error('Supabase connection test failed:', testError);
+        this.showConnectionError('Unable to connect to the database. Please check your internet connection and try again.');
+        return;
+      }
+
       const authState = authManager.getAuthState();
       
       let query = supabase
@@ -86,7 +98,11 @@ class TravelSocialApp {
 
       const { data: posts, error } = await query;
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching posts:', error);
+        this.showConnectionError('Failed to load posts. Please try refreshing the page.');
+        return;
+      }
 
       // If user is authenticated, check which posts they've liked
       if (authState.isAuthenticated && authState.currentUser) {
@@ -113,6 +129,40 @@ class TravelSocialApp {
       }
     } catch (error) {
       console.error('Error loading posts:', error);
+      
+      // Provide more specific error messages based on error type
+      if (error instanceof TypeError && error.message.includes('fetch')) {
+        this.showConnectionError(
+          'Connection failed. This might be due to:\n' +
+          '• Network connectivity issues\n' +
+          '• CORS configuration in Supabase\n' +
+          '• Invalid Supabase URL or API key\n\n' +
+          'Please check your Supabase project settings and ensure your local development URL is added to the allowed origins.'
+        );
+      } else {
+        this.showConnectionError('An unexpected error occurred while loading posts. Please try again.');
+      }
+    }
+  }
+
+  private showConnectionError(message: string) {
+    const feedSection = document.querySelector('#posts-feed') as HTMLElement;
+    if (feedSection) {
+      feedSection.innerHTML = `
+        <div class="error-message">
+          <div class="error-content">
+            <div class="error-icon">⚠️</div>
+            <h3>Connection Error</h3>
+            <p>${message.replace(/\n/g, '<br>')}</p>
+            <button class="retry-btn">Try Again</button>
+          </div>
+        </div>
+      `;
+      
+      const retryBtn = feedSection.querySelector('.retry-btn') as HTMLButtonElement;
+      if (retryBtn) {
+        retryBtn.addEventListener('click', () => this.loadPosts());
+      }
     }
   }
 
