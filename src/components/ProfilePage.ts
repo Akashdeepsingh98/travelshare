@@ -195,6 +195,37 @@ export function createProfilePage(
               ` : ''}
             </div>
             
+            ${miniApps.length > 0 ? `
+              <div class="mini-apps-section">
+                <div class="mini-apps-header">
+                  <h3>${isOwnProfile ? 'Your Services' : `${profileUser.name}'s Services`}</h3>
+                  ${isOwnProfile ? `
+                    <button class="manage-apps-btn">
+                      <span class="manage-icon">⚙️</span>
+                      Manage
+                    </button>
+                  ` : ''}
+                </div>
+                <div class="mini-apps-grid">
+                  ${miniApps.map(app => createMiniAppCard(app)).join('')}
+                </div>
+              </div>
+            ` : isOwnProfile ? `
+              <div class="mini-apps-section">
+                <div class="mini-apps-empty">
+                  <div class="empty-apps-content">
+                    <div class="empty-apps-icon">📱</div>
+                    <h3>Share Your Services</h3>
+                    <p>Add mini apps to showcase your business services like transportation, food delivery, or booking platforms.</p>
+                    <button class="add-first-app-btn">
+                      <span class="add-icon">➕</span>
+                      Add Your First App
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ` : ''}
+            
             ${isOwnProfile ? `
               <div class="business-section">
                 <h3>Business Integration</h3>
@@ -204,23 +235,6 @@ export function createProfilePage(
                 <button class="manage-mcp-btn">
                   🔌 Manage MCP Servers
                 </button>
-              </div>
-              
-              <div class="mini-apps-section">
-                <h3>Mini Apps</h3>
-                <p class="mini-apps-description">
-                  Share your business apps and services directly on your profile for easy access by travelers.
-                </p>
-                <button class="manage-apps-btn">
-                  📱 Manage Mini Apps
-                </button>
-              </div>
-            ` : miniApps.length > 0 ? `
-              <div class="mini-apps-section">
-                <h3>${profileUser.name}'s Services</h3>
-                <div class="mini-apps-grid">
-                  ${miniApps.map(app => createMiniAppCard(app)).join('')}
-                </div>
               </div>
             ` : ''}
             
@@ -299,6 +313,7 @@ export function createProfilePage(
           <span class="mini-app-category">${app.category}</span>
         </div>
         <button class="mini-app-launch" data-app-id="${app.id}">
+          <span class="launch-icon">🚀</span>
           Launch
         </button>
       </div>
@@ -371,10 +386,12 @@ export function createProfilePage(
       const mcpServersBtn = container.querySelector('.mcp-servers-btn') as HTMLButtonElement;
       const manageMcpBtn = container.querySelector('.manage-mcp-btn') as HTMLButtonElement;
       const manageAppsBtn = container.querySelector('.manage-apps-btn') as HTMLButtonElement;
+      const addFirstAppBtn = container.querySelector('.add-first-app-btn') as HTMLButtonElement;
       
       mcpServersBtn?.addEventListener('click', showMCPManager);
       manageMcpBtn?.addEventListener('click', showMCPManager);
       manageAppsBtn?.addEventListener('click', showMiniAppManager);
+      addFirstAppBtn?.addEventListener('click', showMiniAppManager);
       
       // Edit profile functionality
       setupEditProfileFunctionality();

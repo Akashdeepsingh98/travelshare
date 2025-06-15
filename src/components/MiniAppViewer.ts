@@ -32,7 +32,10 @@ export function createMiniAppViewer(app: MiniApp, onClose: () => void): HTMLElem
           </div>
         </div>
         <div class="app-header-actions">
-          <button class="open-app-btn">Open App</button>
+          <button class="open-app-btn">
+            <span class="open-icon">🔗</span>
+            Open App
+          </button>
           <button class="close-viewer-btn">✕</button>
         </div>
       </div>
@@ -51,7 +54,10 @@ export function createMiniAppViewer(app: MiniApp, onClose: () => void): HTMLElem
               <div class="iframe-icon">${defaultIcon}</div>
               <h3>Loading ${app.name}...</h3>
               <p>If the app doesn't load, you can open it in a new tab.</p>
-              <button class="open-new-tab-btn">Open in New Tab</button>
+              <button class="open-new-tab-btn">
+                <span class="tab-icon">🔗</span>
+                Open in New Tab
+              </button>
             </div>
           </div>
         </div>
@@ -62,8 +68,14 @@ export function createMiniAppViewer(app: MiniApp, onClose: () => void): HTMLElem
           <span class="app-url">🔗 ${app.app_url}</span>
         </div>
         <div class="app-footer-actions">
-          <button class="share-app-btn">Share</button>
-          <button class="open-external-btn">Open External</button>
+          <button class="share-app-btn">
+            <span class="share-icon">📤</span>
+            Share
+          </button>
+          <button class="open-external-btn">
+            <span class="external-icon">🔗</span>
+            Open External
+          </button>
         </div>
       </div>
     </div>
@@ -106,7 +118,10 @@ export function createMiniAppViewer(app: MiniApp, onClose: () => void): HTMLElem
           <div class="iframe-icon">⚠️</div>
           <h3>Unable to load ${app.name}</h3>
           <p>This app cannot be displayed in an embedded frame.</p>
-          <button class="open-new-tab-btn">Open in New Tab</button>
+          <button class="open-new-tab-btn">
+            <span class="tab-icon">🔗</span>
+            Open in New Tab
+          </button>
         </div>
       `;
       
@@ -120,6 +135,20 @@ export function createMiniAppViewer(app: MiniApp, onClose: () => void): HTMLElem
         overlay.style.display = 'none';
       }
     }, 5000);
+    
+    // Close on escape key
+    const handleKeyPress = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
+    };
+    
+    document.addEventListener('keydown', handleKeyPress);
+    
+    // Cleanup function
+    container.addEventListener('remove', () => {
+      document.removeEventListener('keydown', handleKeyPress);
+    });
   }
   
   function openInNewTab() {
@@ -136,7 +165,16 @@ export function createMiniAppViewer(app: MiniApp, onClose: () => void): HTMLElem
     } else {
       // Fallback: copy to clipboard
       navigator.clipboard.writeText(app.app_url).then(() => {
-        alert('App URL copied to clipboard!');
+        // Show temporary success message
+        const shareBtn = container.querySelector('.share-app-btn') as HTMLButtonElement;
+        const originalContent = shareBtn.innerHTML;
+        shareBtn.innerHTML = '<span class="check-icon">✅</span> Copied!';
+        shareBtn.disabled = true;
+        
+        setTimeout(() => {
+          shareBtn.innerHTML = originalContent;
+          shareBtn.disabled = false;
+        }, 2000);
       }).catch(() => {
         // Fallback: show URL
         prompt('Copy this URL to share:', app.app_url);
