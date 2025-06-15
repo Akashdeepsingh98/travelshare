@@ -2,53 +2,80 @@ import { authManager } from '../auth';
 
 export function createAuthModal(): HTMLElement {
   const modal = document.createElement('div');
-  modal.className = 'auth-modal';
+  modal.className = 'auth-modal fixed inset-0 z-50 hidden';
   
   modal.innerHTML = `
-    <div class="modal-backdrop"></div>
-    <div class="auth-modal-content">
-      <div class="auth-modal-header">
-        <button class="modal-close">✕</button>
-        <h2 class="auth-title">Welcome to TravelShare</h2>
-      </div>
-      
-      <div class="auth-modal-body">
-        <div class="auth-tabs">
-          <button class="auth-tab active" data-tab="login">Log In</button>
-          <button class="auth-tab" data-tab="signup">Sign Up</button>
+    <div class="fixed inset-0 bg-black/50 backdrop-blur-sm"></div>
+    <div class="fixed inset-0 flex items-center justify-center p-4">
+      <div class="bg-white rounded-xl shadow-2xl w-full max-w-md overflow-hidden">
+        <div class="p-6 border-b border-gray-200">
+          <div class="flex items-center justify-between">
+            <h2 class="text-2xl font-bold text-gray-900">Welcome to TravelShare</h2>
+            <button class="p-2 hover:bg-gray-100 rounded-lg transition-colors modal-close">
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+              </svg>
+            </button>
+          </div>
         </div>
         
-        <div class="auth-forms">
+        <div class="p-6">
+          <div class="flex border-b border-gray-200 mb-6">
+            <button class="auth-tab flex-1 py-2 px-4 text-center font-medium border-b-2 border-primary-600 text-primary-600" data-tab="login">
+              Log In
+            </button>
+            <button class="auth-tab flex-1 py-2 px-4 text-center font-medium border-b-2 border-transparent text-gray-500 hover:text-gray-700" data-tab="signup">
+              Sign Up
+            </button>
+          </div>
+          
           <!-- Login Form -->
-          <form class="auth-form login-form active" data-form="login">
-            <div class="form-group">
-              <input type="email" placeholder="Email" class="form-input" id="login-email" required>
+          <form class="auth-form space-y-4" data-form="login">
+            <div>
+              <label class="form-label" for="login-email">Email</label>
+              <input type="email" id="login-email" class="form-input" placeholder="Enter your email" required>
             </div>
-            <div class="form-group">
-              <input type="password" placeholder="Password" class="form-input" id="login-password" required>
+            <div>
+              <label class="form-label" for="login-password">Password</label>
+              <input type="password" id="login-password" class="form-input" placeholder="Enter your password" required>
             </div>
             <div class="form-error" id="login-error"></div>
-            <button type="submit" class="auth-submit-btn">
+            <button type="submit" class="w-full btn-primary">
               <span class="btn-text">Log In</span>
-              <span class="btn-loading" style="display: none;">Logging in...</span>
+              <span class="btn-loading hidden">
+                <div class="loading-dots">
+                  <span></span>
+                  <span></span>
+                  <span></span>
+                </div>
+              </span>
             </button>
           </form>
           
           <!-- Signup Form -->
-          <form class="auth-form signup-form" data-form="signup">
-            <div class="form-group">
-              <input type="text" placeholder="Full Name" class="form-input" id="signup-name" required>
+          <form class="auth-form space-y-4 hidden" data-form="signup">
+            <div>
+              <label class="form-label" for="signup-name">Full Name</label>
+              <input type="text" id="signup-name" class="form-input" placeholder="Enter your full name" required>
             </div>
-            <div class="form-group">
-              <input type="email" placeholder="Email" class="form-input" id="signup-email" required>
+            <div>
+              <label class="form-label" for="signup-email">Email</label>
+              <input type="email" id="signup-email" class="form-input" placeholder="Enter your email" required>
             </div>
-            <div class="form-group">
-              <input type="password" placeholder="Password (min 6 characters)" class="form-input" id="signup-password" required>
+            <div>
+              <label class="form-label" for="signup-password">Password</label>
+              <input type="password" id="signup-password" class="form-input" placeholder="Create a password (min 6 characters)" required>
             </div>
             <div class="form-error" id="signup-error"></div>
-            <button type="submit" class="auth-submit-btn">
+            <button type="submit" class="w-full btn-primary">
               <span class="btn-text">Sign Up</span>
-              <span class="btn-loading" style="display: none;">Creating account...</span>
+              <span class="btn-loading hidden">
+                <div class="loading-dots">
+                  <span></span>
+                  <span></span>
+                  <span></span>
+                </div>
+              </span>
             </button>
           </form>
         </div>
@@ -56,13 +83,22 @@ export function createAuthModal(): HTMLElement {
     </div>
   `;
   
+  // Add active class styles
+  const style = document.createElement('style');
+  style.textContent = `
+    .auth-modal.active {
+      display: block;
+    }
+  `;
+  document.head.appendChild(style);
+  
   // Get elements
-  const modalBackdrop = modal.querySelector('.modal-backdrop') as HTMLElement;
+  const modalBackdrop = modal.querySelector('.fixed.inset-0.bg-black\\/50') as HTMLElement;
   const modalClose = modal.querySelector('.modal-close') as HTMLButtonElement;
   const authTabs = modal.querySelectorAll('.auth-tab') as NodeListOf<HTMLButtonElement>;
   const authForms = modal.querySelectorAll('.auth-form') as NodeListOf<HTMLFormElement>;
-  const loginForm = modal.querySelector('.login-form') as HTMLFormElement;
-  const signupForm = modal.querySelector('.signup-form') as HTMLFormElement;
+  const loginForm = modal.querySelector('[data-form="login"]') as HTMLFormElement;
+  const signupForm = modal.querySelector('[data-form="signup"]') as HTMLFormElement;
   
   // Tab switching
   authTabs.forEach(tab => {
@@ -70,14 +106,18 @@ export function createAuthModal(): HTMLElement {
       const tabType = tab.dataset.tab!;
       
       // Update active tab
-      authTabs.forEach(t => t.classList.remove('active'));
-      tab.classList.add('active');
+      authTabs.forEach(t => {
+        t.classList.remove('border-primary-600', 'text-primary-600');
+        t.classList.add('border-transparent', 'text-gray-500');
+      });
+      tab.classList.remove('border-transparent', 'text-gray-500');
+      tab.classList.add('border-primary-600', 'text-primary-600');
       
       // Update active form
       authForms.forEach(form => {
-        form.classList.remove('active');
+        form.classList.add('hidden');
         if (form.dataset.form === tabType) {
-          form.classList.add('active');
+          form.classList.remove('hidden');
         }
       });
       
@@ -114,19 +154,19 @@ export function createAuthModal(): HTMLElement {
   
   // Set loading state
   function setLoading(formType: string, loading: boolean) {
-    const form = modal.querySelector(`.${formType}-form`) as HTMLFormElement;
-    const submitBtn = form.querySelector('.auth-submit-btn') as HTMLButtonElement;
+    const form = modal.querySelector(`[data-form="${formType}"]`) as HTMLFormElement;
+    const submitBtn = form.querySelector('button[type="submit"]') as HTMLButtonElement;
     const btnText = submitBtn.querySelector('.btn-text') as HTMLElement;
     const btnLoading = submitBtn.querySelector('.btn-loading') as HTMLElement;
     
     if (loading) {
       submitBtn.disabled = true;
-      btnText.style.display = 'none';
-      btnLoading.style.display = 'inline';
+      btnText.classList.add('hidden');
+      btnLoading.classList.remove('hidden');
     } else {
       submitBtn.disabled = false;
-      btnText.style.display = 'inline';
-      btnLoading.style.display = 'none';
+      btnText.classList.remove('hidden');
+      btnLoading.classList.add('hidden');
     }
   }
   
