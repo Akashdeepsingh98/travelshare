@@ -1,5 +1,6 @@
 import { authManager } from '../auth';
 import { showAuthModal } from './AuthModal';
+import { createMCPManager } from './MCPManager';
 
 interface ChatMessage {
   id: string;
@@ -42,7 +43,7 @@ export function createAIPage(onNavigateBack: () => void): HTMLElement {
           <div class="ai-avatar">🤖</div>
           <div class="welcome-content">
             <h3>Welcome to TravelShare AI!</h3>
-            <p>I'm powered by Google Gemini and have access to real travel experiences from your community. I can help you discover amazing destinations, get travel tips, and find hidden gems based on actual traveler posts!</p>
+            <p>I'm powered by Google Gemini and have access to real travel experiences from your community. I can also connect to your business data through MCP servers for real-time information!</p>
             <div class="suggestion-chips">
               <button class="suggestion-chip" data-question="What are the most popular travel destinations in our community?">Most popular destinations</button>
               <button class="suggestion-chip" data-question="Tell me about travel experiences in Japan">Japan experiences</button>
@@ -106,6 +107,9 @@ export function createAIPage(onNavigateBack: () => void): HTMLElement {
           <h1>🤖 TravelShare AI</h1>
           <p class="ai-subtitle">Ask me anything about travel destinations and experiences!</p>
         </div>
+        ${authState.isAuthenticated ? `
+          <button class="mcp-manager-btn">🔌 MCP Servers</button>
+        ` : ''}
       </div>
       
       <div class="ai-page-content">
@@ -130,6 +134,7 @@ export function createAIPage(onNavigateBack: () => void): HTMLElement {
                 <span class="capability-tag">🌍 Travel Expert</span>
                 <span class="capability-tag">📊 Community Data</span>
                 <span class="capability-tag">💡 Smart Recommendations</span>
+                <span class="capability-tag">🔌 MCP Integration</span>
               </div>
             </div>
           </div>
@@ -163,7 +168,7 @@ export function createAIPage(onNavigateBack: () => void): HTMLElement {
               <div class="chat-disclaimer">
                 <span class="disclaimer-icon">🔒</span>
                 <span class="disclaimer-text">
-                  Powered by Google Gemini AI • Using real community travel data • Responses are AI-generated
+                  Powered by Google Gemini AI • Using real community travel data • MCP-enabled for business data • Responses are AI-generated
                 </span>
               </div>
             </div>
@@ -186,6 +191,10 @@ export function createAIPage(onNavigateBack: () => void): HTMLElement {
     // Back button
     const backBtn = container.querySelector('.back-btn') as HTMLButtonElement;
     backBtn.addEventListener('click', onNavigateBack);
+    
+    // MCP Manager button
+    const mcpManagerBtn = container.querySelector('.mcp-manager-btn') as HTMLButtonElement;
+    mcpManagerBtn?.addEventListener('click', showMCPManager);
     
     if (!authState.isAuthenticated) {
       // Login button
@@ -212,6 +221,18 @@ export function createAIPage(onNavigateBack: () => void): HTMLElement {
     chatInput?.focus();
   }
   
+  function showMCPManager() {
+    const mcpManager = createMCPManager(() => {
+      // Close MCP manager
+      const mcpModal = document.querySelector('.mcp-manager-modal');
+      if (mcpModal) {
+        mcpModal.remove();
+      }
+    });
+    
+    document.body.appendChild(mcpManager);
+  }
+  
   async function handleSendMessage() {
     const chatInput = container.querySelector('#chat-input') as HTMLInputElement;
     const question = chatInput?.value.trim();
@@ -229,7 +250,7 @@ export function createAIPage(onNavigateBack: () => void): HTMLElement {
     try {
       const authState = authManager.getAuthState();
       
-      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-chat-gemini`, {
+      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-chat-mcp`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -302,7 +323,7 @@ The Google Gemini API key needs to be configured in your Supabase project. Here'
 1. Go to your [Supabase Dashboard](https://supabase.com/dashboard)
 2. Select your project
 3. Navigate to **Edge Functions** in the sidebar
-4. Find the **ai-chat-gemini** function
+4. Find the **ai-chat-mcp** function
 5. Click on **Settings** or **Secrets**
 6. Add a new secret:
    - **Name:** \`GEMINI_API_KEY\`

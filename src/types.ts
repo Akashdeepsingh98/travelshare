@@ -39,3 +39,56 @@ export interface AuthState {
   currentUser: User | null;
   loading: boolean;
 }
+
+// MCP Types
+export interface MCPServer {
+  id: string;
+  name: string;
+  description: string;
+  endpoint: string;
+  apiKey?: string;
+  isActive: boolean;
+  category: 'restaurant' | 'hotel' | 'flight' | 'taxi' | 'mall' | 'attraction' | 'general';
+  capabilities: string[];
+  created_at: string;
+  user_id: string;
+}
+
+export interface MCPTool {
+  name: string;
+  description: string;
+  inputSchema: any;
+}
+
+export interface MCPResource {
+  uri: string;
+  name: string;
+  description?: string;
+  mimeType?: string;
+}
+
+export interface MCPPrompt {
+  name: string;
+  description?: string;
+  arguments?: any[];
+}
+
+export interface MCPServerCapabilities {
+  tools?: MCPTool[];
+  resources?: MCPResource[];
+  prompts?: MCPPrompt[];
+}
+
+export interface MCPRequest {
+  method: string;
+  params?: any;
+}
+
+export interface MCPResponse {
+  result?: any;
+  error?: {
+    code: number;
+    message: string;
+    data?: any;
+  };
+}
