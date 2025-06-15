@@ -4,13 +4,16 @@ import { supabase } from '../lib/supabase';
 
 export function createExplorePage(
   onPostSelect: (post: Post, allPosts: Post[]) => void,
-  onNavigateBack: () => void
+  onNavigateBack: () => void,
+  onUserClick?: (userId: string) => void
 ): HTMLElement {
   const container = document.createElement('div');
   container.className = 'explore-page';
   
   let allPosts: Post[] = [];
+  let filteredPosts: Post[] = [];
   let isLoading = false;
+  let currentSearchQuery = '';
   
   async function loadExplorePosts() {
     if (isLoading) return;
@@ -54,6 +57,7 @@ export function createExplorePage(
         }));
       }
 
+      filteredPosts = allPosts;
       renderExplorePage();
     } catch (error) {
       console.error('Error loading explore posts:', error);
@@ -63,25 +67,176 @@ export function createExplorePage(
     }
   }
   
+  function performSearch(query: string) {
+    currentSearchQuery = query.toLowerCase().trim();
+    
+    if (!currentSearchQuery) {
+      filteredPosts = allPosts;
+    } else {
+      filteredPosts = allPosts.filter(post => {
+        // Search in post content
+        const contentMatch = post.content.toLowerCase().includes(currentSearchQuery);
+        
+        // Search in location
+        const locationMatch = post.location.toLowerCase().includes(currentSearchQuery);
+        
+        // Search in user name
+        const userMatch = post.user?.name.toLowerCase().includes(currentSearchQuery) || false;
+        
+        // Search for hashtags (words starting with #)
+        const hashtagMatch = currentSearchQuery.startsWith('#') 
+          ? post.content.toLowerCase().includes(currentSearchQuery)
+          : false;
+        
+        // Search in comments
+        const commentMatch = post.comments?.some(comment => 
+          comment.content.toLowerCase().includes(currentSearchQuery) ||
+          comment.user?.name.toLowerCase().includes(currentSearchQuery)
+        ) || false;
+        
+        return contentMatch || locationMatch || userMatch || hashtagMatch || commentMatch;
+      });
+    }
+    
+    renderExplorePage();
+  }
+  
   function renderExplorePage() {
     container.innerHTML = `
       <div class="explore-content">
         <div class="explore-header">
           <h2>Explore</h2>
           <p class="explore-subtitle">Discover amazing travel experiences from around the world</p>
+          
+          <div class="search-section">
+            <div class="search-container">
+              <div class="search-input-wrapper">
+                <span class="search-icon">🔍</span>
+                <input 
+                  type="text" 
+                  placeholder="Search posts, users, locations, hashtags..." 
+                  class="search-input"
+                  value="${currentSearchQuery}"
+                >
+                <button class="search-clear-btn" style="display: ${currentSearchQuery ? 'flex' : 'none'}">✕</button>
+              </div>
+              <div class="search-suggestions">
+                <button class="search-suggestion" data-query="#travel">#travel</button>
+                <button class="search-suggestion" data-query="#adventure">#adventure</button>
+                <button class="search-suggestion" data-query="#foodie">#foodie</button>
+                <button class="search-suggestion" data-query="#photography">#photography</button>
+                <button class="search-suggestion" data-query="Japan">Japan</button>
+                <button class="search-suggestion" data-query="Europe">Europe</button>
+                <button class="search-suggestion" data-query="beach">Beach</button>
+                <button class="search-suggestion" data-query="mountains">Mountains</button>
+              </div>
+            </div>
+            
+            ${currentSearchQuery ? `
+              <div class="search-results-info">
+                <span class="results-count">${filteredPosts.length} result${filteredPosts.length === 1 ? '' : 's'} for "${currentSearchQuery}"</span>
+                <button class="clear-search-btn">Clear search</button>
+              </div>
+            ` : ''}
+          </div>
         </div>
         
         <div class="posts-grid">
-          ${allPosts.map(post => createPostGridItem(post)).join('')}
+          ${filteredPosts.map(post => createPostGridItem(post)).join('')}
         </div>
+        
+        ${filteredPosts.length === 0 && currentSearchQuery ? `
+          <div class="no-search-results">
+            <div class="no-results-content">
+              <div class="no-results-icon">🔍</div>
+              <h3>No results found</h3>
+              <p>Try searching for different keywords, locations, or hashtags.</p>
+              <div class="search-tips">
+                <h4>Search tips:</h4>
+                <ul>
+                  <li>Try searching for locations like "Tokyo" or "Paris"</li>
+                  <li>Use hashtags like "#travel" or "#adventure"</li>
+                  <li>Search for user names or travel experiences</li>
+                  <li>Look for specific activities like "hiking" or "food"</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        ` : ''}
       </div>
     `;
+    
+    setupSearchListeners();
     
     // Add click handlers for grid items
     const gridItems = container.querySelectorAll('.post-grid-item');
     gridItems.forEach((item, index) => {
-      item.addEventListener('click', () => {
-        onPostSelect(allPosts[index], allPosts);
+      item.addEventListener('click', (e) => {
+        // Check if click was on user info area
+        const userInfoArea = (e.target as HTMLElement).closest('.grid-item-user');
+        if (userInfoArea && onUserClick) {
+          e.stopPropagation();
+          const post = filteredPosts[index];
+          if (post.user_id) {
+            onUserClick(post.user_id);
+          }
+        } else {
+          onPostSelect(filteredPosts[index], filteredPosts);
+        }
+      });
+    });
+  }
+  
+  function setupSearchListeners() {
+    const searchInput = container.querySelector('.search-input') as HTMLInputElement;
+    const searchClearBtn = container.querySelector('.search-clear-btn') as HTMLButtonElement;
+    const clearSearchBtn = container.querySelector('.clear-search-btn') as HTMLButtonElement;
+    const searchSuggestions = container.querySelectorAll('.search-suggestion') as NodeListOf<HTMLButtonElement>;
+    
+    // Search input handling
+    let searchTimeout: NodeJS.Timeout;
+    
+    searchInput?.addEventListener('input', (e) => {
+      const query = (e.target as HTMLInputElement).value;
+      
+      // Update clear button visibility
+      if (searchClearBtn) {
+        searchClearBtn.style.display = query ? 'flex' : 'none';
+      }
+      
+      // Debounce search
+      clearTimeout(searchTimeout);
+      searchTimeout = setTimeout(() => {
+        performSearch(query);
+      }, 300);
+    });
+    
+    searchInput?.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        clearTimeout(searchTimeout);
+        performSearch(searchInput.value);
+      }
+    });
+    
+    // Clear search
+    searchClearBtn?.addEventListener('click', () => {
+      searchInput.value = '';
+      searchClearBtn.style.display = 'none';
+      performSearch('');
+    });
+    
+    clearSearchBtn?.addEventListener('click', () => {
+      searchInput.value = '';
+      performSearch('');
+    });
+    
+    // Search suggestions
+    searchSuggestions.forEach(suggestion => {
+      suggestion.addEventListener('click', () => {
+        const query = suggestion.dataset.query!;
+        searchInput.value = query;
+        performSearch(query);
       });
     });
   }
@@ -90,10 +245,15 @@ export function createExplorePage(
     const userAvatarUrl = post.user?.avatar_url || 'https://images.pexels.com/photos/1040880/pexels-photo-1040880.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&fit=crop';
     const userName = post.user?.name || 'Unknown User';
     
+    // Get the first media URL (either from media_urls or image_url)
+    const imageUrl = (post.media_urls && post.media_urls.length > 0) 
+      ? post.media_urls[0] 
+      : post.image_url || 'https://images.pexels.com/photos/1761279/pexels-photo-1761279.jpeg?auto=compress&cs=tinysrgb&w=800';
+    
     return `
       <div class="post-grid-item" data-post-id="${post.id}">
         <div class="grid-item-image">
-          <img src="${post.image_url}" alt="Travel photo" loading="lazy">
+          <img src="${imageUrl}" alt="Travel photo" loading="lazy">
           <div class="grid-item-overlay">
             <div class="grid-item-stats">
               <span class="stat-item">
@@ -115,6 +275,10 @@ export function createExplorePage(
               <span class="grid-user-name">${userName}</span>
               <span class="grid-location">📍 ${post.location}</span>
             </div>
+          </div>
+          
+          <div class="grid-item-content">
+            <p class="grid-content-preview">${post.content.length > 100 ? post.content.substring(0, 100) + '...' : post.content}</p>
           </div>
         </div>
       </div>

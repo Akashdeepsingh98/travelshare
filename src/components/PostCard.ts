@@ -9,7 +9,8 @@ export function createPostCard(
   onComment: (postId: string, comment: string) => void,
   onFollow?: (userId: string) => void,
   onUnfollow?: (userId: string) => void,
-  showFollowButton: boolean = false
+  showFollowButton: boolean = false,
+  onUserClick?: (userId: string) => void
 ): HTMLElement {
   const card = document.createElement('div');
   card.className = 'post-card';
@@ -67,11 +68,13 @@ export function createPostCard(
     
     card.innerHTML = `
       <div class="post-header">
-        <img src="${userAvatarUrl}" alt="${userName}" class="user-avatar">
-        <div class="post-user-info">
-          <h3 class="user-name">${userName}</h3>
-          <p class="post-location">📍 ${post.location}</p>
-          <p class="post-time">${timeAgo}</p>
+        <div class="post-user-clickable" ${onUserClick ? 'style="cursor: pointer;"' : ''}>
+          <img src="${userAvatarUrl}" alt="${userName}" class="user-avatar">
+          <div class="post-user-info">
+            <h3 class="user-name">${userName}</h3>
+            <p class="post-location">📍 ${post.location}</p>
+            <p class="post-time">${timeAgo}</p>
+          </div>
         </div>
         ${showFollowButton && !isOwnPost && authState.isAuthenticated && onFollow ? `
           <button class="follow-btn ${isFollowing ? 'following' : ''}" data-user-id="${post.user_id}">
@@ -103,7 +106,7 @@ export function createPostCard(
       
       <div class="comments-section">
         <div class="comments-list">
-          ${(post.comments || []).map(comment => createCommentHTML(comment)).join('')}
+          ${(post.comments || []).map(comment => createCommentHTML(comment, onUserClick)).join('')}
         </div>
         ${authState.isAuthenticated && currentUser ? `
           <div class="add-comment">
@@ -124,6 +127,14 @@ export function createPostCard(
     // Setup media carousel if there are multiple items
     if (mediaItems.length > 1) {
       setupMediaCarousel(card, mediaItems);
+    }
+    
+    // User click functionality
+    if (onUserClick) {
+      const userClickable = card.querySelector('.post-user-clickable') as HTMLElement;
+      userClickable.addEventListener('click', () => {
+        onUserClick(post.user_id);
+      });
     }
     
     // Like functionality
@@ -333,17 +344,19 @@ export function createPostCard(
   return card;
 }
 
-function createCommentHTML(comment: Comment): string {
+function createCommentHTML(comment: Comment, onUserClick?: (userId: string) => void): string {
   const timeAgo = getTimeAgo(new Date(comment.created_at));
   const userAvatarUrl = comment.user?.avatar_url || 'https://images.pexels.com/photos/1040880/pexels-photo-1040880.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&fit=crop';
   const userName = comment.user?.name || 'Unknown User';
   
   return `
     <div class="comment">
-      <img src="${userAvatarUrl}" alt="${userName}" class="user-avatar-small">
+      <div class="comment-user-clickable" ${onUserClick ? 'style="cursor: pointer;" data-user-id="' + comment.user_id + '"' : ''}>
+        <img src="${userAvatarUrl}" alt="${userName}" class="user-avatar-small">
+      </div>
       <div class="comment-content">
         <div class="comment-header">
-          <span class="comment-user">${userName}</span>
+          <span class="comment-user ${onUserClick ? 'clickable' : ''}" ${onUserClick ? 'data-user-id="' + comment.user_id + '"' : ''}>${userName}</span>
           <span class="comment-time">${timeAgo}</span>
         </div>
         <p class="comment-text">${comment.content}</p>

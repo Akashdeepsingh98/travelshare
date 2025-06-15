@@ -167,9 +167,9 @@ class TravelSocialApp {
     }
   }
 
-  private navigateToProfile() {
+  private navigateToProfile(userId?: string) {
     this.currentView = 'profile';
-    this.viewData = {};
+    this.viewData = { userId };
     this.render();
   }
 
@@ -244,7 +244,8 @@ class TravelSocialApp {
         const profilePage = createProfilePage(
           () => this.navigateToFeed(),
           (userId, userName) => this.navigateToFollowing(userId, userName),
-          (userId, userName) => this.navigateToFollowers(userId, userName)
+          (userId, userName) => this.navigateToFollowers(userId, userName),
+          this.viewData.userId // Pass the userId to view another user's profile
         );
         this.appContainer.appendChild(profilePage);
       } else if (this.currentView === 'following') {
@@ -252,7 +253,8 @@ class TravelSocialApp {
         const followingPage = createFollowingPage(
           this.viewData.userId!,
           this.viewData.userName!,
-          () => this.navigateToProfile()
+          () => this.navigateToProfile(this.viewData.userId),
+          (userId) => this.navigateToProfile(userId) // Navigate to user profile when clicked
         );
         this.appContainer.appendChild(followingPage);
       } else if (this.currentView === 'followers') {
@@ -260,7 +262,8 @@ class TravelSocialApp {
         const followersPage = createFollowersPage(
           this.viewData.userId!,
           this.viewData.userName!,
-          () => this.navigateToProfile()
+          () => this.navigateToProfile(this.viewData.userId),
+          (userId) => this.navigateToProfile(userId) // Navigate to user profile when clicked
         );
         this.appContainer.appendChild(followersPage);
       } else if (this.currentView === 'explore') {
@@ -277,7 +280,8 @@ class TravelSocialApp {
         // Explore page
         const explorePage = createExplorePage(
           (post, allPosts) => this.openPostViewer(post, allPosts),
-          () => this.navigateToFeed()
+          () => this.navigateToFeed(),
+          (userId) => this.navigateToProfile(userId) // Navigate to user profile when clicked
         );
         this.appContainer.appendChild(explorePage);
       } else {
@@ -349,7 +353,8 @@ class TravelSocialApp {
         (postId, comment) => this.handleComment(postId, comment),
         (userId) => this.handleFollow(userId),
         (userId) => this.handleUnfollow(userId),
-        true // Show follow button in feed
+        true, // Show follow button in feed
+        (userId) => this.navigateToProfile(userId) // Navigate to user profile when clicked
       );
       feedSection.appendChild(postCard);
     });
