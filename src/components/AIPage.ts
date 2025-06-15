@@ -8,15 +8,12 @@ interface ChatMessage {
   timestamp: Date;
 }
 
-type AIProvider = 'openai' | 'gemini';
-
 export function createAIPage(onNavigateBack: () => void): HTMLElement {
   const container = document.createElement('div');
   container.className = 'ai-page';
   
   let chatMessages: ChatMessage[] = [];
   let isLoading = false;
-  let currentProvider: AIProvider = 'gemini'; // Default to Gemini
   
   function generateMessageId(): string {
     return Date.now().toString() + Math.random().toString(36).substr(2, 9);
@@ -69,18 +66,6 @@ export function createAIPage(onNavigateBack: () => void): HTMLElement {
                 <span class="capability-tag">🌍 Travel Expert</span>
                 <span class="capability-tag">📊 Community Data</span>
                 <span class="capability-tag">💡 Smart Recommendations</span>
-              </div>
-            </div>
-          </div>
-
-          <!-- API Key Configuration Notice -->
-          <div class="api-key-notice">
-            <div class="notice-content">
-              <div class="notice-icon">⚠️</div>
-              <div class="notice-text">
-                <strong>API Key Required:</strong> To use the AI chat feature, you need to configure a Google Gemini API key. 
-                <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer">Get your free API key here</a>
-                and add it to your environment variables as <code>VITE_GEMINI_API_KEY</code>.
               </div>
             </div>
           </div>
@@ -191,13 +176,6 @@ export function createAIPage(onNavigateBack: () => void): HTMLElement {
     const question = chatInput?.value.trim();
     
     if (!question || isLoading) return;
-
-    // Check if API key is configured
-    const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
-    if (!apiKey) {
-      addMessage('ai', "⚠️ **API Key Not Configured**\n\nTo use the AI chat feature, you need to set up a Google Gemini API key:\n\n1. Visit [Google AI Studio](https://aistudio.google.com/app/apikey) to get your free API key\n2. Add it to your `.env` file as `VITE_GEMINI_API_KEY=your_api_key_here`\n3. Restart the development server\n\nOnce configured, you'll be able to chat with the AI assistant!");
-      return;
-    }
     
     // Add user message
     addMessage('user', question);
@@ -219,7 +197,7 @@ export function createAIPage(onNavigateBack: () => void): HTMLElement {
         body: JSON.stringify({
           question,
           userId: authState.currentUser?.id,
-          apiKey
+          apiKey: 'AIzaSyDWUUDdsrO0Ms2U4_y1jhYH4a5XJs8U1pc' // Your Gemini API key
         })
       });
 
@@ -243,13 +221,11 @@ export function createAIPage(onNavigateBack: () => void): HTMLElement {
       let errorMessage = "I'm sorry, I'm having trouble processing your question right now. ";
       
       if (error.message.includes('Invalid') && error.message.includes('API key')) {
-        errorMessage = "🔑 **Invalid API Key**\n\nThe Google Gemini API key appears to be invalid. Please check that:\n\n1. Your API key is correct in the `.env` file\n2. The API key has the necessary permissions\n3. You haven't exceeded your API quota\n\nYou can get a new API key from [Google AI Studio](https://aistudio.google.com/app/apikey).";
+        errorMessage = "🔑 **Invalid API Key**\n\nThe Google Gemini API key appears to be invalid. Please check that the API key is correct and has the necessary permissions.";
       } else if (error.message.includes('quota') || error.message.includes('limit')) {
-        errorMessage = "📊 **API Quota Exceeded**\n\nIt looks like you've reached your API usage limit. This could be due to:\n\n• Daily quota exceeded\n• Rate limiting\n• Billing issues\n\nPlease check your [Google Cloud Console](https://console.cloud.google.com/) for more details or try again later.";
+        errorMessage = "📊 **API Quota Exceeded**\n\nIt looks like you've reached your API usage limit. Please try again later.";
       } else if (error.message.includes('403') || error.message.includes('Forbidden')) {
-        errorMessage = "🚫 **Access Denied**\n\nThe API key doesn't have permission to access the Gemini service. Please ensure:\n\n1. The API key is valid and active\n2. The Gemini API is enabled in your Google Cloud project\n3. You have the necessary permissions";
-      } else if (error.message.includes('404') || error.message.includes('Not Found')) {
-        errorMessage = "🔍 **Service Not Found**\n\nThere seems to be an issue with the AI service endpoint. This might be a temporary issue with the Supabase Edge Function or the Gemini API service.";
+        errorMessage = "🚫 **Access Denied**\n\nThe API key doesn't have permission to access the Gemini service.";
       } else {
         errorMessage += "Please try again later or ask a different question.\n\n**Error details:** " + error.message;
       }

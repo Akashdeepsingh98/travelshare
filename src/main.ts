@@ -10,9 +10,10 @@ import { createExplorePage } from './components/ExplorePage';
 import { createPostViewer } from './components/PostViewer';
 import { createFollowingPage } from './components/FollowingPage';
 import { createFollowersPage } from './components/FollowersPage';
+import { createAIPage } from './components/AIPage';
 import { supabase } from './lib/supabase';
 
-type AppView = 'feed' | 'profile' | 'explore' | 'post-viewer' | 'following' | 'followers';
+type AppView = 'feed' | 'profile' | 'explore' | 'post-viewer' | 'following' | 'followers' | 'ai-chat';
 
 interface ViewData {
   userId?: string;
@@ -185,6 +186,12 @@ class TravelSocialApp {
     this.render();
   }
 
+  private navigateToAIChat() {
+    this.currentView = 'ai-chat';
+    this.viewData = {};
+    this.render();
+  }
+
   private navigateToFollowing(userId: string, userName: string) {
     this.currentView = 'following';
     this.viewData = { userId, userName };
@@ -228,7 +235,11 @@ class TravelSocialApp {
     } else {
       document.body.style.overflow = '';
       
-      if (this.currentView === 'profile') {
+      if (this.currentView === 'ai-chat') {
+        // AI Chat page
+        const aiPage = createAIPage(() => this.navigateToFeed());
+        this.appContainer.appendChild(aiPage);
+      } else if (this.currentView === 'profile') {
         // Profile page
         const profilePage = createProfilePage(
           () => this.navigateToFeed(),
@@ -258,6 +269,7 @@ class TravelSocialApp {
           () => this.navigateToProfile(),
           () => this.navigateToExplore(),
           () => this.navigateToFeed(),
+          () => this.navigateToAIChat(),
           this.currentView
         );
         this.appContainer.appendChild(header);
@@ -275,6 +287,7 @@ class TravelSocialApp {
           () => this.navigateToProfile(),
           () => this.navigateToExplore(),
           () => this.navigateToFeed(),
+          () => this.navigateToAIChat(),
           this.currentView
         );
         this.appContainer.appendChild(header);

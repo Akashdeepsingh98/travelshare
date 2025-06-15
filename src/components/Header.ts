@@ -1,6 +1,12 @@
 import { authManager } from '../auth';
 
-export function createHeader(onProfileClick?: () => void, onExploreClick?: () => void, onHomeClick?: () => void, currentView?: string): HTMLElement {
+export function createHeader(
+  onProfileClick?: () => void, 
+  onExploreClick?: () => void, 
+  onHomeClick?: () => void, 
+  onAIChatClick?: () => void,
+  currentView?: string
+): HTMLElement {
   const header = document.createElement('header');
   header.className = 'header';
   
@@ -38,6 +44,10 @@ export function createHeader(onProfileClick?: () => void, onExploreClick?: () =>
             <button class="nav-btn ${currentView === 'explore' ? 'active' : ''}" data-view="explore">
               <span class="nav-icon">🔍</span>
               <span class="nav-text">Explore</span>
+            </button>
+            <button class="nav-btn ${currentView === 'ai-chat' ? 'active' : ''}" data-view="ai-chat">
+              <span class="nav-icon">🤖</span>
+              <span class="nav-text">AI Chat</span>
             </button>
           </nav>
           
@@ -81,6 +91,8 @@ export function createHeader(onProfileClick?: () => void, onExploreClick?: () =>
             onHomeClick();
           } else if (view === 'explore' && onExploreClick) {
             onExploreClick();
+          } else if (view === 'ai-chat' && onAIChatClick) {
+            onAIChatClick();
           }
         });
       });
