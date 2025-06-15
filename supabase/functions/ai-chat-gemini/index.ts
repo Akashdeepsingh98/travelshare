@@ -111,7 +111,7 @@ Please provide a helpful response to the user's travel question.`
     try {
       console.log('Initializing Gemini client...')
       const genAI = new GoogleGenerativeAI(apiKey)
-      const model = genAI.getGenerativeModel({ model: "gemini-pro" })
+      const model = genAI.getGenerativeModel({ model: "gemini-1.0-pro" })
 
       console.log('Sending request to Gemini API...')
       const result = await model.generateContent(prompt)
