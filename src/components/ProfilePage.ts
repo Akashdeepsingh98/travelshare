@@ -1,6 +1,7 @@
 import { User } from '../types';
 import { authManager } from '../auth';
 import { supabase } from '../lib/supabase';
+import { createMCPManager } from './MCPManager';
 
 export function createProfilePage(
   onNavigateBack: () => void,
@@ -13,6 +14,7 @@ export function createProfilePage(
   
   let profileUser: User | null = null;
   let followStats = { followers: 0, following: 0 };
+  let mcpServerCount = 0;
   let isFollowing = false;
   let isOwnProfile = false;
   
@@ -47,6 +49,11 @@ export function createProfilePage(
       // Load follow statistics
       await loadFollowStats(targetUserId);
       
+      // Load MCP server count if it's own profile
+      if (isOwnProfile) {
+        await loadMCPServerCount(targetUserId);
+      }
+      
       // Load follow status if viewing another user's profile
       if (!isOwnProfile) {
         await loadFollowStatus(targetUserId, authState.currentUser.id);
@@ -80,6 +87,20 @@ export function createProfilePage(
     } catch (error) {
       console.error('Error loading follow stats:', error);
       followStats = { followers: 0, following: 0 };
+    }
+  }
+  
+  async function loadMCPServerCount(userId: string) {
+    try {
+      const { count } = await supabase
+        .from('mcp_servers')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', userId);
+      
+      mcpServerCount = count || 0;
+    } catch (error) {
+      console.error('Error loading MCP server count:', error);
+      mcpServerCount = 0;
     }
   }
   
@@ -142,7 +163,25 @@ export function createProfilePage(
                 <span class="stat-number">${followStats.following}</span>
                 <span class="stat-label">Following</span>
               </button>
+              ${isOwnProfile ? `
+                <button class="stat-item mcp-servers-btn">
+                  <span class="stat-number">${mcpServerCount}</span>
+                  <span class="stat-label">MCP Servers</span>
+                </button>
+              ` : ''}
             </div>
+            
+            ${isOwnProfile ? `
+              <div class="business-section">
+                <h3>Business Integration</h3>
+                <p class="business-description">
+                  Connect your business data through MCP (Model Context Protocol) to provide real-time information to AI chat users.
+                </p>
+                <button class="manage-mcp-btn">
+                  🔌 Manage MCP Servers
+                </button>
+              </div>
+            ` : ''}
             
             <div class="profile-field">
               <label>Member Since</label>
@@ -220,6 +259,15 @@ export function createProfilePage(
       });
     }
     
+    // MCP servers navigation (only for own profile)
+    if (isOwnProfile) {
+      const mcpServersBtn = container.querySelector('.mcp-servers-btn') as HTMLButtonElement;
+      const manageMcpBtn = container.querySelector('.manage-mcp-btn') as HTMLButtonElement;
+      
+      mcpServersBtn?.addEventListener('click', showMCPManager);
+      manageMcpBtn?.addEventListener('click', showMCPManager);
+    }
+    
     // Follow button for other users' profiles
     const profileFollowBtn = container.querySelector('.profile-follow-btn') as HTMLButtonElement;
     if (profileFollowBtn && !isOwnProfile) {
@@ -259,6 +307,25 @@ export function createProfilePage(
     if (isOwnProfile) {
       setupEditProfileFunctionality();
     }
+  }
+  
+  function showMCPManager() {
+    const mcpManager = createMCPManager(() => {
+      // Close MCP manager and refresh server count
+      const mcpModal = document.querySelector('.mcp-manager-modal');
+      if (mcpModal) {
+        mcpModal.remove();
+      }
+      
+      // Refresh MCP server count
+      if (profileUser) {
+        loadMCPServerCount(profileUser.id).then(() => {
+          renderProfilePage();
+        });
+      }
+    });
+    
+    document.body.appendChild(mcpManager);
   }
   
   function setupEditProfileFunctionality() {

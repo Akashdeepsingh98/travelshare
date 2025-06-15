@@ -1,6 +1,5 @@
 import { authManager } from '../auth';
 import { showAuthModal } from './AuthModal';
-import { createMCPManager } from './MCPManager';
 
 interface ChatMessage {
   id: string;
@@ -43,7 +42,7 @@ export function createAIPage(onNavigateBack: () => void): HTMLElement {
           <div class="ai-avatar">🤖</div>
           <div class="welcome-content">
             <h3>Welcome to TravelShare AI!</h3>
-            <p>I'm powered by Google Gemini and have access to real travel experiences from your community. I can also connect to your business data through MCP servers for real-time information!</p>
+            <p>I'm powered by Google Gemini and have access to real travel experiences from your community. I can also connect to business data through MCP servers for real-time information!</p>
             <div class="suggestion-chips">
               <button class="suggestion-chip" data-question="What are the most popular travel destinations in our community?">Most popular destinations</button>
               <button class="suggestion-chip" data-question="Tell me about travel experiences in Japan">Japan experiences</button>
@@ -107,9 +106,6 @@ export function createAIPage(onNavigateBack: () => void): HTMLElement {
           <h1>🤖 TravelShare AI</h1>
           <p class="ai-subtitle">Ask me anything about travel destinations and experiences!</p>
         </div>
-        ${authState.isAuthenticated ? `
-          <button class="mcp-manager-btn">🔌 MCP Servers</button>
-        ` : ''}
       </div>
       
       <div class="ai-page-content">
@@ -192,10 +188,6 @@ export function createAIPage(onNavigateBack: () => void): HTMLElement {
     const backBtn = container.querySelector('.back-btn') as HTMLButtonElement;
     backBtn.addEventListener('click', onNavigateBack);
     
-    // MCP Manager button
-    const mcpManagerBtn = container.querySelector('.mcp-manager-btn') as HTMLButtonElement;
-    mcpManagerBtn?.addEventListener('click', showMCPManager);
-    
     if (!authState.isAuthenticated) {
       // Login button
       const aiLoginBtn = container.querySelector('.ai-login-btn') as HTMLButtonElement;
@@ -219,18 +211,6 @@ export function createAIPage(onNavigateBack: () => void): HTMLElement {
     
     // Auto-focus input
     chatInput?.focus();
-  }
-  
-  function showMCPManager() {
-    const mcpManager = createMCPManager(() => {
-      // Close MCP manager
-      const mcpModal = document.querySelector('.mcp-manager-modal');
-      if (mcpModal) {
-        mcpModal.remove();
-      }
-    });
-    
-    document.body.appendChild(mcpManager);
   }
   
   async function handleSendMessage() {
