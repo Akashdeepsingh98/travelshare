@@ -19,6 +19,25 @@ export function createAboutPage(onNavigateBack: () => void): HTMLElement {
         </p>
       </div>
       
+      <div class="demo-info-section">
+        <div class="demo-info-card">
+          <div class="demo-info-icon">🎯</div>
+          <div class="demo-info-content">
+            <h3>Try It Now - No Real Email Required!</h3>
+            <p>This is a demo application. You can sign up with any fake email address (like <code>demo@test.com</code> or <code>traveler@example.org</code>) and start exploring immediately. No email verification needed!</p>
+            <div class="demo-tips">
+              <h4>Quick Start Tips:</h4>
+              <ul>
+                <li>✅ Use any fake email to create an account</li>
+                <li>✅ Choose a password you'll remember</li>
+                <li>✅ Log back in anytime with the same fake email + password</li>
+                <li>✅ All features work exactly like a real social platform</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+      
       <div class="features-section">
         <h3>Features</h3>
         <div class="features-grid">
@@ -66,8 +85,8 @@ export function createAboutPage(onNavigateBack: () => void): HTMLElement {
           <div class="step">
             <div class="step-number">1</div>
             <div class="step-content">
-              <h4>Sign Up</h4>
-              <p>Create your account and set up your traveler profile with your name and photo.</p>
+              <h4>Sign Up (Fake Email OK!)</h4>
+              <p>Create your account with any email address - real or fake. No verification required for this demo!</p>
             </div>
           </div>
           
@@ -196,7 +215,7 @@ export function createAboutPage(onNavigateBack: () => void): HTMLElement {
           
           <div class="cta-section">
             <h4>Ready to start your journey?</h4>
-            <p>Sign up today and become part of the TravelShare community!</p>
+            <p>Sign up today with any email (fake ones work too!) and become part of the TravelShare community!</p>
             <button class="cta-button" id="get-started-btn">Get Started</button>
           </div>
         </div>
@@ -259,7 +278,7 @@ export function createAboutPage(onNavigateBack: () => void): HTMLElement {
 
     .hero-section {
       text-align: center;
-      margin-bottom: 3rem;
+      margin-bottom: 2rem;
       padding: 2rem 0;
     }
 
@@ -281,6 +300,67 @@ export function createAboutPage(onNavigateBack: () => void): HTMLElement {
       line-height: 1.6;
       max-width: 600px;
       margin: 0 auto;
+    }
+
+    .demo-info-section {
+      margin-bottom: 3rem;
+    }
+
+    .demo-info-card {
+      background: linear-gradient(135deg, #e3f2fd 0%, #f3e5f5 100%);
+      border: 2px solid #2196f3;
+      border-radius: 1rem;
+      padding: 2rem;
+      display: flex;
+      align-items: flex-start;
+      gap: 1.5rem;
+    }
+
+    .demo-info-icon {
+      font-size: 3rem;
+      flex-shrink: 0;
+    }
+
+    .demo-info-content h3 {
+      color: #1565c0;
+      font-size: 1.5rem;
+      font-weight: 700;
+      margin: 0 0 1rem 0;
+    }
+
+    .demo-info-content p {
+      color: #1976d2;
+      font-size: 1.125rem;
+      line-height: 1.6;
+      margin: 0 0 1.5rem 0;
+    }
+
+    .demo-info-content code {
+      background: rgba(25, 118, 210, 0.1);
+      color: #0d47a1;
+      padding: 0.25rem 0.5rem;
+      border-radius: 0.25rem;
+      font-family: 'Courier New', monospace;
+      font-weight: 600;
+    }
+
+    .demo-tips h4 {
+      color: #0d47a1;
+      font-size: 1.125rem;
+      font-weight: 600;
+      margin: 0 0 0.75rem 0;
+    }
+
+    .demo-tips ul {
+      color: #1976d2;
+      line-height: 1.8;
+      margin: 0;
+      padding-left: 1rem;
+    }
+
+    .demo-tips li {
+      margin-bottom: 0.5rem;
+      font-weight: 500;
     }
 
     .features-section,
@@ -537,6 +617,11 @@ export function createAboutPage(onNavigateBack: () => void): HTMLElement {
 
       .hero-description {
         font-size: 1.125rem;
+      }
+
+      .demo-info-card {
+        flex-direction: column;
+        text-align: center;
       }
 
       .features-grid {

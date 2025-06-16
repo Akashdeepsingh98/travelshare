@@ -21,8 +21,12 @@ export function createAuthModal(): HTMLElement {
         <div class="auth-forms">
           <!-- Login Form -->
           <form class="auth-form login-form active" data-form="login">
+            <div class="demo-notice">
+              <div class="demo-icon">💡</div>
+              <p><strong>Demo Mode:</strong> You can log in with any email you've used before (even fake ones like test@example.com) as long as you remember the password.</p>
+            </div>
             <div class="form-group">
-              <input type="email" placeholder="Email" class="form-input" id="login-email" required>
+              <input type="email" placeholder="Email (can be fake for demo)" class="form-input" id="login-email" required>
             </div>
             <div class="form-group">
               <input type="password" placeholder="Password" class="form-input" id="login-password" required>
@@ -36,11 +40,15 @@ export function createAuthModal(): HTMLElement {
           
           <!-- Signup Form -->
           <form class="auth-form signup-form" data-form="signup">
+            <div class="demo-notice">
+              <div class="demo-icon">🎯</div>
+              <p><strong>Quick Start:</strong> You can use any fake email (like demo@test.com) to create an account instantly. No email verification required!</p>
+            </div>
             <div class="form-group">
               <input type="text" placeholder="Full Name" class="form-input" id="signup-name" required>
             </div>
             <div class="form-group">
-              <input type="email" placeholder="Email" class="form-input" id="signup-email" required>
+              <input type="email" placeholder="Email (fake emails work!)" class="form-input" id="signup-email" required>
             </div>
             <div class="form-group">
               <input type="password" placeholder="Password (min 6 characters)" class="form-input" id="signup-password" required>
@@ -55,6 +63,44 @@ export function createAuthModal(): HTMLElement {
       </div>
     </div>
   `;
+  
+  // Add styles for demo notice
+  const style = document.createElement('style');
+  style.textContent = `
+    .demo-notice {
+      background: linear-gradient(135deg, #e0f2fe 0%, #f3e5f5 100%);
+      border: 1px solid #81d4fa;
+      border-radius: 0.5rem;
+      padding: 1rem;
+      margin-bottom: 1.5rem;
+      display: flex;
+      align-items: flex-start;
+      gap: 0.75rem;
+    }
+
+    .demo-icon {
+      font-size: 1.25rem;
+      flex-shrink: 0;
+      margin-top: 0.125rem;
+    }
+
+    .demo-notice p {
+      margin: 0;
+      font-size: 0.875rem;
+      line-height: 1.4;
+      color: #1565c0;
+    }
+
+    .demo-notice strong {
+      color: #0d47a1;
+      font-weight: 600;
+    }
+  `;
+  
+  if (!document.head.querySelector('#auth-demo-styles')) {
+    style.id = 'auth-demo-styles';
+    document.head.appendChild(style);
+  }
   
   // Get elements
   const modalBackdrop = modal.querySelector('.modal-backdrop') as HTMLElement;
@@ -170,10 +216,13 @@ export function createAuthModal(): HTMLElement {
     
     if (result.success) {
       // Show success message and switch to login
-      showError('signup', 'Account created! Please check your email to verify your account.');
+      showError('signup', 'Account created successfully! You can now log in with your credentials.');
       setTimeout(() => {
         const loginTab = modal.querySelector('[data-tab="login"]') as HTMLButtonElement;
         loginTab.click();
+        // Pre-fill the login form
+        const loginEmailInput = modal.querySelector('#login-email') as HTMLInputElement;
+        loginEmailInput.value = email;
       }, 2000);
     } else {
       showError('signup', result.error!);
