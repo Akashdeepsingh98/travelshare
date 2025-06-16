@@ -294,19 +294,19 @@ export function createAIPage(onNavigateBack: () => void): HTMLElement {
       }
       
       // Add AI response with enhanced info
-      let responseText = data.answer;
+      let aiResponseContent = data.answer;
       
       // Add metadata about the analysis
       if (data.imagesAnalyzed === 'Yes' || data.mcpServersUsed > 0) {
-        responseText += '\n\n---\n*Enhanced with: ';
+        aiResponseContent += '\n\n---\n*Enhanced with: ';
         const enhancements = [];
         if (data.imagesAnalyzed === 'Yes') enhancements.push('📷 Photo analysis');
         if (data.mcpServersUsed > 0) enhancements.push(`🔌 ${data.mcpServersUsed} MCP server${data.mcpServersUsed > 1 ? 's' : ''}`);
         if (data.postsCount > 0) enhancements.push(`📊 ${data.postsCount} community posts`);
-        responseText += enhancements.join(', ') + '*';
+        aiResponseContent += enhancements.join(', ') + '*';
       }
       
-      addMessage('ai', responseText);
+      addMessage('ai', aiResponseContent);
       
     } catch (error: any) {
       console.error('Error getting AI response:', error);
