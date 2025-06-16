@@ -5,6 +5,7 @@ export function createHeader(
   onExploreClick?: () => void, 
   onHomeClick?: () => void, 
   onAIChatClick?: () => void,
+  onAboutClick?: () => void,
   currentView?: string
 ): HTMLElement {
   const header = document.createElement('header');
@@ -48,6 +49,10 @@ export function createHeader(
             <button class="nav-btn ${currentView === 'ai-chat' ? 'active' : ''}" data-view="ai-chat">
               <span class="nav-icon">🤖</span>
               <span class="nav-text">AI Chat</span>
+            </button>
+            <button class="nav-btn ${currentView === 'about' ? 'active' : ''}" data-view="about">
+              <span class="nav-icon">ℹ️</span>
+              <span class="nav-text">About</span>
             </button>
           </nav>
           
@@ -93,6 +98,8 @@ export function createHeader(
             onExploreClick();
           } else if (view === 'ai-chat' && onAIChatClick) {
             onAIChatClick();
+          } else if (view === 'about' && onAboutClick) {
+            onAboutClick();
           }
         });
       });
@@ -127,6 +134,12 @@ export function createHeader(
           <div class="logo">
             <h1>✈️ TravelShare</h1>
           </div>
+          <nav class="main-nav">
+            <button class="nav-btn ${currentView === 'about' ? 'active' : ''}" data-view="about">
+              <span class="nav-icon">ℹ️</span>
+              <span class="nav-text">About</span>
+            </button>
+          </nav>
           <div class="auth-buttons">
             <button class="login-btn">Log In</button>
           </div>
@@ -142,6 +155,14 @@ export function createHeader(
           document.body.style.overflow = 'hidden';
         }
       });
+      
+      // About navigation for non-authenticated users
+      const aboutBtn = header.querySelector('[data-view="about"]') as HTMLButtonElement;
+      if (aboutBtn && onAboutClick) {
+        aboutBtn.addEventListener('click', () => {
+          onAboutClick();
+        });
+      }
     }
   }
   

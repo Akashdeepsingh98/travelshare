@@ -11,9 +11,10 @@ import { createPostViewer } from './components/PostViewer';
 import { createFollowingPage } from './components/FollowingPage';
 import { createFollowersPage } from './components/FollowersPage';
 import { createAIPage } from './components/AIPage';
+import { createAboutPage } from './components/AboutPage';
 import { supabase } from './lib/supabase';
 
-type AppView = 'feed' | 'profile' | 'explore' | 'post-viewer' | 'following' | 'followers' | 'ai-chat';
+type AppView = 'feed' | 'profile' | 'explore' | 'post-viewer' | 'following' | 'followers' | 'ai-chat' | 'about';
 
 interface ViewData {
   userId?: string;
@@ -156,6 +157,9 @@ class TravelSocialApp {
             <h3>Connection Error</h3>
             <p>${message.replace(/\n/g, '<br>')}</p>
             <button class="retry-btn">Try Again</button>
+            <a href="https://supabase.com/docs/guides/api/cors" target="_blank" rel="noopener noreferrer" class="setup-guide-btn">
+              View Setup Guide
+            </a>
           </div>
         </div>
       `;
@@ -188,6 +192,12 @@ class TravelSocialApp {
 
   private navigateToAIChat() {
     this.currentView = 'ai-chat';
+    this.viewData = {};
+    this.render();
+  }
+
+  private navigateToAbout() {
+    this.currentView = 'about';
     this.viewData = {};
     this.render();
   }
@@ -235,7 +245,11 @@ class TravelSocialApp {
     } else {
       document.body.style.overflow = '';
       
-      if (this.currentView === 'ai-chat') {
+      if (this.currentView === 'about') {
+        // About page
+        const aboutPage = createAboutPage(() => this.navigateToFeed());
+        this.appContainer.appendChild(aboutPage);
+      } else if (this.currentView === 'ai-chat') {
         // AI Chat page
         const aiPage = createAIPage(() => this.navigateToFeed());
         this.appContainer.appendChild(aiPage);
@@ -273,6 +287,7 @@ class TravelSocialApp {
           () => this.navigateToExplore(),
           () => this.navigateToFeed(),
           () => this.navigateToAIChat(),
+          () => this.navigateToAbout(),
           this.currentView
         );
         this.appContainer.appendChild(header);
@@ -292,6 +307,7 @@ class TravelSocialApp {
           () => this.navigateToExplore(),
           () => this.navigateToFeed(),
           () => this.navigateToAIChat(),
+          () => this.navigateToAbout(),
           this.currentView
         );
         this.appContainer.appendChild(header);
