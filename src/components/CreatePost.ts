@@ -3,6 +3,7 @@ import { authManager } from '../auth';
 import { showAuthModal } from './AuthModal';
 import { supabase } from '../lib/supabase';
 import { createLocationSelector, LocationData } from './LocationSelector';
+import { APP_CONFIG } from '../utils/constants';
 
 export function createPostForm(onPostCreate: (post: Post) => void): HTMLElement {
   const container = document.createElement('div');
@@ -73,10 +74,10 @@ export function createPostForm(onPostCreate: (post: Post) => void): HTMLElement 
               <div class="media-placeholder">
                 <div class="upload-icon">📷</div>
                 <p>Add photos or videos</p>
-                <span class="media-hint">Up to 10 files</span>
+                <span class="media-hint">Up to 10 files • Supports JPG, PNG, GIF, WebP, HEIC, MP4, WebM</span>
               </div>
               <div class="media-grid" style="display: none;"></div>
-              <input type="file" accept="image/*,video/*" multiple class="media-file-input" style="display: none;">
+              <input type="file" accept="${APP_CONFIG.supportedImageTypes.join(',')},${APP_CONFIG.supportedVideoTypes.join(',')}" multiple class="media-file-input" style="display: none;">
               <div class="media-url-section">
                 <input type="url" placeholder="Or paste media URL" class="media-url-input">
                 <button type="button" class="add-url-btn">Add</button>
@@ -224,7 +225,7 @@ export function createPostForm(onPostCreate: (post: Post) => void): HTMLElement 
     // Detect media type from URL
     function getMediaTypeFromUrl(url: string): 'image' | 'video' {
       const videoExtensions = ['.mp4', '.webm', '.ogg', '.mov', '.avi', '.wmv', '.flv', '.mkv'];
-      const imageExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp', '.svg'];
+      const imageExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp', '.svg', '.heic', '.heif'];
       
       const urlLower = url.toLowerCase();
       
@@ -240,6 +241,29 @@ export function createPostForm(onPostCreate: (post: Post) => void): HTMLElement 
       return 'image';
     }
     
+    // Validate file type and size
+    function validateFile(file: File): { isValid: boolean; error?: string } {
+      // Check file type
+      const allSupportedTypes = [...APP_CONFIG.supportedImageTypes, ...APP_CONFIG.supportedVideoTypes];
+      if (!allSupportedTypes.includes(file.type)) {
+        return { 
+          isValid: false, 
+          error: `Unsupported file type: ${file.type}. Supported formats: JPG, PNG, GIF, WebP, HEIC, MP4, WebM, OGG` 
+        };
+      }
+      
+      // Check file size
+      const maxSizeInBytes = APP_CONFIG.maxFileSize * 1024 * 1024;
+      if (file.size > maxSizeInBytes) {
+        return { 
+          isValid: false, 
+          error: `File too large: ${(file.size / 1024 / 1024).toFixed(1)}MB. Maximum size: ${APP_CONFIG.maxFileSize}MB` 
+        };
+      }
+      
+      return { isValid: true };
+    }
+    
     // Event listeners
     triggerButton.addEventListener('click', openModal);
     modalBackdrop.addEventListener('click', closeModal);
@@ -247,7 +271,7 @@ export function createPostForm(onPostCreate: (post: Post) => void): HTMLElement 
     
     // Media upload handling
     mediaPlaceholder.addEventListener('click', () => {
-      if (selectedMedia.length < 10) {
+      if (selectedMedia.length < APP_CONFIG.maxMediaFiles) {
         mediaFileInput.click();
       }
     });
@@ -256,7 +280,17 @@ export function createPostForm(onPostCreate: (post: Post) => void): HTMLElement 
       const files = Array.from((e.target as HTMLInputElement).files || []);
       
       files.forEach(file => {
-        if (selectedMedia.length >= 10) return;
+        if (selectedMedia.length >= APP_CONFIG.maxMediaFiles) {
+          alert(`Maximum ${APP_CONFIG.maxMediaFiles} files allowed`);
+          return;
+        }
+        
+        // Validate file
+        const validation = validateFile(file);
+        if (!validation.isValid) {
+          alert(validation.error);
+          return;
+        }
         
         const reader = new FileReader();
         reader.onload = (e) => {
@@ -277,7 +311,7 @@ export function createPostForm(onPostCreate: (post: Post) => void): HTMLElement 
     // URL input handling
     addUrlBtn.addEventListener('click', () => {
       const url = mediaUrlInput.value.trim();
-      if (url && selectedMedia.length < 10) {
+      if (url && selectedMedia.length < APP_CONFIG.maxMediaFiles) {
         const type = getMediaTypeFromUrl(url);
         selectedMedia.push({ url, type });
         mediaUrlInput.value = '';
