@@ -153,12 +153,15 @@ export function createProfilePage(
       display: block;
       font-size: 1.5rem;
       font-weight: 700;
+      color: white;
     }
 
     .stat-label {
       display: block;
       font-size: 0.875rem;
-      opacity: 0.9;
+      color: rgba(255, 255, 255, 0.95);
+      font-weight: 500;
+      text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
     }
 
     .mini-apps-section {
