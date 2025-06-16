@@ -49,7 +49,7 @@ export function validateMediaFile(file: File): { isValid: boolean; error?: strin
   if (!allSupportedTypes.includes(file.type)) {
     return { 
       isValid: false, 
-      error: `Unsupported file type: ${file.type}. Supported formats: JPG, PNG, GIF, WebP, HEIC, MP4, WebM, OGG` 
+      error: `Unsupported file type: ${file.type}. Supported formats: JPG, PNG, GIF, WebP, HEIC, MP4, WebM, OGG, MOV, AVI` 
     };
   }
   
@@ -69,7 +69,7 @@ export function getFileTypeFromExtension(filename: string): 'image' | 'video' | 
   const extension = filename.toLowerCase().split('.').pop() || '';
   
   const imageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'svg', 'heic', 'heif'];
-  const videoExtensions = ['mp4', 'webm', 'ogg', 'mov', 'avi', 'wmv', 'flv', 'mkv'];
+  const videoExtensions = ['mp4', 'webm', 'ogg', 'mov', 'avi', 'wmv', 'flv', 'mkv', 'hevc', 'h265'];
   
   if (imageExtensions.includes(extension)) {
     return 'image';

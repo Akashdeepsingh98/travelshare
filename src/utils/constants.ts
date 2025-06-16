@@ -5,7 +5,7 @@ export const APP_CONFIG = {
   maxFileSize: 10, // MB
   maxMediaFiles: 10,
   supportedImageTypes: ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/heic', 'image/heif'],
-  supportedVideoTypes: ['video/mp4', 'video/webm', 'video/ogg'],
+  supportedVideoTypes: ['video/mp4', 'video/webm', 'video/ogg', 'video/quicktime', 'video/x-msvideo'],
   defaultAvatarUrl: 'https://images.pexels.com/photos/1040880/pexels-photo-1040880.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&fit=crop'
 };
 

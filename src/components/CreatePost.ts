@@ -74,7 +74,7 @@ export function createPostForm(onPostCreate: (post: Post) => void): HTMLElement 
               <div class="media-placeholder">
                 <div class="upload-icon">📷</div>
                 <p>Add photos or videos</p>
-                <span class="media-hint">Up to 10 files • Supports JPG, PNG, GIF, WebP, HEIC, MP4, WebM</span>
+                <span class="media-hint">Up to 10 files • Supports JPG, PNG, GIF, WebP, HEIC, MP4, WebM, MOV, AVI</span>
               </div>
               <div class="media-grid" style="display: none;"></div>
               <input type="file" accept="${APP_CONFIG.supportedImageTypes.join(',')},${APP_CONFIG.supportedVideoTypes.join(',')}" multiple class="media-file-input" style="display: none;">
@@ -224,7 +224,7 @@ export function createPostForm(onPostCreate: (post: Post) => void): HTMLElement 
     
     // Detect media type from URL
     function getMediaTypeFromUrl(url: string): 'image' | 'video' {
-      const videoExtensions = ['.mp4', '.webm', '.ogg', '.mov', '.avi', '.wmv', '.flv', '.mkv'];
+      const videoExtensions = ['.mp4', '.webm', '.ogg', '.mov', '.avi', '.wmv', '.flv', '.mkv', '.hevc', '.h265'];
       const imageExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp', '.svg', '.heic', '.heif'];
       
       const urlLower = url.toLowerCase();
@@ -248,7 +248,7 @@ export function createPostForm(onPostCreate: (post: Post) => void): HTMLElement 
       if (!allSupportedTypes.includes(file.type)) {
         return { 
           isValid: false, 
-          error: `Unsupported file type: ${file.type}. Supported formats: JPG, PNG, GIF, WebP, HEIC, MP4, WebM, OGG` 
+          error: `Unsupported file type: ${file.type}. Supported formats: JPG, PNG, GIF, WebP, HEIC, MP4, WebM, OGG, MOV, AVI` 
         };
       }
       
