@@ -42,10 +42,16 @@ export function createAIPage(onNavigateBack: () => void): HTMLElement {
           <div class="ai-avatar">🤖</div>
           <div class="welcome-content">
             <h3>Welcome to TravelShare AI!</h3>
-            <p>I'm powered by Google Gemini and have access to real travel experiences from your community. I can also connect to business data through MCP servers for real-time information!</p>
+            <p>I'm powered by Google Gemini with vision capabilities and have access to real travel experiences from your community. I can analyze photos from posts and connect to business data through MCP servers for real-time information!</p>
+            <div class="ai-features">
+              <div class="feature-badge">📷 Photo Analysis</div>
+              <div class="feature-badge">🌍 Community Data</div>
+              <div class="feature-badge">🔌 MCP Integration</div>
+              <div class="feature-badge">💡 Smart Recommendations</div>
+            </div>
             <div class="suggestion-chips">
               <button class="suggestion-chip" data-question="What are the most popular travel destinations in our community?">Most popular destinations</button>
-              <button class="suggestion-chip" data-question="Tell me about travel experiences in Japan">Japan experiences</button>
+              <button class="suggestion-chip" data-question="Tell me about travel experiences in Japan with photos">Japan experiences</button>
               <button class="suggestion-chip" data-question="What are some hidden gems for travel?">Hidden gems</button>
               <button class="suggestion-chip" data-question="Best places for photography based on community posts?">Photography spots</button>
               <button class="suggestion-chip" data-question="What should I know before traveling to Europe?">Europe travel tips</button>
@@ -114,7 +120,7 @@ export function createAIPage(onNavigateBack: () => void): HTMLElement {
             <div class="ai-login-content">
               <div class="ai-login-icon">🤖✈️</div>
               <h3>Discover Amazing Travel Insights</h3>
-              <p>Log in to chat with our AI assistant and get personalized travel recommendations based on real traveler experiences!</p>
+              <p>Log in to chat with our AI assistant and get personalized travel recommendations based on real traveler experiences and photo analysis!</p>
               <button class="ai-login-btn">Get Started</button>
             </div>
           </div>
@@ -124,11 +130,12 @@ export function createAIPage(onNavigateBack: () => void): HTMLElement {
             <div class="ai-status-content">
               <div class="ai-status-indicator">
                 <span class="status-dot active"></span>
-                <span class="status-text">AI Ready - Powered by Google Gemini</span>
+                <span class="status-text">AI Ready - Powered by Google Gemini with Vision</span>
               </div>
               <div class="ai-capabilities">
                 <span class="capability-tag">🌍 Travel Expert</span>
                 <span class="capability-tag">📊 Community Data</span>
+                <span class="capability-tag">📷 Photo Analysis</span>
                 <span class="capability-tag">💡 Smart Recommendations</span>
                 <span class="capability-tag">🔌 MCP Integration</span>
               </div>
@@ -164,7 +171,7 @@ export function createAIPage(onNavigateBack: () => void): HTMLElement {
               <div class="chat-disclaimer">
                 <span class="disclaimer-icon">🔒</span>
                 <span class="disclaimer-text">
-                  Powered by Google Gemini AI • Using real community travel data • MCP-enabled for business data • Responses are AI-generated
+                  Powered by Google Gemini AI with Vision • Analyzes community photos • Using real travel data • MCP-enabled for business data • Responses are AI-generated
                 </span>
               </div>
             </div>
@@ -286,8 +293,20 @@ export function createAIPage(onNavigateBack: () => void): HTMLElement {
         throw new Error('No response received from AI service');
       }
       
-      // Add AI response
-      addMessage('ai', data.answer);
+      // Add AI response with enhanced info
+      let responseText = data.answer;
+      
+      // Add metadata about the analysis
+      if (data.imagesAnalyzed === 'Yes' || data.mcpServersUsed > 0) {
+        responseText += '\n\n---\n*Enhanced with: ';
+        const enhancements = [];
+        if (data.imagesAnalyzed === 'Yes') enhancements.push('📷 Photo analysis');
+        if (data.mcpServersUsed > 0) enhancements.push(`🔌 ${data.mcpServersUsed} MCP server${data.mcpServersUsed > 1 ? 's' : ''}`);
+        if (data.postsCount > 0) enhancements.push(`📊 ${data.postsCount} community posts`);
+        responseText += enhancements.join(', ') + '*';
+      }
+      
+      addMessage('ai', responseText);
       
     } catch (error: any) {
       console.error('Error getting AI response:', error);
@@ -309,7 +328,7 @@ The Google Gemini API key needs to be configured in your Supabase project. Here'
    - **Name:** \`GEMINI_API_KEY\`
    - **Value:** Your Google Gemini API key
 
-After adding the secret, the AI chat should work properly!`;
+After adding the secret, the AI chat with vision capabilities should work properly!`;
 
       } else if (error.message === 'GEMINI_API_KEY_INVALID') {
         errorMessage = `🔑 **Invalid API Key**
@@ -317,7 +336,7 @@ After adding the secret, the AI chat should work properly!`;
 The Google Gemini API key appears to be invalid. Please:
 
 1. Check that your API key is correct
-2. Ensure the API key has the necessary permissions
+2. Ensure the API key has the necessary permissions for Gemini Pro Vision
 3. Verify the key is properly set in your Supabase Edge Function secrets
 
 You can get a valid API key from the [Google AI Studio](https://makersuite.google.com/app/apikey).`;
@@ -346,7 +365,7 @@ The Google Gemini API has rate limits to ensure fair usage.`;
 Your Google Gemini API key doesn't have the necessary permissions. Please:
 
 1. Check your API key permissions in [Google AI Studio](https://makersuite.google.com/)
-2. Ensure the key is enabled for the Gemini Pro model
+2. Ensure the key is enabled for the Gemini Pro Vision model
 3. Verify your Google Cloud project settings
 
 Contact your administrator if you need additional permissions.`;
