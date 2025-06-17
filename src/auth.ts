@@ -16,6 +16,18 @@ class AuthManager {
 
   private async init() {
     try {
+      // Test Supabase connection first
+      const { error: connectionError } = await supabase
+        .from('profiles')
+        .select('count')
+        .limit(1);
+
+      if (connectionError) {
+        console.error('Supabase connection test failed:', connectionError);
+        this.handleConnectionError(connectionError);
+        return;
+      }
+
       // Get initial session
       const { data: { session } } = await supabase.auth.getSession();
       
@@ -45,13 +57,26 @@ class AuthManager {
       });
     } catch (error) {
       console.error('Error initializing auth:', error);
-      this.authState = {
-        isAuthenticated: false,
-        currentUser: null,
-        loading: false
-      };
-      this.notifyListeners();
+      this.handleConnectionError(error);
     }
+  }
+
+  private handleConnectionError(error: any) {
+    console.error('Connection error details:', error);
+    
+    // Provide detailed error information
+    if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
+      console.error('Network error - this is likely a CORS issue. Please check your Supabase project settings.');
+      console.error('Make sure to add http://localhost:5173 to your Supabase project\'s allowed origins.');
+      console.error('Go to: Supabase Dashboard > Authentication > Settings > Site URL');
+    }
+    
+    this.authState = {
+      isAuthenticated: false,
+      currentUser: null,
+      loading: false
+    };
+    this.notifyListeners();
   }
 
   private async setCurrentUser(userId: string) {
@@ -64,6 +89,13 @@ class AuthManager {
 
       if (error) {
         console.error('Error fetching user profile:', error);
+        
+        // Handle specific error cases
+        if (error.code === 'PGRST116') {
+          // No rows returned - profile doesn't exist
+          console.error('User profile not found. This might happen if the profile creation trigger failed.');
+        }
+        
         throw error;
       }
 
@@ -78,17 +110,7 @@ class AuthManager {
       };
     } catch (error) {
       console.error('Error fetching user profile:', error);
-      
-      // Check if it's a network/CORS error
-      if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
-        console.error('Network error - this might be a CORS issue. Please check your Supabase project settings.');
-      }
-      
-      this.authState = {
-        isAuthenticated: false,
-        currentUser: null,
-        loading: false
-      };
+      this.handleConnectionError(error);
     }
     
     this.notifyListeners();
@@ -126,6 +148,14 @@ class AuthManager {
       return { success: true };
     } catch (error) {
       console.error('Login error:', error);
+      
+      if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
+        return { 
+          success: false, 
+          error: 'Connection failed. Please check your internet connection and ensure your Supabase project allows requests from this domain.' 
+        };
+      }
+      
       return { success: false, error: 'An unexpected error occurred' };
     }
   }
@@ -149,6 +179,14 @@ class AuthManager {
       return { success: true };
     } catch (error) {
       console.error('Signup error:', error);
+      
+      if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
+        return { 
+          success: false, 
+          error: 'Connection failed. Please check your internet connection and ensure your Supabase project allows requests from this domain.' 
+        };
+      }
+      
       return { success: false, error: 'An unexpected error occurred' };
     }
   }
