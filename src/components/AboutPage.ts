@@ -4,226 +4,7 @@ export function createAboutPage(onNavigateBack: () => void): HTMLElement {
   const container = document.createElement('div');
   container.className = 'about-page';
   
-  container.innerHTML = `
-    <div class="about-header">
-      <button class="back-btn">← Back</button>
-      <h1>About TravelShare</h1>
-    </div>
-    
-    <div class="about-content">
-      <div class="hero-section">
-        <div class="hero-icon">✈️🌍</div>
-        <h2>Share Your Travel Adventures</h2>
-        <p class="hero-description">
-          TravelShare is a social platform where travelers connect, share experiences, and discover amazing destinations through authentic stories from fellow adventurers.
-        </p>
-      </div>
-      
-      <div class="demo-info-section">
-        <div class="demo-info-card">
-          <div class="demo-info-icon">🎯</div>
-          <div class="demo-info-content">
-            <h3>Try It Now - No Real Email Required!</h3>
-            <p>This is a demo application. You can sign up with any fake email address (like <code>demo@test.com</code> or <code>traveler@example.org</code>) and start exploring immediately. No email verification needed!</p>
-            <div class="demo-tips">
-              <h4>Quick Start Tips:</h4>
-              <ul>
-                <li>✅ Use any fake email to create an account</li>
-                <li>✅ Choose a password you'll remember</li>
-                <li>✅ Log back in anytime with the same fake email + password</li>
-                <li>✅ All features work exactly like a real social platform</li>
-              </ul>
-            </div>
-          </div>
-        </div>
-      </div>
-      
-      <div class="features-section">
-        <h3>Features</h3>
-        <div class="features-grid">
-          <div class="feature-card">
-            <div class="feature-icon">📸</div>
-            <h4>Share Your Journey</h4>
-            <p>Post photos, videos, and stories from your travels. Add locations and share the moments that made your trip special.</p>
-          </div>
-          
-          <div class="feature-card">
-            <div class="feature-icon">🔍</div>
-            <h4>Explore Destinations</h4>
-            <p>Discover new places through real traveler experiences. Search by location, hashtags, or browse popular destinations.</p>
-          </div>
-          
-          <div class="feature-card">
-            <div class="feature-icon">👥</div>
-            <h4>Connect with Travelers</h4>
-            <p>Follow other travelers, like and comment on posts, and build a community of adventure seekers.</p>
-          </div>
-          
-          <div class="feature-card">
-            <div class="feature-icon">🤖</div>
-            <h4>AI Travel Assistant</h4>
-            <p>Get personalized travel recommendations powered by Google Gemini AI, based on real community experiences.</p>
-          </div>
-          
-          <div class="feature-card">
-            <div class="feature-icon">📱</div>
-            <h4>Mini Apps</h4>
-            <p>Share your business services directly on your profile. Perfect for transportation, food delivery, hotels, and more.</p>
-          </div>
-          
-          <div class="feature-card">
-            <div class="feature-icon">🔌</div>
-            <h4>MCP Integration</h4>
-            <p>Connect real-time business data through Model Context Protocol for enhanced AI recommendations.</p>
-          </div>
-        </div>
-      </div>
-      
-      <div class="how-it-works-section">
-        <h3>How It Works</h3>
-        <div class="steps-container">
-          <div class="step">
-            <div class="step-number">1</div>
-            <div class="step-content">
-              <h4>Sign Up (Fake Email OK!)</h4>
-              <p>Create your account with any email address - real or fake. No verification required for this demo!</p>
-            </div>
-          </div>
-          
-          <div class="step">
-            <div class="step-number">2</div>
-            <div class="step-content">
-              <h4>Share Your Adventures</h4>
-              <p>Post photos and stories from your travels. Add locations and describe your experiences.</p>
-            </div>
-          </div>
-          
-          <div class="step">
-            <div class="step-number">3</div>
-            <div class="step-content">
-              <h4>Discover & Connect</h4>
-              <p>Explore posts from other travelers, follow interesting accounts, and engage with the community.</p>
-            </div>
-          </div>
-          
-          <div class="step">
-            <div class="step-number">4</div>
-            <div class="step-content">
-              <h4>Get AI Recommendations</h4>
-              <p>Chat with our AI assistant for personalized travel advice based on community experiences.</p>
-            </div>
-          </div>
-        </div>
-      </div>
-      
-      <div class="business-section">
-        <h3>For Businesses</h3>
-        <div class="business-content">
-          <div class="business-text">
-            <h4>Showcase Your Services</h4>
-            <p>Business owners can create mini apps to showcase their services directly on their profiles. Perfect for:</p>
-            <ul>
-              <li>🚗 Transportation and taxi services</li>
-              <li>🍽️ Restaurants and food delivery</li>
-              <li>🏨 Hotels and accommodations</li>
-              <li>🛍️ Shopping and e-commerce</li>
-              <li>🎬 Entertainment and attractions</li>
-              <li>💼 Business services</li>
-            </ul>
-          </div>
-          
-          <div class="business-text">
-            <h4>MCP Integration</h4>
-            <p>Connect your business data through Model Context Protocol (MCP) to provide real-time information to our AI assistant:</p>
-            <ul>
-              <li>📊 Real-time availability and pricing</li>
-              <li>📋 Current menus and services</li>
-              <li>🔄 Live booking and reservation data</li>
-              <li>📈 Enhanced customer recommendations</li>
-            </ul>
-          </div>
-        </div>
-      </div>
-      
-      <div class="technology-section">
-        <h3>Technology</h3>
-        <div class="tech-grid">
-          <div class="tech-item">
-            <div class="tech-icon">⚡</div>
-            <div class="tech-content">
-              <h4>Modern Web Technology</h4>
-              <p>Built with TypeScript, Vite, and modern web standards for a fast, responsive experience.</p>
-            </div>
-          </div>
-          
-          <div class="tech-item">
-            <div class="tech-icon">🔒</div>
-            <div class="tech-content">
-              <h4>Secure & Reliable</h4>
-              <p>Powered by Supabase with row-level security, authentication, and real-time updates.</p>
-            </div>
-          </div>
-          
-          <div class="tech-item">
-            <div class="tech-icon">🌐</div>
-            <div class="tech-content">
-              <h4>Global Accessibility</h4>
-              <p>Responsive design that works on all devices, with support for multiple media formats.</p>
-            </div>
-          </div>
-          
-          <div class="tech-item">
-            <div class="tech-icon">🚀</div>
-            <div class="tech-content">
-              <h4>AI-Powered</h4>
-              <p>Google Gemini AI integration for intelligent travel recommendations and assistance.</p>
-            </div>
-          </div>
-        </div>
-      </div>
-      
-      <div class="community-section">
-        <h3>Join Our Community</h3>
-        <div class="community-content">
-          <p>TravelShare is more than just a social platform – it's a community of passionate travelers sharing authentic experiences and helping each other discover the world.</p>
-          
-          <div class="community-stats">
-            <div class="stat-card">
-              <div class="stat-icon">👥</div>
-              <div class="stat-text">
-                <h4>Growing Community</h4>
-                <p>Join travelers from around the world</p>
-              </div>
-            </div>
-            
-            <div class="stat-card">
-              <div class="stat-icon">🌍</div>
-              <div class="stat-text">
-                <h4>Global Destinations</h4>
-                <p>Discover places you never knew existed</p>
-              </div>
-            </div>
-            
-            <div class="stat-card">
-              <div class="stat-icon">💡</div>
-              <div class="stat-text">
-                <h4>Real Experiences</h4>
-                <p>Authentic stories from real travelers</p>
-              </div>
-            </div>
-          </div>
-          
-          <div class="cta-section">
-            <h4>Ready to start your journey?</h4>
-            <p>Sign up today with any email (fake ones work too!) and become part of the TravelShare community!</p>
-            <button class="cta-button" id="get-started-btn">Get Started</button>
-          </div>
-        </div>
-      </div>
-    </div>
-  `;
-  
-  // Add styles
+  // Add component styles
   const style = document.createElement('style');
   style.textContent = `
     .about-page {
@@ -251,7 +32,7 @@ export function createAboutPage(onNavigateBack: () => void): HTMLElement {
       margin: 0;
     }
 
-    .back-btn {
+    .about-header .back-btn {
       background: rgba(255, 255, 255, 0.2);
       color: white;
       border: none;
@@ -262,7 +43,7 @@ export function createAboutPage(onNavigateBack: () => void): HTMLElement {
       transition: all 0.2s;
     }
 
-    .back-btn:hover {
+    .about-header .back-btn:hover {
       background: rgba(255, 255, 255, 0.3);
       transform: translateY(-1px);
     }
@@ -650,6 +431,225 @@ export function createAboutPage(onNavigateBack: () => void): HTMLElement {
     style.id = 'about-page-styles';
     document.head.appendChild(style);
   }
+  
+  container.innerHTML = `
+    <div class="about-header">
+      <button class="back-btn">← Back</button>
+      <h1>About TravelShare</h1>
+    </div>
+    
+    <div class="about-content">
+      <div class="hero-section">
+        <div class="hero-icon">✈️🌍</div>
+        <h2>Share Your Travel Adventures</h2>
+        <p class="hero-description">
+          TravelShare is a social platform where travelers connect, share experiences, and discover amazing destinations through authentic stories from fellow adventurers.
+        </p>
+      </div>
+      
+      <div class="demo-info-section">
+        <div class="demo-info-card">
+          <div class="demo-info-icon">🎯</div>
+          <div class="demo-info-content">
+            <h3>Try It Now - No Real Email Required!</h3>
+            <p>This is a demo application. You can sign up with any fake email address (like <code>demo@test.com</code> or <code>traveler@example.org</code>) and start exploring immediately. No email verification needed!</p>
+            <div class="demo-tips">
+              <h4>Quick Start Tips:</h4>
+              <ul>
+                <li>✅ Use any fake email to create an account</li>
+                <li>✅ Choose a password you'll remember</li>
+                <li>✅ Log back in anytime with the same fake email + password</li>
+                <li>✅ All features work exactly like a real social platform</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="features-section">
+        <h3>Features</h3>
+        <div class="features-grid">
+          <div class="feature-card">
+            <div class="feature-icon">📸</div>
+            <h4>Share Your Journey</h4>
+            <p>Post photos, videos, and stories from your travels. Add locations and share the moments that made your trip special.</p>
+          </div>
+          
+          <div class="feature-card">
+            <div class="feature-icon">🔍</div>
+            <h4>Explore Destinations</h4>
+            <p>Discover new places through real traveler experiences. Search by location, hashtags, or browse popular destinations.</p>
+          </div>
+          
+          <div class="feature-card">
+            <div class="feature-icon">👥</div>
+            <h4>Connect with Travelers</h4>
+            <p>Follow other travelers, like and comment on posts, and build a community of adventure seekers.</p>
+          </div>
+          
+          <div class="feature-card">
+            <div class="feature-icon">🤖</div>
+            <h4>AI Travel Assistant</h4>
+            <p>Get personalized travel recommendations powered by Google Gemini AI, based on real community experiences.</p>
+          </div>
+          
+          <div class="feature-card">
+            <div class="feature-icon">📱</div>
+            <h4>Mini Apps</h4>
+            <p>Share your business services directly on your profile. Perfect for transportation, food delivery, hotels, and more.</p>
+          </div>
+          
+          <div class="feature-card">
+            <div class="feature-icon">🔌</div>
+            <h4>MCP Integration</h4>
+            <p>Connect real-time business data through Model Context Protocol for enhanced AI recommendations.</p>
+          </div>
+        </div>
+      </div>
+      
+      <div class="how-it-works-section">
+        <h3>How It Works</h3>
+        <div class="steps-container">
+          <div class="step">
+            <div class="step-number">1</div>
+            <div class="step-content">
+              <h4>Sign Up (Fake Email OK!)</h4>
+              <p>Create your account with any email address - real or fake. No verification required for this demo!</p>
+            </div>
+          </div>
+          
+          <div class="step">
+            <div class="step-number">2</div>
+            <div class="step-content">
+              <h4>Share Your Adventures</h4>
+              <p>Post photos and stories from your travels. Add locations and describe your experiences.</p>
+            </div>
+          </div>
+          
+          <div class="step">
+            <div class="step-number">3</div>
+            <div class="step-content">
+              <h4>Discover & Connect</h4>
+              <p>Explore posts from other travelers, follow interesting accounts, and engage with the community.</p>
+            </div>
+          </div>
+          
+          <div class="step">
+            <div class="step-number">4</div>
+            <div class="step-content">
+              <h4>Get AI Recommendations</h4>
+              <p>Chat with our AI assistant for personalized travel advice based on community experiences.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="business-section">
+        <h3>For Businesses</h3>
+        <div class="business-content">
+          <div class="business-text">
+            <h4>Showcase Your Services</h4>
+            <p>Business owners can create mini apps to showcase their services directly on their profiles. Perfect for:</p>
+            <ul>
+              <li>🚗 Transportation and taxi services</li>
+              <li>🍽️ Restaurants and food delivery</li>
+              <li>🏨 Hotels and accommodations</li>
+              <li>🛍️ Shopping and e-commerce</li>
+              <li>🎬 Entertainment and attractions</li>
+              <li>💼 Business services</li>
+            </ul>
+          </div>
+          
+          <div class="business-text">
+            <h4>MCP Integration</h4>
+            <p>Connect your business data through Model Context Protocol (MCP) to provide real-time information to our AI assistant:</p>
+            <ul>
+              <li>📊 Real-time availability and pricing</li>
+              <li>📋 Current menus and services</li>
+              <li>🔄 Live booking and reservation data</li>
+              <li>📈 Enhanced customer recommendations</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+      
+      <div class="technology-section">
+        <h3>Technology</h3>
+        <div class="tech-grid">
+          <div class="tech-item">
+            <div class="tech-icon">⚡</div>
+            <div class="tech-content">
+              <h4>Modern Web Technology</h4>
+              <p>Built with TypeScript, Vite, and modern web standards for a fast, responsive experience.</p>
+            </div>
+          </div>
+          
+          <div class="tech-item">
+            <div class="tech-icon">🔒</div>
+            <div class="tech-content">
+              <h4>Secure & Reliable</h4>
+              <p>Powered by Supabase with row-level security, authentication, and real-time updates.</p>
+            </div>
+          </div>
+          
+          <div class="tech-item">
+            <div class="tech-icon">🌐</div>
+            <div class="tech-content">
+              <h4>Global Accessibility</h4>
+              <p>Responsive design that works on all devices, with support for multiple media formats.</p>
+            </div>
+          </div>
+          
+          <div class="tech-item">
+            <div class="tech-icon">🚀</div>
+            <div class="tech-content">
+              <h4>AI-Powered</h4>
+              <p>Google Gemini AI integration for intelligent travel recommendations and assistance.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="community-section">
+        <h3>Join Our Community</h3>
+        <div class="community-content">
+          <p>TravelShare is more than just a social platform – it's a community of passionate travelers sharing authentic experiences and helping each other discover the world.</p>
+          
+          <div class="community-stats">
+            <div class="stat-card">
+              <div class="stat-icon">👥</div>
+              <div class="stat-text">
+                <h4>Growing Community</h4>
+                <p>Join travelers from around the world</p>
+              </div>
+            </div>
+            
+            <div class="stat-card">
+              <div class="stat-icon">🌍</div>
+              <div class="stat-text">
+                <h4>Global Destinations</h4>
+                <p>Discover places you never knew existed</p>
+              </div>
+            </div>
+            
+            <div class="stat-card">
+              <div class="stat-icon">💡</div>
+              <div class="stat-text">
+                <h4>Real Experiences</h4>
+                <p>Authentic stories from real travelers</p>
+              </div>
+            </div>
+          </div>
+          
+          <div class="cta-section">
+            <h4>Ready to start your journey?</h4>
+            <p>Sign up today with any email (fake ones work too!) and become part of the TravelShare community!</p>
+            <button class="cta-button" id="get-started-btn">Get Started</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
   
   // Event listeners
   const backBtn = container.querySelector('.back-btn') as HTMLButtonElement;
