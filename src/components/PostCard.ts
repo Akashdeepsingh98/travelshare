@@ -33,6 +33,30 @@ export function createPostCard(
     return [];
   }
   
+  // Check if user is approved for interactions
+  async function checkUserApprovalStatus(): Promise<boolean> {
+    const authState = authManager.getAuthState();
+    if (!authState.isAuthenticated || !authState.currentUser) return false;
+    
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('is_approved')
+        .eq('id', authState.currentUser.id)
+        .single();
+      
+      if (error) {
+        console.error('Error checking approval status:', error);
+        return false;
+      }
+      
+      return data?.is_approved || false;
+    } catch (error) {
+      console.error('Error checking approval status:', error);
+      return false;
+    }
+  }
+  
   // Load follow status if needed
   async function loadFollowStatus() {
     if (!showFollowButton || !onFollow) return;
@@ -146,13 +170,21 @@ export function createPostCard(
       });
     }
     
-    // Like functionality
+    // Like functionality with approval check
     const likeBtn = card.querySelector('.like-btn') as HTMLButtonElement;
-    likeBtn.addEventListener('click', () => {
+    likeBtn.addEventListener('click', async () => {
       if (!authState.isAuthenticated) {
         showAuthModal();
         return;
       }
+      
+      // Check if user is approved
+      const isApproved = await checkUserApprovalStatus();
+      if (!isApproved) {
+        alert('Your account needs to be approved before you can like posts. Please wait for admin approval.');
+        return;
+      }
+      
       onLike(post.id);
     });
     
@@ -164,12 +196,19 @@ export function createPostCard(
       });
     }
     
-    // Follow functionality
+    // Follow functionality with approval check
     const followBtn = card.querySelector('.follow-btn') as HTMLButtonElement;
     if (followBtn && onFollow && onUnfollow) {
       followBtn.addEventListener('click', async () => {
         if (!authState.isAuthenticated) {
           showAuthModal();
+          return;
+        }
+        
+        // Check if user is approved
+        const isApproved = await checkUserApprovalStatus();
+        if (!isApproved) {
+          alert('Your account needs to be approved before you can follow users. Please wait for admin approval.');
           return;
         }
         
@@ -187,7 +226,7 @@ export function createPostCard(
       });
     }
     
-    // Comment functionality for authenticated users
+    // Comment functionality for authenticated users with approval check
     if (authState.isAuthenticated && currentUser) {
       const commentInput = card.querySelector('.comment-input') as HTMLInputElement;
       const commentSubmitBtn = card.querySelector('.comment-submit-btn') as HTMLButtonElement;
@@ -197,13 +236,29 @@ export function createPostCard(
           commentSubmitBtn.disabled = commentInput.value.trim().length === 0;
         });
         
-        commentInput.addEventListener('keypress', (e) => {
+        commentInput.addEventListener('keypress', async (e) => {
           if (e.key === 'Enter' && commentInput.value.trim()) {
+            // Check if user is approved
+            const isApproved = await checkUserApprovalStatus();
+            if (!isApproved) {
+              alert('Your account needs to be approved before you can comment. Please wait for admin approval.');
+              return;
+            }
+            
             submitComment();
           }
         });
         
-        commentSubmitBtn.addEventListener('click', submitComment);
+        commentSubmitBtn.addEventListener('click', async () => {
+          // Check if user is approved
+          const isApproved = await checkUserApprovalStatus();
+          if (!isApproved) {
+            alert('Your account needs to be approved before you can comment. Please wait for admin approval.');
+            return;
+          }
+          
+          submitComment();
+        });
         
         function submitComment() {
           const commentText = commentInput.value.trim();

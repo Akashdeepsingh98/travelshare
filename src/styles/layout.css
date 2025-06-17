@@ -109,6 +109,72 @@
   color: #64748b;
 }
 
+/* Approval pending styles */
+.create-post-approval-pending {
+  text-align: center;
+  padding: 2rem;
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+  border-radius: 1rem;
+  color: white;
+}
+
+.approval-pending-content {
+  max-width: 500px;
+  margin: 0 auto;
+}
+
+.approval-pending-icon {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+}
+
+.approval-pending-content h3 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+}
+
+.approval-pending-content > p {
+  margin-bottom: 1.5rem;
+  opacity: 0.95;
+  line-height: 1.6;
+}
+
+.approval-info {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 0.75rem;
+  padding: 1.5rem;
+  text-align: left;
+  backdrop-filter: blur(10px);
+}
+
+.approval-info p {
+  font-weight: 600;
+  margin-bottom: 0.75rem;
+  color: white;
+}
+
+.approval-info ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.approval-info li {
+  padding: 0.25rem 0;
+  color: rgba(255, 255, 255, 0.95);
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
+.approval-info li::before {
+  content: "✓";
+  color: #fbbf24;
+  font-weight: bold;
+  display: inline-block;
+  width: 1.5em;
+}
+
 /* Posts feed */
 .posts-feed {
   display: flex;

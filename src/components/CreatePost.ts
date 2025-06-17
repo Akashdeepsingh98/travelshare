@@ -39,7 +39,55 @@ export function createPostForm(onPostCreate: (post: Post) => void): HTMLElement 
       return;
     }
     
-    const currentUser = authState.currentUser;
+    // Check if user is approved
+    checkUserApprovalStatus(authState.currentUser.id).then(isApproved => {
+      if (!isApproved) {
+        container.innerHTML = `
+          <div class="create-post-approval-pending">
+            <div class="approval-pending-content">
+              <div class="approval-pending-icon">⏳</div>
+              <h3>Account Pending Approval</h3>
+              <p>Your account is currently under review. You'll be able to create posts once your account is approved by our team.</p>
+              <div class="approval-info">
+                <p><strong>What happens next?</strong></p>
+                <ul>
+                  <li>Our team will review your account</li>
+                  <li>You'll receive an email notification when approved</li>
+                  <li>You can still browse and view posts while waiting</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        `;
+        return;
+      }
+      
+      // User is approved, show normal create post form
+      renderCreatePostForm(authState.currentUser);
+    });
+  }
+  
+  async function checkUserApprovalStatus(userId: string): Promise<boolean> {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('is_approved')
+        .eq('id', userId)
+        .single();
+      
+      if (error) {
+        console.error('Error checking approval status:', error);
+        return false;
+      }
+      
+      return data?.is_approved || false;
+    } catch (error) {
+      console.error('Error checking approval status:', error);
+      return false;
+    }
+  }
+  
+  function renderCreatePostForm(currentUser: any) {
     const avatarUrl = currentUser.avatar_url || 'https://images.pexels.com/photos/1040880/pexels-photo-1040880.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&fit=crop';
     
     // Create post trigger button
@@ -370,6 +418,13 @@ export function createPostForm(onPostCreate: (post: Post) => void): HTMLElement 
         } catch (error) {
           console.error('Error creating post:', error);
           setLoading(false);
+          
+          // Show user-friendly error message
+          if (error.message?.includes('new row violates row-level security policy')) {
+            alert('Your account needs to be approved before you can create posts. Please wait for admin approval.');
+          } else {
+            alert('Failed to create post. Please try again.');
+          }
         }
       }
     });
