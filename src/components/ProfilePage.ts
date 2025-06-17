@@ -1,15 +1,17 @@
-import { User, MiniApp } from '../types';
+import { User, MiniApp, Post } from '../types';
 import { authManager } from '../auth';
 import { supabase } from '../lib/supabase';
 import { createMCPManager } from './MCPManager';
 import { createMiniAppManager } from './MiniAppManager';
 import { createMiniAppViewer } from './MiniAppViewer';
+import { createPostCard } from './PostCard';
 
 export function createProfilePage(
   onNavigateBack: () => void,
   onNavigateToFollowing?: (userId: string, userName: string) => void,
   onNavigateToFollowers?: (userId: string, userName: string) => void,
-  viewUserId?: string // Optional: view another user's profile
+  viewUserId?: string, // Optional: view another user's profile
+  onUserClick?: (userId: string) => void
 ): HTMLElement {
   const container = document.createElement('div');
   container.className = 'profile-page';
@@ -162,6 +164,65 @@ export function createProfilePage(
       color: rgba(255, 255, 255, 0.95);
       font-weight: 500;
       text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+    }
+
+    .profile-posts-section {
+      margin-bottom: 2rem;
+    }
+
+    .profile-posts-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1.5rem;
+    }
+
+    .profile-posts-header h3 {
+      color: #374151;
+      font-size: 1.25rem;
+      font-weight: 600;
+      margin: 0;
+    }
+
+    .posts-count {
+      color: #6b7280;
+      font-size: 0.875rem;
+    }
+
+    .profile-posts-grid {
+      display: grid;
+      gap: 1.5rem;
+    }
+
+    .profile-posts-empty {
+      text-align: center;
+      padding: 3rem 1rem;
+      background: #f9fafb;
+      border-radius: 0.75rem;
+      border: 2px dashed #d1d5db;
+    }
+
+    .empty-posts-content {
+      max-width: 400px;
+      margin: 0 auto;
+    }
+
+    .empty-posts-icon {
+      font-size: 3rem;
+      margin-bottom: 1rem;
+    }
+
+    .empty-posts-content h3 {
+      color: #374151;
+      font-size: 1.25rem;
+      font-weight: 600;
+      margin: 0 0 0.5rem 0;
+    }
+
+    .empty-posts-content p {
+      color: #6b7280;
+      margin: 0;
+      line-height: 1.5;
     }
 
     .mini-apps-section {
@@ -520,6 +581,28 @@ export function createProfilePage(
     .btn-loading {
       display: none;
     }
+
+    .posts-loading {
+      text-align: center;
+      padding: 2rem;
+      color: #6b7280;
+    }
+
+    .posts-error {
+      text-align: center;
+      padding: 2rem;
+      color: #dc2626;
+    }
+
+    .retry-posts-btn {
+      background: #667eea;
+      color: white;
+      border: none;
+      padding: 0.5rem 1rem;
+      border-radius: 0.5rem;
+      cursor: pointer;
+      margin-top: 1rem;
+    }
   `;
   
   if (!document.head.querySelector('#profile-page-styles')) {
@@ -528,11 +611,13 @@ export function createProfilePage(
   }
   
   let profileUser: User | null = null;
-  let followStats = { followers: 0, following: 0 };
+  let followStats = { followers: 0, following: 0, posts: 0 };
   let mcpServerCount = 0;
   let miniApps: MiniApp[] = [];
+  let userPosts: Post[] = [];
   let isFollowing = false;
   let isOwnProfile = false;
+  let postsLoading = false;
   
   async function loadProfileData() {
     const authState = authManager.getAuthState();
@@ -562,7 +647,7 @@ export function createProfilePage(
       
       profileUser = profile;
       
-      // Load follow statistics
+      // Load follow statistics and posts count
       await loadFollowStats(targetUserId);
       
       // Load MCP server count if it's own profile
@@ -577,6 +662,9 @@ export function createProfilePage(
       if (!isOwnProfile) {
         await loadFollowStatus(targetUserId, authState.currentUser.id);
       }
+      
+      // Load user posts
+      await loadUserPosts(targetUserId);
       
       renderProfilePage();
     } catch (error) {
@@ -599,13 +687,20 @@ export function createProfilePage(
         .select('*', { count: 'exact', head: true })
         .eq('follower_id', userId);
       
+      // Get posts count
+      const { count: postsCount } = await supabase
+        .from('posts')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', userId);
+      
       followStats = {
         followers: followersCount || 0,
-        following: followingCount || 0
+        following: followingCount || 0,
+        posts: postsCount || 0
       };
     } catch (error) {
       console.error('Error loading follow stats:', error);
-      followStats = { followers: 0, following: 0 };
+      followStats = { followers: 0, following: 0, posts: 0 };
     }
   }
   
@@ -641,6 +736,58 @@ export function createProfilePage(
     }
   }
   
+  async function loadUserPosts(userId: string) {
+    postsLoading = true;
+    renderProfilePage(); // Re-render to show loading state
+    
+    try {
+      const authState = authManager.getAuthState();
+      
+      // Get user's posts with user profiles and comments
+      const { data: posts, error } = await supabase
+        .from('posts')
+        .select(`
+          *,
+          user:profiles(*),
+          comments(
+            *,
+            user:profiles(*)
+          )
+        `)
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      // If current user is authenticated, check which posts they've liked
+      if (authState.isAuthenticated && authState.currentUser) {
+        const { data: likes } = await supabase
+          .from('post_likes')
+          .select('post_id')
+          .eq('user_id', authState.currentUser.id);
+
+        const likedPostIds = new Set(likes?.map(like => like.post_id) || []);
+
+        userPosts = posts.map(post => ({
+          ...post,
+          user_has_liked: likedPostIds.has(post.id)
+        }));
+      } else {
+        userPosts = posts.map(post => ({
+          ...post,
+          user_has_liked: false
+        }));
+      }
+      
+    } catch (error) {
+      console.error('Error loading user posts:', error);
+      userPosts = [];
+    } finally {
+      postsLoading = false;
+      renderProfilePage();
+    }
+  }
+  
   async function loadFollowStatus(targetUserId: string, currentUserId: string) {
     try {
       const { data } = await supabase
@@ -653,6 +800,135 @@ export function createProfilePage(
       isFollowing = !!data;
     } catch (error) {
       isFollowing = false;
+    }
+  }
+  
+  async function handleLike(postId: string) {
+    const authState = authManager.getAuthState();
+    if (!authState.isAuthenticated || !authState.currentUser) return;
+    
+    try {
+      const post = userPosts.find(p => p.id === postId);
+      if (!post) return;
+
+      if (post.user_has_liked) {
+        // Unlike the post
+        await supabase
+          .from('post_likes')
+          .delete()
+          .eq('post_id', postId)
+          .eq('user_id', authState.currentUser.id);
+        
+        post.user_has_liked = false;
+        post.likes_count = Math.max(0, post.likes_count - 1);
+      } else {
+        // Like the post
+        await supabase
+          .from('post_likes')
+          .insert({
+            post_id: postId,
+            user_id: authState.currentUser.id
+          });
+        
+        post.user_has_liked = true;
+        post.likes_count = post.likes_count + 1;
+      }
+      
+      renderProfilePage();
+    } catch (error) {
+      console.error('Error handling like:', error);
+    }
+  }
+
+  async function handleComment(postId: string, commentText: string) {
+    const authState = authManager.getAuthState();
+    if (!authState.isAuthenticated || !authState.currentUser) return;
+    
+    try {
+      const { data, error } = await supabase
+        .from('comments')
+        .insert({
+          post_id: postId,
+          user_id: authState.currentUser.id,
+          content: commentText
+        })
+        .select(`
+          *,
+          user:profiles(*)
+        `)
+        .single();
+
+      if (error) throw error;
+
+      const post = userPosts.find(p => p.id === postId);
+      if (post) {
+        if (!post.comments) post.comments = [];
+        post.comments.push(data);
+        renderProfilePage();
+      }
+    } catch (error) {
+      console.error('Error adding comment:', error);
+    }
+  }
+
+  async function handleFollow(userId: string) {
+    const authState = authManager.getAuthState();
+    if (!authState.isAuthenticated || !authState.currentUser) return;
+    
+    try {
+      await supabase
+        .from('follows')
+        .insert({
+          follower_id: authState.currentUser.id,
+          following_id: userId
+        });
+    } catch (error) {
+      console.error('Error following user:', error);
+    }
+  }
+
+  async function handleUnfollow(userId: string) {
+    const authState = authManager.getAuthState();
+    if (!authState.isAuthenticated || !authState.currentUser) return;
+    
+    try {
+      await supabase
+        .from('follows')
+        .delete()
+        .eq('follower_id', authState.currentUser.id)
+        .eq('following_id', userId);
+    } catch (error) {
+      console.error('Error unfollowing user:', error);
+    }
+  }
+
+  async function handleDeletePost(postId: string) {
+    const authState = authManager.getAuthState();
+    if (!authState.isAuthenticated || !authState.currentUser) return;
+    
+    if (!confirm('Are you sure you want to delete this post? This action cannot be undone.')) {
+      return;
+    }
+    
+    try {
+      const { error } = await supabase
+        .from('posts')
+        .delete()
+        .eq('id', postId)
+        .eq('user_id', authState.currentUser.id); // Ensure user can only delete their own posts
+      
+      if (error) throw error;
+      
+      // Remove post from local state
+      userPosts = userPosts.filter(post => post.id !== postId);
+      
+      // Update posts count
+      followStats.posts = Math.max(0, followStats.posts - 1);
+      
+      renderProfilePage();
+    } catch (error) {
+      console.error('Error deleting post:', error);
+      alert('Failed to delete post. Please try again.');
     }
   }
   
@@ -692,6 +968,10 @@ export function createProfilePage(
             </div>
             
             <div class="profile-stats">
+              <button class="stat-item posts-btn">
+                <span class="stat-number">${followStats.posts}</span>
+                <span class="stat-label">Posts</span>
+              </button>
               <button class="stat-item followers-btn" ${onNavigateToFollowers ? '' : 'disabled'}>
                 <span class="stat-number">${followStats.followers}</span>
                 <span class="stat-label">Followers</span>
@@ -706,6 +986,32 @@ export function createProfilePage(
                   <span class="stat-label">MCP Servers</span>
                 </button>
               ` : ''}
+            </div>
+            
+            <!-- Posts Section -->
+            <div class="profile-posts-section">
+              <div class="profile-posts-header">
+                <h3>${isOwnProfile ? 'Your Posts' : `${profileUser.name}'s Posts`}</h3>
+                <span class="posts-count">${followStats.posts} post${followStats.posts === 1 ? '' : 's'}</span>
+              </div>
+              
+              ${postsLoading ? `
+                <div class="posts-loading">
+                  <div class="loading-spinner">Loading posts...</div>
+                </div>
+              ` : userPosts.length === 0 ? `
+                <div class="profile-posts-empty">
+                  <div class="empty-posts-content">
+                    <div class="empty-posts-icon">📝</div>
+                    <h3>${isOwnProfile ? 'No posts yet' : `${profileUser.name} hasn't posted yet`}</h3>
+                    <p>${isOwnProfile ? 'Share your first travel adventure!' : 'Check back later for new posts.'}</p>
+                  </div>
+                </div>
+              ` : `
+                <div class="profile-posts-grid">
+                  ${userPosts.map(post => createPostCardHTML(post)).join('')}
+                </div>
+              `}
             </div>
             
             ${miniApps.length > 0 ? `
@@ -798,6 +1104,24 @@ export function createProfilePage(
     `;
     
     setupEventListeners();
+  }
+  
+  function createPostCardHTML(post: Post): string {
+    // Create a temporary container to render the post card
+    const tempContainer = document.createElement('div');
+    const postCard = createPostCard(
+      post,
+      (postId) => handleLike(postId),
+      (postId, comment) => handleComment(postId, comment),
+      (userId) => handleFollow(userId),
+      (userId) => handleUnfollow(userId),
+      false, // Don't show follow button in profile
+      onUserClick,
+      isOwnProfile, // Pass whether this is own profile
+      (postId) => handleDeletePost(postId) // Pass delete handler
+    );
+    tempContainer.appendChild(postCard);
+    return tempContainer.innerHTML;
   }
   
   function createMiniAppCard(app: MiniApp): string {
@@ -918,6 +1242,69 @@ export function createProfilePage(
         if (app) {
           showMiniAppViewer(app);
         }
+      });
+    });
+    
+    // Re-attach post card event listeners
+    setupPostCardListeners();
+  }
+  
+  function setupPostCardListeners() {
+    // Re-attach event listeners for post cards since they're rendered as HTML strings
+    const postCards = container.querySelectorAll('.post-card');
+    postCards.forEach((card, index) => {
+      const post = userPosts[index];
+      if (!post) return;
+      
+      // Like button
+      const likeBtn = card.querySelector('.like-btn') as HTMLButtonElement;
+      if (likeBtn) {
+        likeBtn.addEventListener('click', () => handleLike(post.id));
+      }
+      
+      // Comment functionality
+      const commentInput = card.querySelector('.comment-input') as HTMLInputElement;
+      const commentSubmitBtn = card.querySelector('.comment-submit-btn') as HTMLButtonElement;
+      
+      if (commentInput && commentSubmitBtn) {
+        commentInput.addEventListener('input', () => {
+          commentSubmitBtn.disabled = commentInput.value.trim().length === 0;
+        });
+        
+        commentInput.addEventListener('keypress', (e) => {
+          if (e.key === 'Enter' && commentInput.value.trim()) {
+            const commentText = commentInput.value.trim();
+            handleComment(post.id, commentText);
+            commentInput.value = '';
+            commentSubmitBtn.disabled = true;
+          }
+        });
+        
+        commentSubmitBtn.addEventListener('click', () => {
+          const commentText = commentInput.value.trim();
+          if (commentText) {
+            handleComment(post.id, commentText);
+            commentInput.value = '';
+            commentSubmitBtn.disabled = true;
+          }
+        });
+      }
+      
+      // Delete button (only for own posts)
+      const deleteBtn = card.querySelector('.delete-post-btn') as HTMLButtonElement;
+      if (deleteBtn) {
+        deleteBtn.addEventListener('click', () => handleDeletePost(post.id));
+      }
+      
+      // User click handlers for comments
+      const userClickables = card.querySelectorAll('[data-user-id]');
+      userClickables.forEach(element => {
+        element.addEventListener('click', () => {
+          const userId = element.getAttribute('data-user-id');
+          if (userId && onUserClick) {
+            onUserClick(userId);
+          }
+        });
       });
     });
   }

@@ -259,7 +259,8 @@ class TravelSocialApp {
           () => this.navigateToFeed(),
           (userId, userName) => this.navigateToFollowing(userId, userName),
           (userId, userName) => this.navigateToFollowers(userId, userName),
-          this.viewData.userId // Pass the userId to view another user's profile
+          this.viewData.userId, // Pass the userId to view another user's profile
+          (userId) => this.navigateToProfile(userId) // Pass user click handler
         );
         this.appContainer.appendChild(profilePage);
       } else if (this.currentView === 'following') {

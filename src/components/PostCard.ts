@@ -10,7 +10,9 @@ export function createPostCard(
   onFollow?: (userId: string) => void,
   onUnfollow?: (userId: string) => void,
   showFollowButton: boolean = false,
-  onUserClick?: (userId: string) => void
+  onUserClick?: (userId: string) => void,
+  isOwnProfile: boolean = false,
+  onDelete?: (postId: string) => void
 ): HTMLElement {
   const card = document.createElement('div');
   card.className = 'post-card';
@@ -76,11 +78,18 @@ export function createPostCard(
             <p class="post-time">${timeAgo}</p>
           </div>
         </div>
-        ${showFollowButton && !isOwnPost && authState.isAuthenticated && onFollow ? `
-          <button class="follow-btn ${isFollowing ? 'following' : ''}" data-user-id="${post.user_id}">
-            ${isFollowing ? 'Following' : 'Follow'}
-          </button>
-        ` : ''}
+        <div class="post-header-actions">
+          ${showFollowButton && !isOwnPost && authState.isAuthenticated && onFollow ? `
+            <button class="follow-btn ${isFollowing ? 'following' : ''}" data-user-id="${post.user_id}">
+              ${isFollowing ? 'Following' : 'Follow'}
+            </button>
+          ` : ''}
+          ${isOwnProfile && isOwnPost && onDelete ? `
+            <button class="delete-post-btn" title="Delete post">
+              <span class="delete-icon">🗑️</span>
+            </button>
+          ` : ''}
+        </div>
       </div>
       
       <div class="post-content">
@@ -146,6 +155,14 @@ export function createPostCard(
       }
       onLike(post.id);
     });
+    
+    // Delete functionality
+    const deleteBtn = card.querySelector('.delete-post-btn') as HTMLButtonElement;
+    if (deleteBtn && onDelete) {
+      deleteBtn.addEventListener('click', () => {
+        onDelete(post.id);
+      });
+    }
     
     // Follow functionality
     const followBtn = card.querySelector('.follow-btn') as HTMLButtonElement;
