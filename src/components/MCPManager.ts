@@ -291,6 +291,8 @@ export function createMCPManager(onClose: () => void): HTMLElement {
     } else {
       form.reset();
       delete form.dataset.serverId;
+      // Set default active state for new servers
+      (container.querySelector('#server-active') as HTMLInputElement).checked = true;
     }
     
     formModal.style.display = 'flex';
@@ -317,20 +319,52 @@ export function createMCPManager(onClose: () => void): HTMLElement {
     if (!authState.isAuthenticated || !authState.currentUser) return;
     
     const form = e.target as HTMLFormElement;
-    const formData = new FormData(form);
     const isEdit = !!form.dataset.serverId;
     
+    // Get form values
+    const nameInput = container.querySelector('#server-name') as HTMLInputElement;
+    const descriptionInput = container.querySelector('#server-description') as HTMLTextAreaElement;
+    const categoryInput = container.querySelector('#server-category') as HTMLSelectElement;
+    const endpointInput = container.querySelector('#server-endpoint') as HTMLInputElement;
+    const apiKeyInput = container.querySelector('#server-api-key') as HTMLInputElement;
+    const activeInput = container.querySelector('#server-active') as HTMLInputElement;
+    
+    // Validate required fields
+    if (!nameInput.value.trim()) {
+      showFormError('Server name is required');
+      return;
+    }
+    
+    if (!categoryInput.value) {
+      showFormError('Category is required');
+      return;
+    }
+    
+    if (!endpointInput.value.trim()) {
+      showFormError('Endpoint URL is required');
+      return;
+    }
+    
+    // Validate URL format
+    try {
+      new URL(endpointInput.value.trim());
+    } catch {
+      showFormError('Please enter a valid URL for the endpoint');
+      return;
+    }
+    
     const serverData = {
-      name: formData.get('server-name') as string,
-      description: formData.get('server-description') as string,
-      category: formData.get('server-category') as string,
-      endpoint: formData.get('server-endpoint') as string,
-      api_key: formData.get('server-api-key') as string,
-      is_active: (container.querySelector('#server-active') as HTMLInputElement).checked,
+      name: nameInput.value.trim(),
+      description: descriptionInput.value.trim() || null,
+      category: categoryInput.value,
+      endpoint: endpointInput.value.trim(),
+      api_key: apiKeyInput.value.trim() || null,
+      is_active: activeInput.checked,
       user_id: authState.currentUser.id
     };
     
     setFormLoading(true);
+    clearFormError();
     
     try {
       let result;
@@ -351,14 +385,35 @@ export function createMCPManager(onClose: () => void): HTMLElement {
           .single();
       }
       
-      if (result.error) throw result.error;
+      if (result.error) {
+        console.error('Database error:', result.error);
+        throw result.error;
+      }
       
       hideServerForm();
       await loadMCPServers();
       
     } catch (error: any) {
       console.error('Error saving MCP server:', error);
-      showFormError(error.message || 'Failed to save server');
+      
+      // Provide user-friendly error messages
+      let errorMessage = 'Failed to save server';
+      
+      if (error.code === '23505') {
+        errorMessage = 'A server with this name or endpoint already exists';
+      } else if (error.code === '23514') {
+        errorMessage = 'Invalid category selected';
+      } else if (error.message?.includes('violates check constraint')) {
+        errorMessage = 'Invalid category. Please select a valid category from the dropdown.';
+      } else if (error.message?.includes('violates foreign key constraint')) {
+        errorMessage = 'Authentication error. Please try logging out and back in.';
+      } else if (error.message?.includes('violates row-level security policy')) {
+        errorMessage = 'Permission denied. You can only manage your own MCP servers.';
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
+      showFormError(errorMessage);
     } finally {
       setFormLoading(false);
     }
@@ -377,6 +432,11 @@ export function createMCPManager(onClose: () => void): HTMLElement {
   function showFormError(message: string) {
     const errorElement = container.querySelector('#server-form-error') as HTMLElement;
     errorElement.textContent = message;
+  }
+  
+  function clearFormError() {
+    const errorElement = container.querySelector('#server-form-error') as HTMLElement;
+    errorElement.textContent = '';
   }
   
   async function testServerConnection(serverId: string) {
