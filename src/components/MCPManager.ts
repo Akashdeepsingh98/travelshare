@@ -11,26 +11,39 @@ export function createMCPManager(onClose: () => void): HTMLElement {
   
   async function loadMCPServers() {
     const authState = authManager.getAuthState();
-    if (!authState.isAuthenticated || !authState.currentUser) return;
+    if (!authState.isAuthenticated || !authState.currentUser) {
+      console.log('User not authenticated, cannot load MCP servers');
+      return;
+    }
     
     isLoading = true;
     renderMCPManager();
     
     try {
+      console.log('Loading MCP servers for user:', authState.currentUser.id);
+      
       const { data, error } = await supabase
         .from('mcp_servers')
         .select('*')
         .eq('user_id', authState.currentUser.id)
         .order('created_at', { ascending: false });
       
-      if (error) throw error;
+      console.log('MCP servers query result:', { data, error });
+      
+      if (error) {
+        console.error('Error loading MCP servers:', error);
+        throw error;
+      }
       
       mcpServers = data || [];
-      renderMCPManager();
+      console.log('Loaded MCP servers:', mcpServers);
+      
     } catch (error) {
       console.error('Error loading MCP servers:', error);
+      mcpServers = [];
     } finally {
       isLoading = false;
+      renderMCPManager();
     }
   }
   
