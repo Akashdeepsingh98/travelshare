@@ -81,12 +81,16 @@ Deno.serve(async (req) => {
   }
 
   try {
+    console.log('Mock MCP Server - Request received:', req.method, req.url)
+    console.log('Headers:', Object.fromEntries(req.headers.entries()))
+
     const mcpRequest: MCPRequest = await req.json()
     
-    console.log('MCP Request:', mcpRequest)
+    console.log('MCP Request:', JSON.stringify(mcpRequest, null, 2))
 
     switch (mcpRequest.method) {
       case 'initialize':
+        console.log('Handling initialize request')
         return new Response(
           JSON.stringify({
             result: {
@@ -110,6 +114,7 @@ Deno.serve(async (req) => {
         )
 
       case 'tools/list':
+        console.log('Handling tools/list request')
         return new Response(
           JSON.stringify({
             result: {
@@ -165,8 +170,10 @@ Deno.serve(async (req) => {
         )
 
       case 'tools/call':
+        console.log('Handling tools/call request')
         const toolName = mcpRequest.params?.name
         const args = mcpRequest.params?.arguments || {}
+        console.log('Tool name:', toolName, 'Args:', args)
 
         switch (toolName) {
           case 'search_restaurants':
@@ -189,6 +196,8 @@ Deno.serve(async (req) => {
                 return matchesQuery && matchesLocation
               })
             }
+
+            console.log('Search results:', filteredRestaurants.length, 'restaurants found')
 
             return new Response(
               JSON.stringify({
@@ -273,6 +282,7 @@ Deno.serve(async (req) => {
             )
 
           default:
+            console.log('Unknown tool:', toolName)
             return new Response(
               JSON.stringify({
                 error: {
@@ -285,6 +295,7 @@ Deno.serve(async (req) => {
         }
 
       default:
+        console.log('Unknown method:', mcpRequest.method)
         return new Response(
           JSON.stringify({
             error: {

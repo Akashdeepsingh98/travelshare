@@ -29,6 +29,9 @@ Deno.serve(async (req) => {
       )
     }
 
+    console.log(`Testing MCP server at: ${endpoint}`)
+    console.log(`API Key provided: ${apiKey ? 'Yes' : 'No'}`)
+
     // Test MCP server connection by calling the initialize method
     const mcpRequest = {
       method: 'initialize',
@@ -50,11 +53,15 @@ Deno.serve(async (req) => {
       'Content-Type': 'application/json',
     }
 
+    // Only add Authorization header if API key is provided and not empty
     if (apiKey?.trim()) {
       headers['Authorization'] = `Bearer ${apiKey}`
+      console.log('Added Authorization header')
+    } else {
+      console.log('No API key provided, testing without authentication')
     }
 
-    console.log(`Testing MCP server at: ${endpoint}`)
+    console.log('Sending request with headers:', Object.keys(headers))
 
     const response = await fetch(endpoint, {
       method: 'POST',
@@ -63,13 +70,20 @@ Deno.serve(async (req) => {
       signal: AbortSignal.timeout(10000) // 10 second timeout
     })
 
+    console.log(`Response status: ${response.status}`)
+    console.log(`Response headers:`, Object.fromEntries(response.headers.entries()))
+
     if (!response.ok) {
+      const errorText = await response.text()
+      console.error(`HTTP Error: ${response.status} - ${errorText}`)
       throw new Error(`HTTP ${response.status}: ${response.statusText}`)
     }
 
     const data = await response.json()
+    console.log('Response data:', JSON.stringify(data, null, 2))
     
     if (data.error) {
+      console.error('MCP Error:', data.error)
       throw new Error(data.error.message || 'MCP server returned an error')
     }
 
@@ -77,10 +91,14 @@ Deno.serve(async (req) => {
     const capabilities = data.result?.capabilities || {}
     const serverInfo = data.result?.serverInfo || {}
 
+    console.log('Server capabilities:', capabilities)
+    console.log('Server info:', serverInfo)
+
     // Get available tools
     let tools: string[] = []
     if (capabilities.tools) {
       try {
+        console.log('Fetching tools list...')
         const toolsResponse = await fetch(endpoint, {
           method: 'POST',
           headers,
@@ -93,9 +111,13 @@ Deno.serve(async (req) => {
 
         if (toolsResponse.ok) {
           const toolsData = await toolsResponse.json()
+          console.log('Tools response:', JSON.stringify(toolsData, null, 2))
           if (toolsData.result?.tools) {
             tools = toolsData.result.tools.map((tool: any) => tool.name)
+            console.log('Available tools:', tools)
           }
+        } else {
+          console.log('Could not fetch tools list - HTTP', toolsResponse.status)
         }
       } catch (toolsError) {
         console.log('Could not fetch tools list:', toolsError)
