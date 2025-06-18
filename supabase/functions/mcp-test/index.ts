@@ -55,7 +55,7 @@ Deno.serve(async (req) => {
 
     // Only add Authorization header if API key is provided and not empty
     if (apiKey?.trim()) {
-      headers['Authorization'] = `Bearer ${apiKey}`
+      headers['Authorization'] = `Bearer ${apiKey.trim()}`
       console.log('Added Authorization header')
     } else {
       console.log('No API key provided, testing without authentication')
@@ -76,6 +76,16 @@ Deno.serve(async (req) => {
     if (!response.ok) {
       const errorText = await response.text()
       console.error(`HTTP Error: ${response.status} - ${errorText}`)
+      
+      // Special handling for authentication errors
+      if (response.status === 401) {
+        // Check if this might be a mock server that doesn't need auth
+        if (endpoint.includes('mock-mcp-server')) {
+          console.log('This appears to be a mock server, authentication error might be unexpected')
+        }
+        throw new Error(`Authentication failed (HTTP 401). If this is a mock server, ensure no API key is provided.`)
+      }
+      
       throw new Error(`HTTP ${response.status}: ${response.statusText}`)
     }
 
@@ -155,14 +165,16 @@ Deno.serve(async (req) => {
       errorMessage = 'Network error - could not reach the server'
     } else if (error.message.includes('CORS')) {
       errorMessage = 'CORS error - server does not allow cross-origin requests'
-    } else if (error.message.includes('401') || error.message.includes('Unauthorized')) {
-      errorMessage = 'Authentication failed - check your API key'
+    } else if (error.message.includes('Authentication failed') || error.message.includes('401')) {
+      errorMessage = 'Authentication failed - if this is a mock server, make sure the API key field is empty'
     } else if (error.message.includes('403') || error.message.includes('Forbidden')) {
       errorMessage = 'Access forbidden - insufficient permissions'
     } else if (error.message.includes('404') || error.message.includes('Not Found')) {
       errorMessage = 'Server not found - check the endpoint URL'
     } else if (error.message.includes('500') || error.message.includes('Internal Server Error')) {
       errorMessage = 'Server error - the MCP server encountered an internal error'
+    } else if (error.message) {
+      errorMessage = error.message
     }
 
     return new Response(

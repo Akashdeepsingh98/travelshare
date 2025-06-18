@@ -84,9 +84,47 @@ Deno.serve(async (req) => {
     console.log('Mock MCP Server - Request received:', req.method, req.url)
     console.log('Headers:', Object.fromEntries(req.headers.entries()))
 
-    const mcpRequest: MCPRequest = await req.json()
+    // Check if this is a test request (no body)
+    let mcpRequest: MCPRequest;
+    
+    try {
+      const body = await req.text();
+      console.log('Request body:', body);
+      
+      if (!body.trim()) {
+        // Empty body - return a simple success response
+        return new Response(
+          JSON.stringify({
+            result: {
+              message: 'Mock MCP Server is running',
+              status: 'ok'
+            }
+          }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      
+      mcpRequest = JSON.parse(body);
+    } catch (parseError) {
+      console.error('Error parsing request body:', parseError);
+      return new Response(
+        JSON.stringify({
+          error: {
+            code: -1,
+            message: 'Invalid JSON in request body'
+          }
+        }),
+        { 
+          status: 400, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      );
+    }
     
     console.log('MCP Request:', JSON.stringify(mcpRequest, null, 2))
+
+    // Note: This mock server does NOT require authentication
+    // It ignores any Authorization headers and processes all requests
 
     switch (mcpRequest.method) {
       case 'initialize':
