@@ -32,6 +32,10 @@ Deno.serve(async (req) => {
     console.log(`Testing MCP server at: ${endpoint}`)
     console.log(`API Key provided: ${apiKey ? 'Yes' : 'No'}`)
 
+    // Check if this is the mock server
+    const isMockServer = endpoint.includes('mock-mcp-server')
+    console.log(`Is mock server: ${isMockServer}`)
+
     // Test MCP server connection by calling the initialize method
     const mcpRequest = {
       method: 'initialize',
@@ -53,10 +57,12 @@ Deno.serve(async (req) => {
       'Content-Type': 'application/json',
     }
 
-    // Only add Authorization header if API key is provided and not empty
-    if (apiKey?.trim()) {
+    // For mock server, do NOT add Authorization header even if API key is provided
+    if (!isMockServer && apiKey?.trim()) {
       headers['Authorization'] = `Bearer ${apiKey.trim()}`
-      console.log('Added Authorization header')
+      console.log('Added Authorization header for real server')
+    } else if (isMockServer) {
+      console.log('Mock server detected - skipping authentication')
     } else {
       console.log('No API key provided, testing without authentication')
     }
@@ -77,13 +83,18 @@ Deno.serve(async (req) => {
       const errorText = await response.text()
       console.error(`HTTP Error: ${response.status} - ${errorText}`)
       
+      // Special handling for mock server
+      if (isMockServer && response.status === 401) {
+        throw new Error(`Mock server authentication error - this should not happen. The mock server is configured incorrectly.`)
+      }
+      
       // Special handling for authentication errors
       if (response.status === 401) {
-        // Check if this might be a mock server that doesn't need auth
-        if (endpoint.includes('mock-mcp-server')) {
-          console.log('This appears to be a mock server, authentication error might be unexpected')
+        if (isMockServer) {
+          throw new Error(`Authentication failed on mock server - ensure no API key is provided`)
+        } else {
+          throw new Error(`Authentication failed (HTTP 401). Please check your API key.`)
         }
-        throw new Error(`Authentication failed (HTTP 401). If this is a mock server, ensure no API key is provided.`)
       }
       
       throw new Error(`HTTP ${response.status}: ${response.statusText}`)
@@ -139,7 +150,8 @@ Deno.serve(async (req) => {
         success: true,
         serverInfo: {
           name: serverInfo.name || 'Unknown',
-          version: serverInfo.version || 'Unknown'
+          version: serverInfo.version || 'Unknown',
+          description: serverInfo.description || ''
         },
         capabilities: {
           tools: !!capabilities.tools,
@@ -147,7 +159,8 @@ Deno.serve(async (req) => {
           prompts: !!capabilities.prompts
         },
         availableTools: tools,
-        protocolVersion: data.result?.protocolVersion || 'Unknown'
+        protocolVersion: data.result?.protocolVersion || 'Unknown',
+        isMockServer: isMockServer
       }),
       { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
@@ -165,8 +178,10 @@ Deno.serve(async (req) => {
       errorMessage = 'Network error - could not reach the server'
     } else if (error.message.includes('CORS')) {
       errorMessage = 'CORS error - server does not allow cross-origin requests'
+    } else if (error.message.includes('Mock server authentication error')) {
+      errorMessage = 'Mock server configuration error - please report this issue'
     } else if (error.message.includes('Authentication failed') || error.message.includes('401')) {
-      errorMessage = 'Authentication failed - if this is a mock server, make sure the API key field is empty'
+      errorMessage = 'Authentication failed - check your API key (for mock servers, leave API key empty)'
     } else if (error.message.includes('403') || error.message.includes('Forbidden')) {
       errorMessage = 'Access forbidden - insufficient permissions'
     } else if (error.message.includes('404') || error.message.includes('Not Found')) {
