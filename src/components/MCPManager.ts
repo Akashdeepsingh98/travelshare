@@ -329,12 +329,15 @@ export function createMCPManager(onClose: () => void): HTMLElement {
     e.preventDefault();
     
     const authState = authManager.getAuthState();
-    if (!authState.isAuthenticated || !authState.currentUser) return;
+    if (!authState.isAuthenticated || !authState.currentUser) {
+      showFormError('Authentication required. Please log in again.');
+      return;
+    }
     
     const form = e.target as HTMLFormElement;
     const isEdit = !!form.dataset.serverId;
     
-    // Get form values
+    // Get form values directly from the form elements
     const nameInput = container.querySelector('#server-name') as HTMLInputElement;
     const descriptionInput = container.querySelector('#server-description') as HTMLTextAreaElement;
     const categoryInput = container.querySelector('#server-category') as HTMLSelectElement;
@@ -376,6 +379,8 @@ export function createMCPManager(onClose: () => void): HTMLElement {
       user_id: authState.currentUser.id
     };
     
+    console.log('Submitting server data:', serverData);
+    
     setFormLoading(true);
     clearFormError();
     
@@ -383,6 +388,7 @@ export function createMCPManager(onClose: () => void): HTMLElement {
       let result;
       
       if (isEdit) {
+        console.log('Updating existing server:', form.dataset.serverId);
         result = await supabase
           .from('mcp_servers')
           .update(serverData)
@@ -391,6 +397,7 @@ export function createMCPManager(onClose: () => void): HTMLElement {
           .select()
           .single();
       } else {
+        console.log('Creating new server');
         result = await supabase
           .from('mcp_servers')
           .insert(serverData)
@@ -398,11 +405,14 @@ export function createMCPManager(onClose: () => void): HTMLElement {
           .single();
       }
       
+      console.log('Database operation result:', result);
+      
       if (result.error) {
         console.error('Database error:', result.error);
         throw result.error;
       }
       
+      console.log('Server saved successfully');
       hideServerForm();
       await loadMCPServers();
       
@@ -422,6 +432,8 @@ export function createMCPManager(onClose: () => void): HTMLElement {
         errorMessage = 'Authentication error. Please try logging out and back in.';
       } else if (error.message?.includes('violates row-level security policy')) {
         errorMessage = 'Permission denied. You can only manage your own MCP servers.';
+      } else if (error.message?.includes('JWT')) {
+        errorMessage = 'Session expired. Please refresh the page and try again.';
       } else if (error.message) {
         errorMessage = error.message;
       }
@@ -479,13 +491,13 @@ export function createMCPManager(onClose: () => void): HTMLElement {
       const result = await response.json();
       
       if (response.ok) {
-        alert(`✅ Connection successful!\n\nCapabilities: ${result.capabilities?.length || 0} tools available`);
+        alert(`✅ Connection successful!\n\nServer: ${result.serverInfo?.name || 'Unknown'}\nCapabilities: ${result.availableTools?.length || 0} tools available\nTools: ${result.availableTools?.join(', ') || 'None'}`);
         
         // Update server capabilities
-        if (result.capabilities) {
+        if (result.availableTools) {
           await supabase
             .from('mcp_servers')
-            .update({ capabilities: result.capabilities })
+            .update({ capabilities: result.availableTools })
             .eq('id', serverId);
           
           await loadMCPServers();
