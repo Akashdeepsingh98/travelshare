@@ -5,6 +5,7 @@ import { createMCPManager } from './MCPManager';
 import { createMiniAppManager } from './MiniAppManager';
 import { createMiniAppViewer } from './MiniAppViewer';
 import { createPostCard } from './PostCard';
+import { createMCPTestGuide } from './MCPTestGuide';
 
 export function createProfilePage(
   onNavigateBack: () => void,
@@ -603,6 +604,23 @@ export function createProfilePage(
       cursor: pointer;
       margin-top: 1rem;
     }
+
+    .show-mcp-guide-btn {
+      background: #10b981;
+      color: white;
+      border: none;
+      padding: 0.5rem 1rem;
+      border-radius: 0.5rem;
+      cursor: pointer;
+      font-size: 0.875rem;
+      margin-left: 0.5rem;
+      transition: all 0.2s;
+    }
+
+    .show-mcp-guide-btn:hover {
+      background: #059669;
+      transform: translateY(-1px);
+    }
   `;
   
   if (!document.head.querySelector('#profile-page-styles')) {
@@ -618,6 +636,7 @@ export function createProfilePage(
   let isFollowing = false;
   let isOwnProfile = false;
   let postsLoading = false;
+  let showMCPGuide = false;
   
   async function loadProfileData() {
     const authState = authManager.getAuthState();
@@ -1054,7 +1073,14 @@ export function createProfilePage(
                 <button class="manage-mcp-btn">
                   🔌 Manage MCP Servers
                 </button>
+                <button class="show-mcp-guide-btn">
+                  📖 Testing Guide
+                </button>
               </div>
+            ` : ''}
+            
+            ${showMCPGuide && isOwnProfile ? `
+              <div id="mcp-guide-container"></div>
             ` : ''}
             
             <div class="profile-field">
@@ -1102,6 +1128,15 @@ export function createProfilePage(
         ` : ''}
       </div>
     `;
+    
+    // Add MCP guide if needed
+    if (showMCPGuide && isOwnProfile) {
+      const guideContainer = container.querySelector('#mcp-guide-container');
+      if (guideContainer) {
+        const mcpGuide = createMCPTestGuide();
+        guideContainer.appendChild(mcpGuide);
+      }
+    }
     
     setupEventListeners();
   }
@@ -1221,6 +1256,7 @@ export function createProfilePage(
     if (isOwnProfile) {
       const mcpServersBtn = container.querySelector('.mcp-servers-btn') as HTMLButtonElement;
       const manageMcpBtn = container.querySelector('.manage-mcp-btn') as HTMLButtonElement;
+      const showMcpGuideBtn = container.querySelector('.show-mcp-guide-btn') as HTMLButtonElement;
       const manageAppsBtn = container.querySelector('.manage-apps-btn') as HTMLButtonElement;
       const addFirstAppBtn = container.querySelector('.add-first-app-btn') as HTMLButtonElement;
       
@@ -1228,6 +1264,11 @@ export function createProfilePage(
       manageMcpBtn?.addEventListener('click', showMCPManager);
       manageAppsBtn?.addEventListener('click', showMiniAppManager);
       addFirstAppBtn?.addEventListener('click', showMiniAppManager);
+      
+      showMcpGuideBtn?.addEventListener('click', () => {
+        showMCPGuide = !showMCPGuide;
+        renderProfilePage();
+      });
       
       // Edit profile functionality
       setupEditProfileFunctionality();
