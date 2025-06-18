@@ -12,6 +12,7 @@ import { createFollowingPage } from './components/FollowingPage';
 import { createFollowersPage } from './components/FollowersPage';
 import { createAIPage } from './components/AIPage';
 import { createAboutPage } from './components/AboutPage';
+import { createBoltBadge } from './components/BoltBadge';
 import { supabase } from './lib/supabase';
 
 type AppView = 'feed' | 'profile' | 'explore' | 'post-viewer' | 'following' | 'followers' | 'ai-chat' | 'about';
@@ -27,14 +28,17 @@ class TravelSocialApp {
   private currentView: AppView = 'feed';
   private postViewerData: { post: Post; allPosts: Post[] } | null = null;
   private viewData: ViewData = {};
+  private boltBadge: HTMLElement;
 
   constructor() {
     this.appContainer = document.querySelector('#app')!;
+    this.boltBadge = createBoltBadge();
     this.init();
   }
 
   private init() {
     this.setupAuthModal();
+    this.setupBoltBadge();
     this.render();
     this.loadPosts();
     
@@ -47,6 +51,10 @@ class TravelSocialApp {
   private setupAuthModal() {
     const authModal = createAuthModal();
     document.body.appendChild(authModal);
+  }
+
+  private setupBoltBadge() {
+    document.body.appendChild(this.boltBadge);
   }
 
   private async loadPosts() {

@@ -1,0 +1,71 @@
+/* Bolt Badge Styles */
+.bolt-badge {
+  position: fixed;
+  bottom: 20px;
+  left: 20px;
+  z-index: 9999;
+  transition: all 0.3s ease;
+}
+
+.bolt-badge-link {
+  display: block;
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  transition: all 0.3s ease;
+  background: white;
+  padding: 2px;
+}
+
+.bolt-badge-link:hover {
+  transform: scale(1.1);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
+}
+
+.bolt-badge-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+  transition: all 0.3s ease;
+}
+
+.bolt-badge-link:hover .bolt-badge-image {
+  transform: rotate(360deg);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .bolt-badge {
+    bottom: 15px;
+    left: 15px;
+  }
+  
+  .bolt-badge-link {
+    width: 50px;
+    height: 50px;
+  }
+}
+
+@media (max-width: 480px) {
+  .bolt-badge {
+    bottom: 10px;
+    left: 10px;
+  }
+  
+  .bolt-badge-link {
+    width: 45px;
+    height: 45px;
+  }
+}
+
+/* Ensure badge doesn't interfere with other elements */
+.bolt-badge {
+  pointer-events: auto;
+}
+
+.bolt-badge-link {
+  pointer-events: auto;
+}
