@@ -174,7 +174,7 @@ export function createMCPManager(onClose: () => void): HTMLElement {
     };
     
     return `
-      <div class="server-card ${server.isActive ? 'active' : 'inactive'}" data-server-id="${server.id}">
+      <div class="server-card ${server.is_active ? 'active' : 'inactive'}" data-server-id="${server.id}">
         <div class="server-card-header">
           <div class="server-info">
             <span class="server-icon">${categoryIcons[server.category]}</span>
@@ -184,8 +184,8 @@ export function createMCPManager(onClose: () => void): HTMLElement {
             </div>
           </div>
           <div class="server-status">
-            <span class="status-indicator ${server.isActive ? 'active' : 'inactive'}"></span>
-            <span class="status-text">${server.isActive ? 'Active' : 'Inactive'}</span>
+            <span class="status-indicator ${server.is_active ? 'active' : 'inactive'}"></span>
+            <span class="status-text">${server.is_active ? 'Active' : 'Inactive'}</span>
           </div>
         </div>
         
@@ -220,7 +220,7 @@ export function createMCPManager(onClose: () => void): HTMLElement {
           <button class="test-server-btn" data-server-id="${server.id}">Test Connection</button>
           <button class="edit-server-btn" data-server-id="${server.id}">Edit</button>
           <button class="toggle-server-btn" data-server-id="${server.id}">
-            ${server.isActive ? 'Disable' : 'Enable'}
+            ${server.is_active ? 'Disable' : 'Enable'}
           </button>
           <button class="delete-server-btn" data-server-id="${server.id}">Delete</button>
         </div>
@@ -284,8 +284,8 @@ export function createMCPManager(onClose: () => void): HTMLElement {
       (container.querySelector('#server-description') as HTMLTextAreaElement).value = server.description || '';
       (container.querySelector('#server-category') as HTMLSelectElement).value = server.category;
       (container.querySelector('#server-endpoint') as HTMLInputElement).value = server.endpoint;
-      (container.querySelector('#server-api-key') as HTMLInputElement).value = server.apiKey || '';
-      (container.querySelector('#server-active') as HTMLInputElement).checked = server.isActive;
+      (container.querySelector('#server-api-key') as HTMLInputElement).value = server.api_key || '';
+      (container.querySelector('#server-active') as HTMLInputElement).checked = server.is_active;
       
       form.dataset.serverId = server.id;
     } else {
@@ -399,7 +399,7 @@ export function createMCPManager(onClose: () => void): HTMLElement {
         },
         body: JSON.stringify({
           endpoint: server.endpoint,
-          apiKey: server.apiKey
+          apiKey: server.api_key
         })
       });
       
@@ -447,7 +447,7 @@ export function createMCPManager(onClose: () => void): HTMLElement {
     try {
       const { error } = await supabase
         .from('mcp_servers')
-        .update({ is_active: !server.isActive })
+        .update({ is_active: !server.is_active })
         .eq('id', serverId)
         .eq('user_id', authState.currentUser.id);
       
@@ -457,7 +457,7 @@ export function createMCPManager(onClose: () => void): HTMLElement {
       
     } catch (error: any) {
       console.error('Error toggling MCP server:', error);
-      alert(`Failed to ${server.isActive ? 'disable' : 'enable'} server: ${error.message}`);
+      alert(`Failed to ${server.is_active ? 'disable' : 'enable'} server: ${error.message}`);
     }
   }
   

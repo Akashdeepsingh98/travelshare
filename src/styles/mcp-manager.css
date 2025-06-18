@@ -1,0 +1,640 @@
+/* MCP Manager Modal Styles */
+.mcp-manager-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  padding: 1rem;
+}
+
+.mcp-manager-modal .modal-backdrop {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: -1;
+}
+
+.mcp-manager-content {
+  background: white;
+  border-radius: 1rem;
+  width: 100%;
+  max-width: 800px;
+  max-height: 90vh;
+  overflow-y: auto;
+  position: relative;
+  z-index: 1;
+}
+
+.mcp-manager-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.5rem;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.mcp-manager-header h2 {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #374151;
+}
+
+.mcp-manager-modal .modal-close {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  color: #6b7280;
+  padding: 0.5rem;
+  border-radius: 0.5rem;
+  transition: all 0.2s;
+}
+
+.mcp-manager-modal .modal-close:hover {
+  background: #f3f4f6;
+  color: #374151;
+}
+
+.mcp-manager-body {
+  padding: 1.5rem;
+}
+
+.mcp-intro {
+  margin-bottom: 2rem;
+  text-align: center;
+}
+
+.mcp-intro p {
+  color: #6b7280;
+  margin-bottom: 1rem;
+  line-height: 1.6;
+}
+
+.mcp-benefits {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.benefit-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  background: #f9fafb;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  color: #374151;
+}
+
+.benefit-icon {
+  font-size: 1.25rem;
+}
+
+.mcp-servers-section {
+  margin-top: 2rem;
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.section-header h3 {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #374151;
+}
+
+.add-server-btn {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  padding: 0.75rem 1rem;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+.add-server-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+.mcp-servers-list {
+  min-height: 200px;
+}
+
+.loading-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem;
+  color: #6b7280;
+}
+
+.loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid #f3f4f6;
+  border-top: 3px solid #667eea;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 1rem;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.empty-servers {
+  text-align: center;
+  padding: 3rem 1rem;
+  background: #f9fafb;
+  border-radius: 0.75rem;
+  border: 2px dashed #d1d5db;
+}
+
+.empty-icon {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+}
+
+.empty-servers h4 {
+  color: #374151;
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin: 0 0 0.5rem 0;
+}
+
+.empty-servers p {
+  color: #6b7280;
+  margin: 0 0 1.5rem 0;
+  line-height: 1.5;
+}
+
+.add-first-server-btn {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+.add-first-server-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+.server-card {
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.75rem;
+  padding: 1.5rem;
+  margin-bottom: 1rem;
+  transition: all 0.2s;
+}
+
+.server-card:hover {
+  border-color: #667eea;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.server-card.active {
+  border-color: #10b981;
+  background: #f0fdf4;
+}
+
+.server-card.inactive {
+  border-color: #f59e0b;
+  background: #fffbeb;
+}
+
+.server-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 1rem;
+}
+
+.server-info {
+  display: flex;
+  gap: 1rem;
+  flex: 1;
+}
+
+.server-icon {
+  font-size: 2rem;
+  flex-shrink: 0;
+}
+
+.server-details {
+  flex: 1;
+}
+
+.server-name {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #374151;
+  margin: 0 0 0.25rem 0;
+}
+
+.server-description {
+  color: #6b7280;
+  font-size: 0.875rem;
+  margin: 0;
+  line-height: 1.4;
+}
+
+.server-status {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.status-indicator {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.status-indicator.active {
+  background: #10b981;
+}
+
+.status-indicator.inactive {
+  background: #f59e0b;
+}
+
+.status-text {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #374151;
+}
+
+.server-card-body {
+  margin-bottom: 1rem;
+}
+
+.server-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.meta-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.meta-label {
+  font-size: 0.75rem;
+  color: #6b7280;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.meta-value {
+  font-size: 0.875rem;
+  color: #374151;
+  word-break: break-all;
+}
+
+.server-capabilities {
+  margin-top: 1rem;
+}
+
+.capabilities-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.capability-tag {
+  background: #e0f2fe;
+  color: #0369a1;
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.25rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.no-capabilities {
+  color: #9ca3af;
+  font-size: 0.875rem;
+  font-style: italic;
+}
+
+.server-card-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.test-server-btn, .edit-server-btn, .toggle-server-btn, .delete-server-btn {
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.375rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: 1px solid;
+}
+
+.test-server-btn {
+  background: #667eea;
+  color: white;
+  border-color: #667eea;
+}
+
+.test-server-btn:hover {
+  background: #5a67d8;
+  border-color: #5a67d8;
+}
+
+.edit-server-btn {
+  background: white;
+  color: #374151;
+  border-color: #d1d5db;
+}
+
+.edit-server-btn:hover {
+  background: #f9fafb;
+  border-color: #9ca3af;
+}
+
+.toggle-server-btn {
+  background: #10b981;
+  color: white;
+  border-color: #10b981;
+}
+
+.toggle-server-btn:hover {
+  background: #059669;
+  border-color: #059669;
+}
+
+.delete-server-btn {
+  background: #ef4444;
+  color: white;
+  border-color: #ef4444;
+}
+
+.delete-server-btn:hover {
+  background: #dc2626;
+  border-color: #dc2626;
+}
+
+/* Server Form Modal */
+.server-form-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+  padding: 1rem;
+}
+
+.server-form-backdrop {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+}
+
+.server-form-content {
+  background: white;
+  border-radius: 1rem;
+  width: 100%;
+  max-width: 500px;
+  max-height: 90vh;
+  overflow-y: auto;
+  position: relative;
+  z-index: 1;
+}
+
+.server-form-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.5rem;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.server-form-header h3 {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #374151;
+}
+
+.server-form-close {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  color: #6b7280;
+  padding: 0.5rem;
+  border-radius: 0.5rem;
+  transition: all 0.2s;
+}
+
+.server-form-close:hover {
+  background: #f3f4f6;
+  color: #374151;
+}
+
+.server-form {
+  padding: 1.5rem;
+}
+
+.mcp-manager-modal .form-group {
+  margin-bottom: 1.5rem;
+}
+
+.mcp-manager-modal .form-group label {
+  display: block;
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 0.5rem;
+}
+
+.mcp-manager-modal .form-input {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid #d1d5db;
+  border-radius: 0.5rem;
+  font-size: 1rem;
+  transition: border-color 0.2s;
+  box-sizing: border-box;
+}
+
+.mcp-manager-modal .form-input:focus {
+  outline: none;
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.form-help {
+  display: block;
+  margin-top: 0.25rem;
+  font-size: 0.875rem;
+  color: #6b7280;
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+}
+
+.checkbox-custom {
+  width: 20px;
+  height: 20px;
+  border: 2px solid #d1d5db;
+  border-radius: 0.25rem;
+  position: relative;
+  transition: all 0.2s;
+}
+
+.checkbox-label input[type="checkbox"] {
+  display: none;
+}
+
+.checkbox-label input[type="checkbox"]:checked + .checkbox-custom {
+  background: #667eea;
+  border-color: #667eea;
+}
+
+.checkbox-label input[type="checkbox"]:checked + .checkbox-custom::after {
+  content: '✓';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: white;
+  font-size: 0.875rem;
+  font-weight: bold;
+}
+
+.mcp-manager-modal .form-error {
+  color: #dc2626;
+  font-size: 0.875rem;
+  margin-bottom: 1rem;
+}
+
+.form-actions {
+  display: flex;
+  gap: 1rem;
+  justify-content: flex-end;
+}
+
+.cancel-btn {
+  background: #6b7280;
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+.cancel-btn:hover {
+  background: #4b5563;
+}
+
+.save-btn {
+  background: #667eea;
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+.save-btn:hover {
+  background: #5a67d8;
+}
+
+.save-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.btn-loading {
+  display: none;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .mcp-manager-modal {
+    padding: 0.5rem;
+  }
+
+  .mcp-manager-content {
+    max-height: 95vh;
+  }
+
+  .mcp-manager-header {
+    padding: 1rem;
+  }
+
+  .mcp-manager-body {
+    padding: 1rem;
+  }
+
+  .mcp-benefits {
+    grid-template-columns: 1fr;
+  }
+
+  .server-meta {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .server-card-actions {
+    flex-direction: column;
+  }
+
+  .server-form {
+    padding: 1rem;
+  }
+
+  .form-actions {
+    flex-direction: column;
+  }
+}
