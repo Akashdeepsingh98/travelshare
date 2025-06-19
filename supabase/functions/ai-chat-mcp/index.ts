@@ -332,44 +332,92 @@ This is real-time business information that can help provide current details abo
 
 async function queryMCPServer(server: MCPServer, question: string): Promise<string | null> {
   try {
-    // Create MCP request based on question content and server capabilities
-    const mcpRequest = {
-      method: 'tools/call',
-      params: {
-        name: 'search',
-        arguments: {
-          query: question,
-          category: server.category
+    console.log(`Querying MCP server: ${server.name} (${server.category})`)
+    console.log(`Question: ${question}`)
+    
+    // Extract location from question for better search
+    const extractedLocation = extractLocationFromQuestion(question)
+    console.log(`Extracted location: ${extractedLocation}`)
+    
+    // Create MCP request based on server category and question content
+    let mcpRequest: any
+    
+    if (server.category === 'restaurant') {
+      // Use the correct tool name for restaurant servers
+      mcpRequest = {
+        method: 'tools/call',
+        params: {
+          name: 'search_restaurants',
+          arguments: {
+            query: question,
+            ...(extractedLocation && { location: extractedLocation })
+          }
+        }
+      }
+    } else {
+      // For other categories, try to use a generic search tool
+      mcpRequest = {
+        method: 'tools/call',
+        params: {
+          name: 'search',
+          arguments: {
+            query: question,
+            category: server.category,
+            ...(extractedLocation && { location: extractedLocation })
+          }
         }
       }
     }
+
+    console.log('MCP Request:', JSON.stringify(mcpRequest, null, 2))
 
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
     }
 
-    if (server.api_key) {
-      headers['Authorization'] = `Bearer ${server.api_key}`
+    // Only add Authorization header if API key is provided and it's not a mock server
+    const isMockServer = server.endpoint.includes('mock-mcp-server')
+    if (!isMockServer && server.api_key?.trim()) {
+      headers['Authorization'] = `Bearer ${server.api_key.trim()}`
     }
+
+    console.log(`Sending request to: ${server.endpoint}`)
+    console.log(`Headers: ${Object.keys(headers).join(', ')}`)
 
     const response = await fetch(server.endpoint, {
       method: 'POST',
       headers,
-      body: JSON.stringify(mcpRequest)
+      body: JSON.stringify(mcpRequest),
+      signal: AbortSignal.timeout(10000) // 10 second timeout
     })
 
+    console.log(`Response status: ${response.status}`)
+
     if (!response.ok) {
+      const errorText = await response.text()
+      console.error(`HTTP Error: ${response.status} - ${errorText}`)
       throw new Error(`HTTP ${response.status}: ${response.statusText}`)
     }
 
     const data = await response.json()
+    console.log('MCP Response:', JSON.stringify(data, null, 2))
     
     if (data.error) {
+      console.error('MCP Error:', data.error)
       throw new Error(data.error.message || 'MCP server error')
     }
 
     // Extract useful information from MCP response
-    if (data.result && data.result.content) {
+    if (data.result?.content) {
+      // Handle array of content objects
+      if (Array.isArray(data.result.content)) {
+        const textContent = data.result.content
+          .filter(item => item.type === 'text')
+          .map(item => item.text)
+          .join('\n')
+        return textContent || null
+      }
+      // Handle direct content
       return data.result.content
     }
 
@@ -379,6 +427,46 @@ async function queryMCPServer(server: MCPServer, question: string): Promise<stri
     console.error(`Error querying MCP server ${server.name}:`, error)
     return null
   }
+}
+
+function extractLocationFromQuestion(question: string): string | null {
+  const questionLower = question.toLowerCase()
+  
+  // Common travel destinations that might be mentioned
+  const locations = [
+    'tokyo', 'japan', 'kyoto', 'osaka',
+    'paris', 'france', 'lyon', 'marseille',
+    'rome', 'italy', 'milan', 'florence', 'venice',
+    'bangkok', 'thailand', 'phuket', 'chiang mai',
+    'mexico city', 'mexico', 'cancun', 'guadalajara',
+    'london', 'england', 'uk', 'manchester', 'liverpool',
+    'new york', 'usa', 'america', 'los angeles', 'chicago', 'san francisco',
+    'berlin', 'germany', 'munich', 'hamburg',
+    'madrid', 'spain', 'barcelona', 'seville',
+    'amsterdam', 'netherlands', 'rotterdam',
+    'sydney', 'australia', 'melbourne', 'brisbane',
+    'seoul', 'south korea', 'busan',
+    'beijing', 'china', 'shanghai', 'guangzhou',
+    'mumbai', 'india', 'delhi', 'bangalore', 'kolkata',
+    'istanbul', 'turkey', 'ankara',
+    'cairo', 'egypt', 'alexandria',
+    'dubai', 'uae', 'abu dhabi',
+    'singapore',
+    'hong kong',
+    'taipei', 'taiwan'
+  ]
+  
+  // Find the first location mentioned in the question
+  for (const location of locations) {
+    if (questionLower.includes(location)) {
+      // Return the properly capitalized version
+      return location.split(' ').map(word => 
+        word.charAt(0).toUpperCase() + word.slice(1)
+      ).join(' ')
+    }
+  }
+  
+  return null
 }
 
 async function analyzeRelevantImages(posts: any[], question: string, apiKey: string): Promise<string | null> {
