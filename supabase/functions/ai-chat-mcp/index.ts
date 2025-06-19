@@ -335,9 +335,12 @@ async function queryMCPServer(server: MCPServer, question: string): Promise<stri
     console.log(`Querying MCP server: ${server.name} (${server.category})`)
     console.log(`Question: ${question}`)
     
-    // Extract location from question for better search
+    // Extract location and search terms from question for better search
     const extractedLocation = extractLocationFromQuestion(question)
+    const searchQuery = extractRestaurantSearchQuery(question)
+    
     console.log(`Extracted location: ${extractedLocation}`)
+    console.log(`Extracted search query: ${searchQuery}`)
     
     // Create MCP request based on server category and question content
     let mcpRequest: any
@@ -349,7 +352,7 @@ async function queryMCPServer(server: MCPServer, question: string): Promise<stri
         params: {
           name: 'search_restaurants',
           arguments: {
-            query: question,
+            query: searchQuery || question,
             ...(extractedLocation && { location: extractedLocation })
           }
         }
@@ -361,7 +364,7 @@ async function queryMCPServer(server: MCPServer, question: string): Promise<stri
         params: {
           name: 'search',
           arguments: {
-            query: question,
+            query: searchQuery || question,
             category: server.category,
             ...(extractedLocation && { location: extractedLocation })
           }
@@ -463,6 +466,66 @@ function extractLocationFromQuestion(question: string): string | null {
       return location.split(' ').map(word => 
         word.charAt(0).toUpperCase() + word.slice(1)
       ).join(' ')
+    }
+  }
+  
+  return null
+}
+
+function extractRestaurantSearchQuery(question: string): string | null {
+  const questionLower = question.toLowerCase()
+  
+  // Define cuisine types and food keywords that the mock server understands
+  const cuisineTypes = [
+    'japanese', 'italian', 'french', 'thai', 'mexican', 'chinese', 'indian', 'korean',
+    'american', 'mediterranean', 'greek', 'spanish', 'german', 'vietnamese', 'lebanese',
+    'turkish', 'moroccan', 'brazilian', 'argentinian', 'peruvian', 'ethiopian'
+  ]
+  
+  const foodKeywords = [
+    'ramen', 'sushi', 'pasta', 'pizza', 'burger', 'tacos', 'curry', 'noodles',
+    'soup', 'salad', 'steak', 'chicken', 'seafood', 'vegetarian', 'vegan',
+    'dessert', 'coffee', 'breakfast', 'lunch', 'dinner', 'brunch',
+    'pad thai', 'pho', 'dim sum', 'tapas', 'paella', 'risotto', 'gnocchi',
+    'tempura', 'yakitori', 'bibimbap', 'falafel', 'hummus', 'gyoza',
+    'carbonara', 'lasagna', 'tiramisu', 'gelato', 'croissant', 'baguette',
+    'enchiladas', 'quesadilla', 'guacamole', 'churros', 'paella',
+    'tom yum', 'green curry', 'massaman', 'spring rolls', 'satay'
+  ]
+  
+  // Check for cuisine types first
+  for (const cuisine of cuisineTypes) {
+    if (questionLower.includes(cuisine)) {
+      return cuisine
+    }
+  }
+  
+  // Check for specific food items
+  for (const food of foodKeywords) {
+    if (questionLower.includes(food)) {
+      return food
+    }
+  }
+  
+  // Check for restaurant-related terms
+  if (questionLower.includes('restaurant') || questionLower.includes('food') || 
+      questionLower.includes('eat') || questionLower.includes('dining')) {
+    
+    // Try to extract any meaningful food-related word
+    const words = questionLower.split(/\s+/)
+    for (const word of words) {
+      // Skip common words
+      if (['what', 'where', 'how', 'when', 'who', 'the', 'a', 'an', 'in', 'at', 'for', 
+           'with', 'restaurant', 'restaurants', 'food', 'eat', 'eating', 'dining',
+           'available', 'options', 'places', 'good', 'best', 'find', 'show', 'me',
+           'are', 'is', 'can', 'could', 'would', 'should', 'have', 'has'].includes(word)) {
+        continue
+      }
+      
+      // If it's a longer word that might be cuisine or food related, return it
+      if (word.length > 3) {
+        return word
+      }
     }
   }
   
