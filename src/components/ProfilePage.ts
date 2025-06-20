@@ -738,6 +738,7 @@ export function createProfilePage(
   }
   
   async function loadMiniApps(userId: string) {
+    console.log('🔄 Loading mini apps for user:', userId);
     try {
       const { data, error } = await supabase
         .from('mini_apps')
@@ -746,11 +747,17 @@ export function createProfilePage(
         .eq('is_active', true)
         .order('created_at', { ascending: false });
       
-      if (error) throw error;
+      if (error) {
+        console.error('❌ Error loading mini apps:', error);
+        throw error;
+      }
+      
+      console.log('✅ Mini apps loaded successfully:', data?.length || 0, 'apps found');
+      console.log('📱 Mini apps data:', data);
       
       miniApps = data || [];
     } catch (error) {
-      console.error('Error loading mini apps:', error);
+      console.error('❌ Error loading mini apps:', error);
       miniApps = [];
     }
   }
@@ -1280,8 +1287,12 @@ export function createProfilePage(
       btn.addEventListener('click', () => {
         const appId = btn.dataset.appId!;
         const app = miniApps.find(a => a.id === appId);
+        console.log('🚀 Launch button clicked for app:', appId);
+        console.log('📱 App data:', app);
         if (app) {
           showMiniAppViewer(app);
+        } else {
+          console.error('❌ App not found for ID:', appId);
         }
       });
     });
@@ -1372,9 +1383,9 @@ export function createProfilePage(
   }
   
   function showMiniAppManager() {
-    console.log('Creating mini app manager...');
+    console.log('🔧 Opening Mini App Manager...');
     const miniAppManager = createMiniAppManager(() => {
-      console.log('Closing mini app manager...');
+      console.log('🔄 Mini App Manager closing - refreshing mini apps...');
       // Close mini app manager and refresh apps
       const appModal = document.querySelector('.mini-app-manager-modal');
       if (appModal) {
@@ -1384,34 +1395,25 @@ export function createProfilePage(
       
       // Refresh mini apps
       if (profileUser) {
+        console.log('🔄 Reloading mini apps for user:', profileUser.id);
         loadMiniApps(profileUser.id).then(() => {
+          console.log('✅ Mini apps reloaded, re-rendering profile page...');
           renderProfilePage();
         });
       }
     });
     
-    console.log('Appending mini app manager to body...');
+    console.log('📱 Appending mini app manager to body...');
     document.body.appendChild(miniAppManager);
     document.body.style.overflow = 'hidden';
-    
-    // Force the modal to be visible
-    setTimeout(() => {
-      const modal = document.querySelector('.mini-app-manager-modal') as HTMLElement;
-      if (modal) {
-        modal.style.display = 'flex';
-        modal.style.position = 'fixed';
-        modal.style.top = '0';
-        modal.style.left = '0';
-        modal.style.width = '100%';
-        modal.style.height = '100%';
-        modal.style.zIndex = '9999';
-        console.log('Modal should now be visible');
-      }
-    }, 100);
   }
   
   function showMiniAppViewer(app: MiniApp) {
+    console.log('🎬 Opening Mini App Viewer for app:', app.name);
+    console.log('🔗 App URL:', app.app_url);
+    
     const viewer = createMiniAppViewer(app, () => {
+      console.log('🔄 Mini App Viewer closing...');
       const viewerModal = document.querySelector('.mini-app-viewer-modal');
       if (viewerModal) {
         viewerModal.remove();
@@ -1419,6 +1421,7 @@ export function createProfilePage(
       }
     });
     
+    console.log('📱 Appending mini app viewer to body...');
     document.body.appendChild(viewer);
     document.body.style.overflow = 'hidden';
   }

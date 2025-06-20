@@ -98,21 +98,32 @@ export function createMiniAppViewer(app: MiniApp, onClose: () => void): HTMLElem
     closeBtn.addEventListener('click', onClose);
     
     // Open app actions
-    openAppBtn.addEventListener('click', () => openInNewTab());
-    openNewTabBtn.addEventListener('click', () => openInNewTab());
-    openExternalBtn.addEventListener('click', () => openInNewTab());
+    openAppBtn.addEventListener('click', () => {
+      console.log('🔗 Open App button clicked');
+      openInNewTab();
+    });
+    openNewTabBtn.addEventListener('click', () => {
+      console.log('🔗 Open New Tab button clicked');
+      openInNewTab();
+    });
+    openExternalBtn.addEventListener('click', () => {
+      console.log('🔗 Open External button clicked');
+      openInNewTab();
+    });
     
     // Share app
     shareBtn.addEventListener('click', () => shareApp());
     
     // Handle iframe loading
     iframe.addEventListener('load', () => {
+      console.log('✅ Iframe loaded successfully');
       setTimeout(() => {
         overlay.style.display = 'none';
       }, 1000);
     });
     
     iframe.addEventListener('error', () => {
+      console.error('❌ Iframe failed to load');
       overlay.innerHTML = `
         <div class="iframe-message">
           <div class="iframe-icon">⚠️</div>
@@ -126,12 +137,16 @@ export function createMiniAppViewer(app: MiniApp, onClose: () => void): HTMLElem
       `;
       
       const newOpenBtn = overlay.querySelector('.open-new-tab-btn') as HTMLButtonElement;
-      newOpenBtn.addEventListener('click', () => openInNewTab());
+      newOpenBtn.addEventListener('click', () => {
+        console.log('🔗 Retry Open New Tab button clicked');
+        openInNewTab();
+      });
     });
     
     // Hide overlay after timeout
     setTimeout(() => {
       if (overlay.style.display !== 'none') {
+        console.log('⏰ Hiding overlay after timeout');
         overlay.style.display = 'none';
       }
     }, 5000);
@@ -152,10 +167,30 @@ export function createMiniAppViewer(app: MiniApp, onClose: () => void): HTMLElem
   }
   
   function openInNewTab() {
-    window.open(app.app_url, '_blank', 'noopener,noreferrer');
+    console.log('🚀 Opening app in new tab:', app.app_url);
+    console.log('📱 App details:', {
+      name: app.name,
+      url: app.app_url,
+      category: app.category
+    });
+    
+    try {
+      const newWindow = window.open(app.app_url, '_blank', 'noopener,noreferrer');
+      if (newWindow) {
+        console.log('✅ New window opened successfully');
+      } else {
+        console.error('❌ Failed to open new window - popup blocked?');
+        alert('Unable to open the app. Please check if popup blockers are enabled and try again.');
+      }
+    } catch (error) {
+      console.error('❌ Error opening new tab:', error);
+      alert('Unable to open the app. Please try again or check the app URL.');
+    }
   }
   
   function shareApp() {
+    console.log('📤 Sharing app:', app.name);
+    
     if (navigator.share) {
       navigator.share({
         title: app.name,
@@ -165,6 +200,7 @@ export function createMiniAppViewer(app: MiniApp, onClose: () => void): HTMLElem
     } else {
       // Fallback: copy to clipboard
       navigator.clipboard.writeText(app.app_url).then(() => {
+        console.log('📋 App URL copied to clipboard');
         // Show temporary success message
         const shareBtn = container.querySelector('.share-app-btn') as HTMLButtonElement;
         const originalContent = shareBtn.innerHTML;
