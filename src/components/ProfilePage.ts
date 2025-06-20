@@ -167,65 +167,6 @@ export function createProfilePage(
       text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
     }
 
-    .profile-posts-section {
-      margin-bottom: 2rem;
-    }
-
-    .profile-posts-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 1.5rem;
-    }
-
-    .profile-posts-header h3 {
-      color: #374151;
-      font-size: 1.25rem;
-      font-weight: 600;
-      margin: 0;
-    }
-
-    .posts-count {
-      color: #6b7280;
-      font-size: 0.875rem;
-    }
-
-    .profile-posts-grid {
-      display: grid;
-      gap: 1.5rem;
-    }
-
-    .profile-posts-empty {
-      text-align: center;
-      padding: 3rem 1rem;
-      background: #f9fafb;
-      border-radius: 0.75rem;
-      border: 2px dashed #d1d5db;
-    }
-
-    .empty-posts-content {
-      max-width: 400px;
-      margin: 0 auto;
-    }
-
-    .empty-posts-icon {
-      font-size: 3rem;
-      margin-bottom: 1rem;
-    }
-
-    .empty-posts-content h3 {
-      color: #374151;
-      font-size: 1.25rem;
-      font-weight: 600;
-      margin: 0 0 0.5rem 0;
-    }
-
-    .empty-posts-content p {
-      color: #6b7280;
-      margin: 0;
-      line-height: 1.5;
-    }
-
     .mini-apps-section {
       margin-bottom: 2rem;
     }
@@ -444,6 +385,82 @@ export function createProfilePage(
       transform: translateY(-1px);
     }
 
+    .show-mcp-guide-btn {
+      background: #10b981;
+      color: white;
+      border: none;
+      padding: 0.5rem 1rem;
+      border-radius: 0.5rem;
+      cursor: pointer;
+      font-size: 0.875rem;
+      margin-left: 0.5rem;
+      transition: all 0.2s;
+    }
+
+    .show-mcp-guide-btn:hover {
+      background: #059669;
+      transform: translateY(-1px);
+    }
+
+    .profile-posts-section {
+      margin-bottom: 2rem;
+    }
+
+    .profile-posts-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1.5rem;
+    }
+
+    .profile-posts-header h3 {
+      color: #374151;
+      font-size: 1.25rem;
+      font-weight: 600;
+      margin: 0;
+    }
+
+    .posts-count {
+      color: #6b7280;
+      font-size: 0.875rem;
+    }
+
+    .profile-posts-grid {
+      display: grid;
+      gap: 1.5rem;
+    }
+
+    .profile-posts-empty {
+      text-align: center;
+      padding: 3rem 1rem;
+      background: #f9fafb;
+      border-radius: 0.75rem;
+      border: 2px dashed #d1d5db;
+    }
+
+    .empty-posts-content {
+      max-width: 400px;
+      margin: 0 auto;
+    }
+
+    .empty-posts-icon {
+      font-size: 3rem;
+      margin-bottom: 1rem;
+    }
+
+    .empty-posts-content h3 {
+      color: #374151;
+      font-size: 1.25rem;
+      font-weight: 600;
+      margin: 0 0 0.5rem 0;
+    }
+
+    .empty-posts-content p {
+      color: #6b7280;
+      margin: 0;
+      line-height: 1.5;
+    }
+
     .profile-loading, .profile-error {
       display: flex;
       align-items: center;
@@ -603,23 +620,6 @@ export function createProfilePage(
       border-radius: 0.5rem;
       cursor: pointer;
       margin-top: 1rem;
-    }
-
-    .show-mcp-guide-btn {
-      background: #10b981;
-      color: white;
-      border: none;
-      padding: 0.5rem 1rem;
-      border-radius: 0.5rem;
-      cursor: pointer;
-      font-size: 0.875rem;
-      margin-left: 0.5rem;
-      transition: all 0.2s;
-    }
-
-    .show-mcp-guide-btn:hover {
-      background: #059669;
-      transform: translateY(-1px);
     }
   `;
   
@@ -1014,32 +1014,6 @@ export function createProfilePage(
               ` : ''}
             </div>
             
-            <!-- Posts Section -->
-            <div class="profile-posts-section">
-              <div class="profile-posts-header">
-                <h3>${isOwnProfile ? 'Your Posts' : `${profileUser.name}'s Posts`}</h3>
-                <span class="posts-count">${followStats.posts} post${followStats.posts === 1 ? '' : 's'}</span>
-              </div>
-              
-              ${postsLoading ? `
-                <div class="posts-loading">
-                  <div class="loading-spinner">Loading posts...</div>
-                </div>
-              ` : userPosts.length === 0 ? `
-                <div class="profile-posts-empty">
-                  <div class="empty-posts-content">
-                    <div class="empty-posts-icon">📝</div>
-                    <h3>${isOwnProfile ? 'No posts yet' : `${profileUser.name} hasn't posted yet`}</h3>
-                    <p>${isOwnProfile ? 'Share your first travel adventure!' : 'Check back later for new posts.'}</p>
-                  </div>
-                </div>
-              ` : `
-                <div class="profile-posts-grid">
-                  ${userPosts.map(post => createPostCardHTML(post)).join('')}
-                </div>
-              `}
-            </div>
-            
             ${miniApps.length > 0 ? `
               <div class="mini-apps-section">
                 <div class="mini-apps-header">
@@ -1089,6 +1063,32 @@ export function createProfilePage(
             ${showMCPGuide && isOwnProfile ? `
               <div id="mcp-guide-container"></div>
             ` : ''}
+            
+            <!-- Posts Section -->
+            <div class="profile-posts-section">
+              <div class="profile-posts-header">
+                <h3>${isOwnProfile ? 'Your Posts' : `${profileUser.name}'s Posts`}</h3>
+                <span class="posts-count">${followStats.posts} post${followStats.posts === 1 ? '' : 's'}</span>
+              </div>
+              
+              ${postsLoading ? `
+                <div class="posts-loading">
+                  <div class="loading-spinner">Loading posts...</div>
+                </div>
+              ` : userPosts.length === 0 ? `
+                <div class="profile-posts-empty">
+                  <div class="empty-posts-content">
+                    <div class="empty-posts-icon">📝</div>
+                    <h3>${isOwnProfile ? 'No posts yet' : `${profileUser.name} hasn't posted yet`}</h3>
+                    <p>${isOwnProfile ? 'Share your first travel adventure!' : 'Check back later for new posts.'}</p>
+                  </div>
+                </div>
+              ` : `
+                <div class="profile-posts-grid">
+                  ${userPosts.map(post => createPostCardHTML(post)).join('')}
+                </div>
+              `}
+            </div>
             
             <div class="profile-field">
               <label>Member Since</label>
