@@ -24,12 +24,18 @@ class AuthManager {
 
       if (connectionError) {
         console.error('Supabase connection test failed:', connectionError);
-        this.handleConnectionError(connectionError);
+        await this.handleConnectionError(connectionError);
         return;
       }
 
       // Get initial session
-      const { data: { session } } = await supabase.auth.getSession();
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      
+      if (sessionError) {
+        console.error('Session error:', sessionError);
+        await this.handleAuthError(sessionError);
+        return;
+      }
       
       if (session?.user) {
         await this.setCurrentUser(session.user.id);
@@ -57,12 +63,55 @@ class AuthManager {
       });
     } catch (error) {
       console.error('Error initializing auth:', error);
-      this.handleConnectionError(error);
+      await this.handleConnectionError(error);
     }
   }
 
-  private handleConnectionError(error: any) {
+  private async handleAuthError(error: any) {
+    console.error('Auth error details:', error);
+    
+    // Check for refresh token errors
+    if (error.message && (
+      error.message.includes('Invalid Refresh Token') ||
+      error.message.includes('refresh_token_not_found') ||
+      error.message.includes('Refresh Token Not Found')
+    )) {
+      console.log('Invalid refresh token detected, clearing session...');
+      try {
+        // Clear the invalid session
+        await supabase.auth.signOut();
+      } catch (signOutError) {
+        console.error('Error signing out:', signOutError);
+      }
+    }
+    
+    this.authState = {
+      isAuthenticated: false,
+      currentUser: null,
+      loading: false
+    };
+    this.notifyListeners();
+  }
+
+  private async handleConnectionError(error: any) {
     console.error('Connection error details:', error);
+    
+    // Check for refresh token errors first
+    if (error && typeof error === 'object' && (
+      (error.message && (
+        error.message.includes('Invalid Refresh Token') ||
+        error.message.includes('refresh_token_not_found') ||
+        error.message.includes('Refresh Token Not Found')
+      )) ||
+      (error.code === 'refresh_token_not_found')
+    )) {
+      console.log('Invalid refresh token detected in connection error, clearing session...');
+      try {
+        await supabase.auth.signOut();
+      } catch (signOutError) {
+        console.error('Error signing out:', signOutError);
+      }
+    }
     
     // Provide detailed error information
     if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
@@ -110,7 +159,7 @@ class AuthManager {
       };
     } catch (error) {
       console.error('Error fetching user profile:', error);
-      this.handleConnectionError(error);
+      await this.handleConnectionError(error);
     }
     
     this.notifyListeners();
@@ -142,6 +191,20 @@ class AuthManager {
       });
 
       if (error) {
+        // Handle refresh token errors during login
+        if (error.message && (
+          error.message.includes('Invalid Refresh Token') ||
+          error.message.includes('refresh_token_not_found') ||
+          error.message.includes('Refresh Token Not Found')
+        )) {
+          console.log('Invalid refresh token during login, clearing session...');
+          try {
+            await supabase.auth.signOut();
+          } catch (signOutError) {
+            console.error('Error signing out during login:', signOutError);
+          }
+        }
+        
         return { success: false, error: error.message };
       }
 
