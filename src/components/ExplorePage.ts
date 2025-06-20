@@ -1,6 +1,7 @@
 import { Post } from '../types';
 import { authManager } from '../auth';
 import { supabase } from '../lib/supabase';
+import { getCurrentPosition, calculateDistance, formatDistance, GeolocationPosition } from '../utils/geolocation';
 
 export function createExplorePage(
   onPostSelect: (post: Post, allPosts: Post[]) => void,
@@ -108,6 +109,150 @@ export function createExplorePage(
     .search-clear-btn:hover {
       background: #e2e8f0;
       color: #475569;
+    }
+
+    .nearby-search-section {
+      background: rgba(255, 255, 255, 0.15);
+      border-radius: 1rem;
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+      border: 1px solid rgba(255, 255, 255, 0.3);
+    }
+
+    .nearby-search-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 1rem;
+    }
+
+    .nearby-search-title {
+      color: white;
+      font-size: 1.125rem;
+      font-weight: 600;
+      margin: 0;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .nearby-toggle {
+      position: relative;
+      display: inline-block;
+      width: 50px;
+      height: 24px;
+    }
+
+    .nearby-toggle input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+
+    .nearby-slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: rgba(255, 255, 255, 0.3);
+      transition: 0.3s;
+      border-radius: 24px;
+    }
+
+    .nearby-slider:before {
+      position: absolute;
+      content: "";
+      height: 18px;
+      width: 18px;
+      left: 3px;
+      bottom: 3px;
+      background-color: white;
+      transition: 0.3s;
+      border-radius: 50%;
+    }
+
+    input:checked + .nearby-slider {
+      background-color: #10b981;
+    }
+
+    input:checked + .nearby-slider:before {
+      transform: translateX(26px);
+    }
+
+    .nearby-controls {
+      display: none;
+      gap: 1rem;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .nearby-controls.active {
+      display: flex;
+    }
+
+    .distance-control {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .distance-label {
+      color: white;
+      font-size: 0.875rem;
+      font-weight: 500;
+    }
+
+    .distance-select {
+      background: rgba(255, 255, 255, 0.9);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      border-radius: 0.5rem;
+      padding: 0.5rem;
+      color: #374151;
+      font-size: 0.875rem;
+      cursor: pointer;
+    }
+
+    .location-status {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      color: white;
+      font-size: 0.875rem;
+    }
+
+    .location-status.loading {
+      color: #fbbf24;
+    }
+
+    .location-status.success {
+      color: #10b981;
+    }
+
+    .location-status.error {
+      color: #ef4444;
+    }
+
+    .get-location-btn {
+      background: rgba(255, 255, 255, 0.2);
+      color: white;
+      border: none;
+      padding: 0.5rem 1rem;
+      border-radius: 0.5rem;
+      cursor: pointer;
+      font-size: 0.875rem;
+      font-weight: 500;
+      transition: all 0.2s;
+    }
+
+    .get-location-btn:hover {
+      background: rgba(255, 255, 255, 0.3);
+    }
+
+    .get-location-btn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
     }
 
     .search-suggestions {
@@ -281,6 +426,19 @@ export function createExplorePage(
       color: #667eea;
       font-size: 0.75rem;
       font-weight: 500;
+      display: flex;
+      align-items: center;
+      gap: 0.25rem;
+    }
+
+    .distance-badge {
+      background: #10b981;
+      color: white;
+      padding: 0.125rem 0.5rem;
+      border-radius: 1rem;
+      font-size: 0.7rem;
+      font-weight: 600;
+      margin-left: 0.5rem;
     }
 
     .grid-item-content {
@@ -440,6 +598,16 @@ export function createExplorePage(
         gap: 0.75rem;
         text-align: center;
       }
+
+      .nearby-controls {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 1rem;
+      }
+
+      .distance-control {
+        justify-content: space-between;
+      }
     }
 
     @media (max-width: 480px) {
@@ -499,6 +667,10 @@ export function createExplorePage(
   let filteredPosts: Post[] = [];
   let isLoading = false;
   let currentSearchQuery = '';
+  let nearbySearchEnabled = false;
+  let userLocation: GeolocationPosition | null = null;
+  let selectedDistance = 25; // Default 25km
+  let locationStatus: 'idle' | 'loading' | 'success' | 'error' = 'idle';
   
   async function loadExplorePosts() {
     if (isLoading) return;
@@ -552,13 +724,56 @@ export function createExplorePage(
     }
   }
   
+  async function getUserLocation() {
+    if (locationStatus === 'loading') return;
+    
+    locationStatus = 'loading';
+    renderExplorePage();
+    
+    try {
+      userLocation = await getCurrentPosition();
+      locationStatus = 'success';
+      console.log('User location obtained:', userLocation);
+      
+      // If nearby search is enabled, re-filter posts
+      if (nearbySearchEnabled) {
+        performSearch(currentSearchQuery);
+      }
+    } catch (error) {
+      console.error('Error getting user location:', error);
+      locationStatus = 'error';
+      userLocation = null;
+    }
+    
+    renderExplorePage();
+  }
+  
   function performSearch(query: string) {
     currentSearchQuery = query.toLowerCase().trim();
     
+    let postsToFilter = allPosts;
+    
+    // Apply nearby filter first if enabled
+    if (nearbySearchEnabled && userLocation) {
+      postsToFilter = allPosts.filter(post => {
+        if (!post.latitude || !post.longitude) return false;
+        
+        const distance = calculateDistance(
+          userLocation!.latitude,
+          userLocation!.longitude,
+          post.latitude,
+          post.longitude
+        );
+        
+        return distance <= selectedDistance;
+      });
+    }
+    
+    // Apply text search filter
     if (!currentSearchQuery) {
-      filteredPosts = allPosts;
+      filteredPosts = postsToFilter;
     } else {
-      filteredPosts = allPosts.filter(post => {
+      filteredPosts = postsToFilter.filter(post => {
         // Search in post content
         const contentMatch = post.content.toLowerCase().includes(currentSearchQuery);
         
@@ -587,6 +802,14 @@ export function createExplorePage(
   }
   
   function renderExplorePage() {
+    const nearbyResultsText = nearbySearchEnabled && userLocation 
+      ? ` within ${selectedDistance}km` 
+      : '';
+    
+    const searchResultsText = currentSearchQuery 
+      ? ` for "${currentSearchQuery}"` 
+      : '';
+    
     container.innerHTML = `
       <div class="explore-content">
         <div class="explore-header">
@@ -605,6 +828,50 @@ export function createExplorePage(
                 >
                 <button class="search-clear-btn" style="display: ${currentSearchQuery ? 'flex' : 'none'}">✕</button>
               </div>
+              
+              <div class="nearby-search-section">
+                <div class="nearby-search-header">
+                  <h3 class="nearby-search-title">
+                    <span>📍</span>
+                    Nearby Experiences
+                  </h3>
+                  <label class="nearby-toggle">
+                    <input type="checkbox" id="nearby-toggle" ${nearbySearchEnabled ? 'checked' : ''}>
+                    <span class="nearby-slider"></span>
+                  </label>
+                </div>
+                
+                <div class="nearby-controls ${nearbySearchEnabled ? 'active' : ''}">
+                  <div class="distance-control">
+                    <span class="distance-label">Distance:</span>
+                    <select class="distance-select" id="distance-select">
+                      <option value="5" ${selectedDistance === 5 ? 'selected' : ''}>5 km</option>
+                      <option value="10" ${selectedDistance === 10 ? 'selected' : ''}>10 km</option>
+                      <option value="25" ${selectedDistance === 25 ? 'selected' : ''}>25 km</option>
+                      <option value="50" ${selectedDistance === 50 ? 'selected' : ''}>50 km</option>
+                      <option value="100" ${selectedDistance === 100 ? 'selected' : ''}>100 km</option>
+                    </select>
+                  </div>
+                  
+                  <div class="location-status ${locationStatus}">
+                    ${locationStatus === 'idle' ? `
+                      <button class="get-location-btn" id="get-location-btn">
+                        📍 Get My Location
+                      </button>
+                    ` : locationStatus === 'loading' ? `
+                      <span>⏳ Getting your location...</span>
+                    ` : locationStatus === 'success' ? `
+                      <span>✅ Location found</span>
+                    ` : `
+                      <span>❌ Location access denied</span>
+                      <button class="get-location-btn" id="retry-location-btn">
+                        🔄 Try Again
+                      </button>
+                    `}
+                  </div>
+                </div>
+              </div>
+              
               <div class="search-suggestions">
                 <button class="search-suggestion" data-query="#travel">#travel</button>
                 <button class="search-suggestion" data-query="#adventure">#adventure</button>
@@ -617,9 +884,9 @@ export function createExplorePage(
               </div>
             </div>
             
-            ${currentSearchQuery ? `
+            ${currentSearchQuery || nearbySearchEnabled ? `
               <div class="search-results-info">
-                <span class="results-count">${filteredPosts.length} result${filteredPosts.length === 1 ? '' : 's'} for "${currentSearchQuery}"</span>
+                <span class="results-count">${filteredPosts.length} result${filteredPosts.length === 1 ? '' : 's'}${searchResultsText}${nearbyResultsText}</span>
                 <button class="clear-search-btn">Clear search</button>
               </div>
             ` : ''}
@@ -630,12 +897,12 @@ export function createExplorePage(
           ${filteredPosts.map(post => createPostGridItem(post)).join('')}
         </div>
         
-        ${filteredPosts.length === 0 && currentSearchQuery ? `
+        ${filteredPosts.length === 0 && (currentSearchQuery || nearbySearchEnabled) ? `
           <div class="no-search-results">
             <div class="no-results-content">
               <div class="no-results-icon">🔍</div>
               <h3>No results found</h3>
-              <p>Try searching for different keywords, locations, or hashtags.</p>
+              <p>Try ${nearbySearchEnabled ? 'increasing the distance or ' : ''}searching for different keywords, locations, or hashtags.</p>
               <div class="search-tips">
                 <h4>Search tips:</h4>
                 <ul>
@@ -643,6 +910,7 @@ export function createExplorePage(
                   <li>Use hashtags like "#travel" or "#adventure"</li>
                   <li>Search for user names or travel experiences</li>
                   <li>Look for specific activities like "hiking" or "food"</li>
+                  ${nearbySearchEnabled ? '<li>Increase the distance range to find more posts</li>' : '<li>Enable "Nearby Experiences" to find posts near you</li>'}
                 </ul>
               </div>
             </div>
@@ -677,6 +945,10 @@ export function createExplorePage(
     const searchClearBtn = container.querySelector('.search-clear-btn') as HTMLButtonElement;
     const clearSearchBtn = container.querySelector('.clear-search-btn') as HTMLButtonElement;
     const searchSuggestions = container.querySelectorAll('.search-suggestion') as NodeListOf<HTMLButtonElement>;
+    const nearbyToggle = container.querySelector('#nearby-toggle') as HTMLInputElement;
+    const distanceSelect = container.querySelector('#distance-select') as HTMLSelectElement;
+    const getLocationBtn = container.querySelector('#get-location-btn') as HTMLButtonElement;
+    const retryLocationBtn = container.querySelector('#retry-location-btn') as HTMLButtonElement;
     
     // Search input handling
     let searchTimeout: NodeJS.Timeout;
@@ -713,8 +985,32 @@ export function createExplorePage(
     
     clearSearchBtn?.addEventListener('click', () => {
       searchInput.value = '';
+      nearbySearchEnabled = false;
       performSearch('');
     });
+    
+    // Nearby search toggle
+    nearbyToggle?.addEventListener('change', (e) => {
+      nearbySearchEnabled = (e.target as HTMLInputElement).checked;
+      
+      if (nearbySearchEnabled && !userLocation && locationStatus !== 'loading') {
+        getUserLocation();
+      } else {
+        performSearch(currentSearchQuery);
+      }
+    });
+    
+    // Distance selection
+    distanceSelect?.addEventListener('change', (e) => {
+      selectedDistance = parseInt((e.target as HTMLSelectElement).value);
+      if (nearbySearchEnabled) {
+        performSearch(currentSearchQuery);
+      }
+    });
+    
+    // Location buttons
+    getLocationBtn?.addEventListener('click', getUserLocation);
+    retryLocationBtn?.addEventListener('click', getUserLocation);
     
     // Search suggestions
     searchSuggestions.forEach(suggestion => {
@@ -734,6 +1030,18 @@ export function createExplorePage(
     const imageUrl = (post.media_urls && post.media_urls.length > 0) 
       ? post.media_urls[0] 
       : post.image_url || 'https://images.pexels.com/photos/1761279/pexels-photo-1761279.jpeg?auto=compress&cs=tinysrgb&w=800';
+    
+    // Calculate distance if nearby search is enabled and user location is available
+    let distanceBadge = '';
+    if (nearbySearchEnabled && userLocation && post.latitude && post.longitude) {
+      const distance = calculateDistance(
+        userLocation.latitude,
+        userLocation.longitude,
+        post.latitude,
+        post.longitude
+      );
+      distanceBadge = `<span class="distance-badge">${formatDistance(distance)}</span>`;
+    }
     
     return `
       <div class="post-grid-item" data-post-id="${post.id}">
@@ -758,7 +1066,9 @@ export function createExplorePage(
             <img src="${userAvatarUrl}" alt="${userName}" class="grid-user-avatar">
             <div class="grid-user-details">
               <span class="grid-user-name">${userName}</span>
-              <span class="grid-location">📍 ${post.location}</span>
+              <span class="grid-location">
+                📍 ${post.location}${distanceBadge}
+              </span>
             </div>
           </div>
           

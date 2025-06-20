@@ -388,16 +388,25 @@ export function createPostForm(onPostCreate: (post: Post) => void): HTMLElement 
           const mediaUrls = selectedMedia.map(media => media.url);
           const mediaTypes = selectedMedia.map(media => media.type);
           
+          // Prepare post data with coordinates
+          const postData: any = {
+            user_id: currentUser.id,
+            location: selectedLocation.name,
+            content,
+            image_url: mediaUrls[0], // Keep first media as image_url for backward compatibility
+            media_urls: mediaUrls,
+            media_types: mediaTypes
+          };
+          
+          // Add coordinates if available
+          if (selectedLocation.lat !== undefined && selectedLocation.lng !== undefined) {
+            postData.latitude = selectedLocation.lat;
+            postData.longitude = selectedLocation.lng;
+          }
+          
           const { data, error } = await supabase
             .from('posts')
-            .insert({
-              user_id: currentUser.id,
-              location: selectedLocation.name,
-              content,
-              image_url: mediaUrls[0], // Keep first media as image_url for backward compatibility
-              media_urls: mediaUrls,
-              media_types: mediaTypes
-            })
+            .insert(postData)
             .select(`
               *,
               user:profiles(*)
