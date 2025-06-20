@@ -510,11 +510,24 @@ export function createMiniAppManager(onClose: () => void): HTMLElement {
       box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
     }
 
+    .mini-app-manager-modal .form-input.error {
+      border-color: #ef4444;
+      box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
+    }
+
     .form-help {
       display: block;
       margin-top: 0.25rem;
       font-size: 0.875rem;
       color: #6b7280;
+    }
+
+    .field-error {
+      display: block;
+      margin-top: 0.25rem;
+      font-size: 0.875rem;
+      color: #ef4444;
+      font-weight: 500;
     }
 
     .checkbox-label {
@@ -557,6 +570,10 @@ export function createMiniAppManager(onClose: () => void): HTMLElement {
       color: #dc2626;
       font-size: 0.875rem;
       margin-bottom: 1rem;
+      padding: 0.75rem;
+      background: #fef2f2;
+      border: 1px solid #fecaca;
+      border-radius: 0.5rem;
     }
 
     .form-actions {
@@ -602,6 +619,46 @@ export function createMiniAppManager(onClose: () => void): HTMLElement {
 
     .btn-loading {
       display: none;
+    }
+
+    /* Responsive design */
+    @media (max-width: 768px) {
+      .mini-app-manager-modal {
+        padding: 0.5rem;
+      }
+
+      .mini-app-manager-content {
+        max-height: 95vh;
+      }
+
+      .mini-app-manager-header {
+        padding: 1rem;
+      }
+
+      .mini-app-manager-body {
+        padding: 1rem;
+      }
+
+      .mini-app-benefits {
+        grid-template-columns: 1fr;
+      }
+
+      .app-meta {
+        flex-direction: column;
+        gap: 0.5rem;
+      }
+
+      .app-card-actions {
+        flex-direction: column;
+      }
+
+      .app-form {
+        padding: 1rem;
+      }
+
+      .form-actions {
+        flex-direction: column;
+      }
     }
   `;
   
@@ -706,17 +763,19 @@ export function createMiniAppManager(onClose: () => void): HTMLElement {
             
             <form class="app-form" id="app-form">
               <div class="form-group">
-                <label for="app-name">App Name</label>
+                <label for="app-name">App Name *</label>
                 <input type="text" id="app-name" class="form-input" placeholder="My Taxi Service" required>
+                <span class="field-error" id="app-name-error"></span>
               </div>
               
               <div class="form-group">
                 <label for="app-description">Description</label>
                 <textarea id="app-description" class="form-input" placeholder="Fast and reliable taxi service in the city" rows="3"></textarea>
+                <span class="field-error" id="app-description-error"></span>
               </div>
               
               <div class="form-group">
-                <label for="app-category">Category</label>
+                <label for="app-category">Category *</label>
                 <select id="app-category" class="form-input" required>
                   <option value="">Select category...</option>
                   <option value="transportation">🚗 Transportation</option>
@@ -727,18 +786,21 @@ export function createMiniAppManager(onClose: () => void): HTMLElement {
                   <option value="business">💼 Business Services</option>
                   <option value="other">📋 Other</option>
                 </select>
+                <span class="field-error" id="app-category-error"></span>
               </div>
               
               <div class="form-group">
-                <label for="app-url">App URL</label>
+                <label for="app-url">App URL *</label>
                 <input type="url" id="app-url" class="form-input" placeholder="https://your-app.com" required>
                 <small class="form-help">The URL where users can access your app or service</small>
+                <span class="field-error" id="app-url-error"></span>
               </div>
               
               <div class="form-group">
                 <label for="app-icon">Icon URL (Optional)</label>
                 <input type="url" id="app-icon" class="form-input" placeholder="https://your-app.com/icon.png">
                 <small class="form-help">URL to your app's icon or logo</small>
+                <span class="field-error" id="app-icon-error"></span>
               </div>
               
               <div class="form-group">
@@ -893,6 +955,10 @@ export function createMiniAppManager(onClose: () => void): HTMLElement {
       delete form.dataset.appId;
     }
     
+    // Clear any previous errors
+    clearAllFieldErrors();
+    clearFormError();
+    
     formModal.style.display = 'flex';
   }
   
@@ -906,35 +972,193 @@ export function createMiniAppManager(onClose: () => void): HTMLElement {
     delete form.dataset.appId;
     
     // Clear errors
-    const errorElement = container.querySelector('#app-form-error') as HTMLElement;
-    errorElement.textContent = '';
+    clearAllFieldErrors();
+    clearFormError();
+  }
+  
+  // Validation functions
+  function validateRequired(value: string, fieldName: string): string | null {
+    if (!value || value.trim().length === 0) {
+      return `${fieldName} is required`;
+    }
+    return null;
+  }
+  
+  function validateUrl(value: string): string | null {
+    if (!value || value.trim().length === 0) {
+      return null; // Let required validation handle empty values
+    }
+    
+    try {
+      const url = new URL(value.trim());
+      if (!['http:', 'https:'].includes(url.protocol)) {
+        return 'URL must start with http:// or https://';
+      }
+      return null;
+    } catch {
+      return 'Please enter a valid URL (e.g., https://example.com)';
+    }
+  }
+  
+  function validateMaxLength(value: string, maxLength: number, fieldName: string): string | null {
+    if (value && value.trim().length > maxLength) {
+      return `${fieldName} must be ${maxLength} characters or less`;
+    }
+    return null;
+  }
+  
+  function showFieldError(fieldId: string, message: string) {
+    const field = container.querySelector(`#${fieldId}`) as HTMLInputElement;
+    const errorElement = container.querySelector(`#${fieldId}-error`) as HTMLElement;
+    
+    if (field && errorElement) {
+      field.classList.add('error');
+      errorElement.textContent = message;
+    }
+  }
+  
+  function clearFieldError(fieldId: string) {
+    const field = container.querySelector(`#${fieldId}`) as HTMLInputElement;
+    const errorElement = container.querySelector(`#${fieldId}-error`) as HTMLElement;
+    
+    if (field && errorElement) {
+      field.classList.remove('error');
+      errorElement.textContent = '';
+    }
+  }
+  
+  function clearAllFieldErrors() {
+    const fieldIds = ['app-name', 'app-description', 'app-category', 'app-url', 'app-icon'];
+    fieldIds.forEach(fieldId => clearFieldError(fieldId));
+  }
+  
+  function validateForm(): boolean {
+    clearAllFieldErrors();
+    clearFormError();
+    
+    let isValid = true;
+    
+    // Get form values
+    const nameInput = container.querySelector('#app-name') as HTMLInputElement;
+    const descriptionInput = container.querySelector('#app-description') as HTMLTextAreaElement;
+    const categoryInput = container.querySelector('#app-category') as HTMLSelectElement;
+    const urlInput = container.querySelector('#app-url') as HTMLInputElement;
+    const iconInput = container.querySelector('#app-icon') as HTMLInputElement;
+    
+    const name = nameInput?.value?.trim() || '';
+    const description = descriptionInput?.value?.trim() || '';
+    const category = categoryInput?.value?.trim() || '';
+    const appUrl = urlInput?.value?.trim() || '';
+    const iconUrl = iconInput?.value?.trim() || '';
+    
+    // Validate required fields
+    const nameError = validateRequired(name, 'App name');
+    if (nameError) {
+      showFieldError('app-name', nameError);
+      isValid = false;
+    }
+    
+    const categoryError = validateRequired(category, 'Category');
+    if (categoryError) {
+      showFieldError('app-category', categoryError);
+      isValid = false;
+    }
+    
+    const urlRequiredError = validateRequired(appUrl, 'App URL');
+    if (urlRequiredError) {
+      showFieldError('app-url', urlRequiredError);
+      isValid = false;
+    }
+    
+    // Validate field lengths
+    const nameMaxError = validateMaxLength(name, 100, 'App name');
+    if (nameMaxError) {
+      showFieldError('app-name', nameMaxError);
+      isValid = false;
+    }
+    
+    const descriptionMaxError = validateMaxLength(description, 500, 'Description');
+    if (descriptionMaxError) {
+      showFieldError('app-description', descriptionMaxError);
+      isValid = false;
+    }
+    
+    // Validate URLs
+    if (appUrl) {
+      const urlError = validateUrl(appUrl);
+      if (urlError) {
+        showFieldError('app-url', urlError);
+        isValid = false;
+      }
+    }
+    
+    if (iconUrl) {
+      const iconUrlError = validateUrl(iconUrl);
+      if (iconUrlError) {
+        showFieldError('app-icon', iconUrlError);
+        isValid = false;
+      }
+    }
+    
+    // Validate category selection
+    const validCategories = ['transportation', 'food', 'shopping', 'entertainment', 'travel', 'business', 'other'];
+    if (category && !validCategories.includes(category)) {
+      showFieldError('app-category', 'Please select a valid category');
+      isValid = false;
+    }
+    
+    return isValid;
   }
   
   async function handleAppFormSubmit(e: Event) {
     e.preventDefault();
     
+    console.log('Form submission started');
+    
+    // Validate form first
+    if (!validateForm()) {
+      console.log('Form validation failed');
+      showFormError('Please fix the errors above before saving.');
+      return;
+    }
+    
     const authState = authManager.getAuthState();
-    if (!authState.isAuthenticated || !authState.currentUser) return;
+    if (!authState.isAuthenticated || !authState.currentUser) {
+      showFormError('Authentication required. Please log in again.');
+      return;
+    }
     
     const form = e.target as HTMLFormElement;
     const isEdit = !!form.dataset.appId;
     
+    // Get form values (we know they're valid at this point)
+    const nameInput = container.querySelector('#app-name') as HTMLInputElement;
+    const descriptionInput = container.querySelector('#app-description') as HTMLTextAreaElement;
+    const categoryInput = container.querySelector('#app-category') as HTMLSelectElement;
+    const urlInput = container.querySelector('#app-url') as HTMLInputElement;
+    const iconInput = container.querySelector('#app-icon') as HTMLInputElement;
+    const activeInput = container.querySelector('#app-active') as HTMLInputElement;
+    
     const appData = {
-      name: (container.querySelector('#app-name') as HTMLInputElement).value,
-      description: (container.querySelector('#app-description') as HTMLTextAreaElement).value,
-      category: (container.querySelector('#app-category') as HTMLSelectElement).value,
-      app_url: (container.querySelector('#app-url') as HTMLInputElement).value,
-      icon_url: (container.querySelector('#app-icon') as HTMLInputElement).value || null,
-      is_active: (container.querySelector('#app-active') as HTMLInputElement).checked,
+      name: nameInput.value.trim(),
+      description: descriptionInput.value.trim() || null,
+      category: categoryInput.value,
+      app_url: urlInput.value.trim(),
+      icon_url: iconInput.value.trim() || null,
+      is_active: activeInput.checked,
       user_id: authState.currentUser.id
     };
     
+    console.log('Submitting app data:', appData);
+    
     setFormLoading(true);
+    clearFormError();
     
     try {
       let result;
       
       if (isEdit) {
+        console.log('Updating existing app:', form.dataset.appId);
         result = await supabase
           .from('mini_apps')
           .update(appData)
@@ -943,6 +1167,7 @@ export function createMiniAppManager(onClose: () => void): HTMLElement {
           .select()
           .single();
       } else {
+        console.log('Creating new app');
         result = await supabase
           .from('mini_apps')
           .insert(appData)
@@ -950,14 +1175,40 @@ export function createMiniAppManager(onClose: () => void): HTMLElement {
           .single();
       }
       
-      if (result.error) throw result.error;
+      console.log('Database operation result:', result);
       
+      if (result.error) {
+        console.error('Database error:', result.error);
+        throw result.error;
+      }
+      
+      console.log('App saved successfully');
       hideAppForm();
       await loadMiniApps();
       
     } catch (error: any) {
       console.error('Error saving mini app:', error);
-      showFormError(error.message || 'Failed to save app');
+      
+      // Provide user-friendly error messages
+      let errorMessage = 'Failed to save app';
+      
+      if (error.code === '23505') {
+        errorMessage = 'An app with this name or URL already exists';
+      } else if (error.code === '23514') {
+        errorMessage = 'Invalid category selected';
+      } else if (error.message?.includes('violates check constraint')) {
+        errorMessage = 'Invalid category. Please select a valid category from the dropdown.';
+      } else if (error.message?.includes('violates foreign key constraint')) {
+        errorMessage = 'Authentication error. Please try logging out and back in.';
+      } else if (error.message?.includes('violates row-level security policy')) {
+        errorMessage = 'Permission denied. You can only manage your own mini apps.';
+      } else if (error.message?.includes('JWT')) {
+        errorMessage = 'Session expired. Please refresh the page and try again.';
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
+      showFormError(errorMessage);
     } finally {
       setFormLoading(false);
     }
@@ -976,6 +1227,11 @@ export function createMiniAppManager(onClose: () => void): HTMLElement {
   function showFormError(message: string) {
     const errorElement = container.querySelector('#app-form-error') as HTMLElement;
     errorElement.textContent = message;
+  }
+  
+  function clearFormError() {
+    const errorElement = container.querySelector('#app-form-error') as HTMLElement;
+    errorElement.textContent = '';
   }
   
   function previewApp(appId: string) {
