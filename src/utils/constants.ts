@@ -4,6 +4,7 @@ export const APP_CONFIG = {
   description: 'Share Your Travel Adventures',
   maxFileSize: 10, // MB
   maxMediaFiles: 10,
+  maxTextPostWords: 300, // Maximum words for text-only posts
   supportedImageTypes: ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/heic', 'image/heif'],
   supportedVideoTypes: ['video/mp4', 'video/webm', 'video/ogg', 'video/quicktime', 'video/x-msvideo'],
   defaultAvatarUrl: 'https://images.pexels.com/photos/1040880/pexels-photo-1040880.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&fit=crop'
@@ -48,5 +49,6 @@ export const ERROR_MESSAGES = {
   VALIDATION_ERROR: 'Please check your input and try again.',
   FILE_TOO_LARGE: `File size must be less than ${APP_CONFIG.maxFileSize}MB`,
   INVALID_FILE_TYPE: 'Invalid file type. Please select a supported file format.',
-  REQUIRED_FIELD: 'This field is required.'
+  REQUIRED_FIELD: 'This field is required.',
+  WORD_LIMIT_EXCEEDED: `Text posts cannot exceed ${APP_CONFIG.maxTextPostWords} words`
 };

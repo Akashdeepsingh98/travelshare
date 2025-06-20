@@ -5,6 +5,8 @@ import { supabase } from '../lib/supabase';
 import { createLocationSelector, LocationData } from './LocationSelector';
 import { APP_CONFIG } from '../utils/constants';
 
+type PostType = 'media' | 'text';
+
 export function createPostForm(onPostCreate: (post: Post) => void): HTMLElement {
   const container = document.createElement('div');
   container.className = 'create-post-container';
@@ -117,7 +119,22 @@ export function createPostForm(onPostCreate: (post: Post) => void): HTMLElement 
         </div>
         
         <div class="modal-body">
-          <div class="media-upload-section">
+          <!-- Post Type Selection -->
+          <div class="post-type-section">
+            <div class="post-type-tabs">
+              <button class="post-type-tab active" data-type="media">
+                <span class="tab-icon">📷</span>
+                <span class="tab-text">Media Post</span>
+              </button>
+              <button class="post-type-tab" data-type="text">
+                <span class="tab-icon">📝</span>
+                <span class="tab-text">Text Post</span>
+              </button>
+            </div>
+          </div>
+          
+          <!-- Media Upload Section -->
+          <div class="media-upload-section" id="media-upload-section">
             <div class="media-preview-container">
               <div class="media-placeholder">
                 <div class="upload-icon">📷</div>
@@ -133,13 +150,20 @@ export function createPostForm(onPostCreate: (post: Post) => void): HTMLElement 
             </div>
           </div>
           
+          <!-- Post Details Section -->
           <div class="post-details-section">
             <div class="user-info">
               <img src="${avatarUrl}" alt="${currentUser.name}" class="user-avatar">
               <span class="user-name">${currentUser.name}</span>
             </div>
             
-            <textarea class="post-caption" placeholder="Write a caption..." rows="4"></textarea>
+            <div class="caption-container">
+              <textarea class="post-caption" placeholder="Write a caption..." rows="4"></textarea>
+              <div class="word-count-container">
+                <span class="word-count">0 words</span>
+                <span class="word-limit" style="display: none;">/ ${APP_CONFIG.maxTextPostWords} words</span>
+              </div>
+            </div>
             
             <div class="location-section" id="location-section">
               <!-- Location selector will be inserted here -->
@@ -157,16 +181,21 @@ export function createPostForm(onPostCreate: (post: Post) => void): HTMLElement 
     const modalBackdrop = modal.querySelector('.modal-backdrop') as HTMLElement;
     const modalClose = modal.querySelector('.modal-close') as HTMLButtonElement;
     const modalShare = modal.querySelector('.modal-share') as HTMLButtonElement;
+    const postTypeTabs = modal.querySelectorAll('.post-type-tab') as NodeListOf<HTMLButtonElement>;
+    const mediaUploadSection = modal.querySelector('#media-upload-section') as HTMLElement;
     const mediaPlaceholder = modal.querySelector('.media-placeholder') as HTMLElement;
     const mediaGrid = modal.querySelector('.media-grid') as HTMLElement;
     const mediaFileInput = modal.querySelector('.media-file-input') as HTMLInputElement;
     const mediaUrlInput = modal.querySelector('.media-url-input') as HTMLInputElement;
     const addUrlBtn = modal.querySelector('.add-url-btn') as HTMLButtonElement;
     const postCaption = modal.querySelector('.post-caption') as HTMLTextAreaElement;
+    const wordCountElement = modal.querySelector('.word-count') as HTMLElement;
+    const wordLimitElement = modal.querySelector('.word-limit') as HTMLElement;
     const locationSection = modal.querySelector('#location-section') as HTMLElement;
     
     let selectedMedia: MediaItem[] = [];
     let selectedLocation: LocationData | null = null;
+    let currentPostType: PostType = 'media';
     
     // Create location selector
     const locationSelector = createLocationSelector((location: LocationData) => {
@@ -174,6 +203,62 @@ export function createPostForm(onPostCreate: (post: Post) => void): HTMLElement 
       updateShareButton();
     });
     locationSection.appendChild(locationSelector);
+    
+    // Post type switching
+    postTypeTabs.forEach(tab => {
+      tab.addEventListener('click', () => {
+        const newType = tab.dataset.type as PostType;
+        if (newType === currentPostType) return;
+        
+        // Update active tab
+        postTypeTabs.forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+        
+        // Update post type
+        currentPostType = newType;
+        
+        // Show/hide media section
+        if (currentPostType === 'text') {
+          mediaUploadSection.style.display = 'none';
+          wordLimitElement.style.display = 'inline';
+          postCaption.placeholder = 'Share your travel thoughts, tips, or experiences...';
+        } else {
+          mediaUploadSection.style.display = 'block';
+          wordLimitElement.style.display = 'none';
+          postCaption.placeholder = 'Write a caption...';
+        }
+        
+        updateWordCount();
+        updateShareButton();
+      });
+    });
+    
+    // Word counting functionality
+    function countWords(text: string): number {
+      return text.trim().split(/\s+/).filter(word => word.length > 0).length;
+    }
+    
+    function updateWordCount() {
+      const text = postCaption.value;
+      const wordCount = countWords(text);
+      
+      wordCountElement.textContent = `${wordCount} word${wordCount === 1 ? '' : 's'}`;
+      
+      if (currentPostType === 'text') {
+        const isOverLimit = wordCount > APP_CONFIG.maxTextPostWords;
+        wordCountElement.classList.toggle('over-limit', isOverLimit);
+        
+        if (isOverLimit) {
+          wordCountElement.style.color = '#ef4444';
+        } else if (wordCount > APP_CONFIG.maxTextPostWords * 0.8) {
+          wordCountElement.style.color = '#f59e0b';
+        } else {
+          wordCountElement.style.color = '#6b7280';
+        }
+      } else {
+        wordCountElement.style.color = '#6b7280';
+      }
+    }
     
     // Open modal
     function openModal() {
@@ -195,7 +280,19 @@ export function createPostForm(onPostCreate: (post: Post) => void): HTMLElement 
       selectedLocation = null;
       mediaUrlInput.value = '';
       selectedMedia = [];
+      currentPostType = 'media';
+      
+      // Reset post type tabs
+      postTypeTabs.forEach(tab => tab.classList.remove('active'));
+      postTypeTabs[0].classList.add('active');
+      
+      // Reset UI
+      mediaUploadSection.style.display = 'block';
+      wordLimitElement.style.display = 'none';
+      postCaption.placeholder = 'Write a caption...';
+      
       updateMediaPreview();
+      updateWordCount();
       updateShareButton();
       setLoading(false);
       
@@ -266,8 +363,20 @@ export function createPostForm(onPostCreate: (post: Post) => void): HTMLElement 
       const hasContent = postCaption.value.trim().length > 0;
       const hasLocation = selectedLocation !== null;
       const hasMedia = selectedMedia.length > 0;
+      const wordCount = countWords(postCaption.value);
+      const isWordCountValid = currentPostType === 'text' ? wordCount <= APP_CONFIG.maxTextPostWords : true;
       
-      modalShare.disabled = !(hasContent && hasLocation && hasMedia);
+      let isValid = false;
+      
+      if (currentPostType === 'media') {
+        // Media post requires content, location, and at least one media file
+        isValid = hasContent && hasLocation && hasMedia && isWordCountValid;
+      } else {
+        // Text post requires content and location, media is optional
+        isValid = hasContent && hasLocation && isWordCountValid;
+      }
+      
+      modalShare.disabled = !isValid;
     }
     
     // Detect media type from URL
@@ -375,13 +484,29 @@ export function createPostForm(onPostCreate: (post: Post) => void): HTMLElement 
     });
     
     // Form validation
-    postCaption.addEventListener('input', updateShareButton);
+    postCaption.addEventListener('input', () => {
+      updateWordCount();
+      updateShareButton();
+    });
     
     // Handle form submission
     modalShare.addEventListener('click', async () => {
       const content = postCaption.value.trim();
+      const wordCount = countWords(content);
       
-      if (content && selectedLocation && selectedMedia.length > 0 && currentUser) {
+      // Validate word count for text posts
+      if (currentPostType === 'text' && wordCount > APP_CONFIG.maxTextPostWords) {
+        alert(`Text posts cannot exceed ${APP_CONFIG.maxTextPostWords} words. Current: ${wordCount} words.`);
+        return;
+      }
+      
+      if (content && selectedLocation && currentUser) {
+        // Check if media is required
+        if (currentPostType === 'media' && selectedMedia.length === 0) {
+          alert('Please add at least one photo or video for a media post.');
+          return;
+        }
+        
         setLoading(true);
         
         try {
@@ -393,10 +518,14 @@ export function createPostForm(onPostCreate: (post: Post) => void): HTMLElement 
             user_id: currentUser.id,
             location: selectedLocation.name,
             content,
-            image_url: mediaUrls[0], // Keep first media as image_url for backward compatibility
             media_urls: mediaUrls,
             media_types: mediaTypes
           };
+          
+          // For backward compatibility, set image_url to first media if available
+          if (mediaUrls.length > 0) {
+            postData.image_url = mediaUrls[0];
+          }
           
           // Add coordinates if available
           if (selectedLocation.lat !== undefined && selectedLocation.lng !== undefined) {
