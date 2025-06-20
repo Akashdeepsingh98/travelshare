@@ -180,11 +180,15 @@ export function createMiniAppViewer(app: MiniApp, onClose: () => void): HTMLElem
         console.log('✅ New window opened successfully');
       } else {
         console.error('❌ Failed to open new window - popup blocked?');
-        alert('Unable to open the app. Please check if popup blockers are enabled and try again.');
+        const currentDomain = window.location.hostname;
+        const currentPort = window.location.port;
+        const siteUrl = currentPort ? `${currentDomain}:${currentPort}` : currentDomain;
+        
+        alert(`🚫 Popup Blocked!\n\nYour browser has blocked the popup window. To open ${app.name}:\n\n1. Look for a popup blocker icon in your browser's address bar\n2. Click it and select "Always allow pop-ups from ${siteUrl}"\n3. Or go to your browser settings and add ${siteUrl} to the allowed sites for pop-ups\n4. Then try opening the app again\n\nAlternatively, you can copy this URL and open it manually:\n${app.app_url}`);
       }
     } catch (error) {
       console.error('❌ Error opening new tab:', error);
-      alert('Unable to open the app. Please try again or check the app URL.');
+      alert(`Unable to open ${app.name}. Please try again or manually visit:\n${app.app_url}`);
     }
   }
   
