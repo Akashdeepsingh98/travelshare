@@ -544,8 +544,17 @@ export function createPostForm(onPostCreate: (post: Post) => void): HTMLElement 
 
           if (error) throw error;
 
+          // Create the Post object with proper structure
           const newPost: Post = {
-            ...data,
+            id: data.id,
+            user_id: data.user_id,
+            location: data.location,
+            content: data.content,
+            image_url: data.image_url,
+            media_urls: data.media_urls,
+            media_types: data.media_types,
+            created_at: data.created_at,
+            likes_count: data.likes_count || 0,
             user: data.user,
             comments: [],
             user_has_liked: false
