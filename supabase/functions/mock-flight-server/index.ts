@@ -192,52 +192,21 @@ Deno.serve(async (req) => {
               tools: [
                 {
                   name: 'search_flights',
-                  description: 'Search for flights between destinations',
+                  description: 'Search for flights between destinations (returns all flight data regardless of parameters)',
                   inputSchema: {
                     type: 'object',
                     properties: {
                       from: {
                         type: 'string',
-                        description: 'Departure city or airport'
+                        description: 'Departure city or airport (optional)'
                       },
                       to: {
                         type: 'string',
-                        description: 'Destination city or airport'
+                        description: 'Destination city or airport (optional)'
                       },
-                      date: {
+                      query: {
                         type: 'string',
-                        description: 'Departure date'
-                      },
-                      class: {
-                        type: 'string',
-                        description: 'Flight class (economy, business, first)'
-                      }
-                    }
-                  }
-                },
-                {
-                  name: 'get_flight_details',
-                  description: 'Get detailed information about a specific flight',
-                  inputSchema: {
-                    type: 'object',
-                    properties: {
-                      flight_id: {
-                        type: 'string',
-                        description: 'Flight ID'
-                      }
-                    },
-                    required: ['flight_id']
-                  }
-                },
-                {
-                  name: 'check_flight_availability',
-                  description: 'Check availability for flights to a destination',
-                  inputSchema: {
-                    type: 'object',
-                    properties: {
-                      destination: {
-                        type: 'string',
-                        description: 'Destination to check flights for'
+                        description: 'General search query (optional)'
                       }
                     }
                   }
@@ -254,126 +223,43 @@ Deno.serve(async (req) => {
         const args = mcpRequest.params?.arguments || {}
         console.log('Tool name:', toolName, 'Args:', args)
 
-        switch (toolName) {
-          case 'search_flights':
-            const from = args.from?.toLowerCase() || ''
-            const to = args.to?.toLowerCase() || ''
-            const flightClass = args.class?.toLowerCase() || ''
-            
-            let filteredFlights = mockFlights
-            
-            if (from || to || flightClass) {
-              filteredFlights = mockFlights.filter(flight => {
-                const matchesFrom = !from || 
-                  flight.from.toLowerCase().includes(from)
-                
-                const matchesTo = !to || 
-                  flight.to.toLowerCase().includes(to)
-                
-                const matchesClass = !flightClass || 
-                  flight.class.toLowerCase().includes(flightClass)
-                
-                return matchesFrom && matchesTo && matchesClass
-              })
-            }
+        if (toolName === 'search_flights') {
+          // ALWAYS return all flight data regardless of parameters
+          console.log('Returning all flight data for AI processing')
+          
+          const formattedFlights = mockFlights.map(f => 
+            `✈️ **${f.airline} ${f.flightNumber}**\n` +
+            `   Route: ${f.from} → ${f.to}\n` +
+            `   Departure: ${f.departure} | Arrival: ${f.arrival}\n` +
+            `   Duration: ${f.duration} | Aircraft: ${f.aircraft}\n` +
+            `   Price: ${f.price} (${f.class}) | Status: ${f.availability}\n` +
+            `   ${f.stops}\n`
+          ).join('\n')
 
-            console.log('Flight search results:', filteredFlights.length, 'flights found')
-
-            return new Response(
-              JSON.stringify({
-                result: {
-                  content: [
-                    {
-                      type: 'text',
-                      text: `Found ${filteredFlights.length} flights:\n\n${filteredFlights.map(f => 
-                        `✈️ **${f.airline} ${f.flightNumber}**\n` +
-                        `   Route: ${f.from} → ${f.to}\n` +
-                        `   Departure: ${f.departure} | Arrival: ${f.arrival}\n` +
-                        `   Duration: ${f.duration} | Aircraft: ${f.aircraft}\n` +
-                        `   Price: ${f.price} (${f.class}) | Status: ${f.availability}\n` +
-                        `   ${f.stops}\n`
-                      ).join('\n')}`
-                    }
-                  ]
-                }
-              }),
-              { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-            )
-
-          case 'get_flight_details':
-            const flightId = args.flight_id
-            const flight = mockFlights.find(f => f.id === flightId)
-            
-            if (!flight) {
-              return new Response(
-                JSON.stringify({
-                  error: {
-                    code: -1,
-                    message: 'Flight not found'
+          return new Response(
+            JSON.stringify({
+              result: {
+                content: [
+                  {
+                    type: 'text',
+                    text: `Here is our complete flight database (${mockFlights.length} flights):\n\n${formattedFlights}\n\nNote: This is mock flight data. The AI should extract relevant information based on the user's query.`
                   }
-                }),
-                { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-              )
-            }
-
-            return new Response(
-              JSON.stringify({
-                result: {
-                  content: [
-                    {
-                      type: 'text',
-                      text: `✈️ **${flight.airline} Flight ${flight.flightNumber}**\n\n` +
-                            `🛫 Departure: ${flight.from} at ${flight.departure}\n` +
-                            `🛬 Arrival: ${flight.to} at ${flight.arrival}\n` +
-                            `⏱️ Duration: ${flight.duration}\n` +
-                            `✈️ Aircraft: ${flight.aircraft}\n` +
-                            `💺 Class: ${flight.class}\n` +
-                            `💰 Price: ${flight.price}\n` +
-                            `📅 Availability: ${flight.availability}\n` +
-                            `🔄 Stops: ${flight.stops}`
-                    }
-                  ]
-                }
-              }),
-              { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-            )
-
-          case 'check_flight_availability':
-            const destination = args.destination?.toLowerCase() || ''
-            const availableFlights = mockFlights.filter(f => 
-              f.availability === 'Available' && 
-              (!destination || f.to.toLowerCase().includes(destination))
-            )
-
-            return new Response(
-              JSON.stringify({
-                result: {
-                  content: [
-                    {
-                      type: 'text',
-                      text: `🟢 **Available Flights** ${destination ? `to ${args.destination}` : ''}:\n\n${availableFlights.map(f => 
-                        `• **${f.airline} ${f.flightNumber}** - ${f.from} to ${f.to}\n` +
-                        `  Departure: ${f.departure} | Price: ${f.price} | Duration: ${f.duration}`
-                      ).join('\n')}\n\n` +
-                      `Total available flights: ${availableFlights.length}`
-                    }
-                  ]
-                }
-              }),
-              { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-            )
-
-          default:
-            console.log('Unknown tool:', toolName)
-            return new Response(
-              JSON.stringify({
-                error: {
-                  code: -1,
-                  message: `Unknown tool: ${toolName}`
-                }
-              }),
-              { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-            )
+                ]
+              }
+            }),
+            { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          )
+        } else {
+          console.log('Unknown tool:', toolName)
+          return new Response(
+            JSON.stringify({
+              error: {
+                code: -1,
+                message: `Unknown tool: ${toolName}. Available tools: search_flights`
+              }
+            }),
+            { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          )
         }
 
       default:

@@ -207,69 +207,21 @@ Deno.serve(async (req) => {
               tools: [
                 {
                   name: 'search_transportation',
-                  description: 'Search for taxi and transportation services by location',
+                  description: 'Search for taxi and transportation services (returns all transportation data regardless of parameters)',
                   inputSchema: {
                     type: 'object',
                     properties: {
                       location: {
                         type: 'string',
-                        description: 'Location to search for transportation'
+                        description: 'Location to search for transportation (optional)'
                       },
                       type: {
                         type: 'string',
-                        description: 'Type of transportation (taxi, rideshare, shuttle)'
+                        description: 'Type of transportation (optional)'
                       },
                       query: {
                         type: 'string',
-                        description: 'General search query'
-                      }
-                    }
-                  }
-                },
-                {
-                  name: 'get_transportation_details',
-                  description: 'Get detailed information about a specific transportation service',
-                  inputSchema: {
-                    type: 'object',
-                    properties: {
-                      service_id: {
-                        type: 'string',
-                        description: 'Transportation service ID'
-                      }
-                    },
-                    required: ['service_id']
-                  }
-                },
-                {
-                  name: 'check_availability',
-                  description: 'Check current availability of transportation services',
-                  inputSchema: {
-                    type: 'object',
-                    properties: {
-                      location: {
-                        type: 'string',
-                        description: 'Location to check availability'
-                      }
-                    }
-                  }
-                },
-                {
-                  name: 'estimate_fare',
-                  description: 'Get fare estimates for transportation',
-                  inputSchema: {
-                    type: 'object',
-                    properties: {
-                      from: {
-                        type: 'string',
-                        description: 'Starting location'
-                      },
-                      to: {
-                        type: 'string',
-                        description: 'Destination'
-                      },
-                      service_type: {
-                        type: 'string',
-                        description: 'Type of service'
+                        description: 'General search query (optional)'
                       }
                     }
                   }
@@ -286,183 +238,44 @@ Deno.serve(async (req) => {
         const args = mcpRequest.params?.arguments || {}
         console.log('Tool name:', toolName, 'Args:', args)
 
-        switch (toolName) {
-          case 'search_transportation':
-            const location = args.location?.toLowerCase() || ''
-            const type = args.type?.toLowerCase() || ''
-            const query = args.query?.toLowerCase() || ''
-            
-            let filteredTransportation = mockTransportation
-            
-            if (location || type || query) {
-              filteredTransportation = mockTransportation.filter(transport => {
-                const matchesLocation = !location || 
-                  transport.location.toLowerCase().includes(location)
-                
-                const matchesType = !type || 
-                  transport.type.toLowerCase().includes(type) ||
-                  transport.service.toLowerCase().includes(type)
-                
-                const matchesQuery = !query ||
-                  transport.service.toLowerCase().includes(query) ||
-                  transport.type.toLowerCase().includes(query) ||
-                  transport.location.toLowerCase().includes(query) ||
-                  transport.description.toLowerCase().includes(query)
-                
-                return matchesLocation && matchesType && matchesQuery
-              })
-            }
+        if (toolName === 'search_transportation') {
+          // ALWAYS return all transportation data regardless of parameters
+          console.log('Returning all transportation data for AI processing')
+          
+          const formattedTransportation = mockTransportation.map(t => 
+            `🚗 **${t.service}** (${t.type})\n` +
+            `   Location: ${t.location}\n` +
+            `   Availability: ${t.availability} | ETA: ${t.estimatedArrival}\n` +
+            `   Price Range: ${t.priceRange} | Rating: ${t.rating}⭐\n` +
+            `   Vehicle: ${t.vehicleType} | Capacity: ${t.capacity}\n` +
+            `   Features: ${t.features.join(', ')}\n` +
+            `   ${t.description}\n`
+          ).join('\n')
 
-            console.log('Transportation search results:', filteredTransportation.length, 'services found')
-
-            return new Response(
-              JSON.stringify({
-                result: {
-                  content: [
-                    {
-                      type: 'text',
-                      text: `Found ${filteredTransportation.length} transportation services:\n\n${filteredTransportation.map(t => 
-                        `🚗 **${t.service}** (${t.type})\n` +
-                        `   Location: ${t.location}\n` +
-                        `   Availability: ${t.availability} | ETA: ${t.estimatedArrival}\n` +
-                        `   Price Range: ${t.priceRange} | Rating: ${t.rating}⭐\n` +
-                        `   Vehicle: ${t.vehicleType} | Capacity: ${t.capacity}\n` +
-                        `   Features: ${t.features.join(', ')}\n` +
-                        `   ${t.description}\n`
-                      ).join('\n')}`
-                    }
-                  ]
-                }
-              }),
-              { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-            )
-
-          case 'get_transportation_details':
-            const serviceId = args.service_id
-            const service = mockTransportation.find(t => t.id === serviceId)
-            
-            if (!service) {
-              return new Response(
-                JSON.stringify({
-                  error: {
-                    code: -1,
-                    message: 'Transportation service not found'
+          return new Response(
+            JSON.stringify({
+              result: {
+                content: [
+                  {
+                    type: 'text',
+                    text: `Here is our complete transportation database (${mockTransportation.length} services):\n\n${formattedTransportation}\n\nNote: This is mock transportation data. The AI should extract relevant information based on the user's query and location.`
                   }
-                }),
-                { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-              )
-            }
-
-            return new Response(
-              JSON.stringify({
-                result: {
-                  content: [
-                    {
-                      type: 'text',
-                      text: `🚗 **${service.service}** - ${service.type}\n\n` +
-                            `📍 Location: ${service.location}\n` +
-                            `🕒 Availability: ${service.availability}\n` +
-                            `⏱️ Estimated Arrival: ${service.estimatedArrival}\n` +
-                            `💰 Price Range: ${service.priceRange}\n` +
-                            `⭐ Rating: ${service.rating}/5.0\n` +
-                            `🚙 Vehicle: ${service.vehicleType}\n` +
-                            `👥 Capacity: ${service.capacity}\n` +
-                            `👨‍✈️ Driver Rating: ${service.driverRating}/5.0\n\n` +
-                            `**Features:**\n${service.features.map(f => `• ${f}`).join('\n')}\n\n` +
-                            `**Description:** ${service.description}`
-                    }
-                  ]
-                }
-              }),
-              { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-            )
-
-          case 'check_availability':
-            const checkLocation = args.location?.toLowerCase() || ''
-            const availableServices = mockTransportation.filter(t => 
-              t.availability === 'Available Now' && 
-              (!checkLocation || t.location.toLowerCase().includes(checkLocation))
-            )
-
-            return new Response(
-              JSON.stringify({
-                result: {
-                  content: [
-                    {
-                      type: 'text',
-                      text: `🟢 **Available Transportation** ${checkLocation ? `in ${args.location}` : ''}:\n\n${availableServices.map(t => 
-                        `• **${t.service}** (${t.type}) - ${t.location}\n` +
-                        `  ETA: ${t.estimatedArrival} | Price: ${t.priceRange} | Rating: ${t.rating}⭐`
-                      ).join('\n')}\n\n` +
-                      `Total available services: ${availableServices.length}`
-                    }
-                  ]
-                }
-              }),
-              { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-            )
-
-          case 'estimate_fare':
-            const from = args.from || 'Current Location'
-            const to = args.to || 'Destination'
-            const serviceType = args.service_type?.toLowerCase() || 'standard'
-            
-            // Simple fare estimation based on service type
-            const fareEstimates = [
-              {
-                service: 'Standard Taxi',
-                estimate: '$15-25',
-                duration: '15-20 minutes',
-                type: 'taxi'
-              },
-              {
-                service: 'Premium Taxi',
-                estimate: '$25-35',
-                duration: '15-20 minutes',
-                type: 'premium'
-              },
-              {
-                service: 'Ride Share',
-                estimate: '$10-18',
-                duration: '12-18 minutes',
-                type: 'rideshare'
+                ]
               }
-            ]
-            
-            const relevantEstimates = fareEstimates.filter(est => 
-              !serviceType || est.type.includes(serviceType) || serviceType.includes(est.type)
-            )
-
-            return new Response(
-              JSON.stringify({
-                result: {
-                  content: [
-                    {
-                      type: 'text',
-                      text: `💰 **Fare Estimates** from ${from} to ${to}:\n\n${relevantEstimates.map(est => 
-                        `🚗 **${est.service}**\n` +
-                        `   Estimated Fare: ${est.estimate}\n` +
-                        `   Estimated Duration: ${est.duration}\n`
-                      ).join('\n')}\n` +
-                      `*Estimates may vary based on traffic, time of day, and exact pickup/drop-off locations.*`
-                    }
-                  ]
-                }
-              }),
-              { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-            )
-
-          default:
-            console.log('Unknown tool:', toolName)
-            return new Response(
-              JSON.stringify({
-                error: {
-                  code: -1,
-                  message: `Unknown tool: ${toolName}`
-                }
-              }),
-              { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-            )
+            }),
+            { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          )
+        } else {
+          console.log('Unknown tool:', toolName)
+          return new Response(
+            JSON.stringify({
+              error: {
+                code: -1,
+                message: `Unknown tool: ${toolName}. Available tools: search_transportation`
+              }
+            }),
+            { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          )
         }
 
       default:

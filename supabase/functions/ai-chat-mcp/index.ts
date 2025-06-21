@@ -348,26 +348,22 @@ async function prepareMCPContext(mcpServers: MCPServer[], question: string, post
 
   let mcpData: string[] = []
 
-  // Query relevant MCP servers based on question content and post context
+  // Query all MCP servers to get their data
   for (const server of mcpServers) {
     try {
-      // If we have post context, prioritize servers that match the location or category
-      let relevantForPostContext = false
+      // Determine the generic search tool name based on server category
+      let toolName = 'search'
+      if (server.category === 'restaurant') toolName = 'search_restaurants'
+      else if (server.category === 'flight') toolName = 'search_flights'
+      else if (server.category === 'taxi') toolName = 'search_transportation'
+      else if (server.category === 'hotel') toolName = 'search_hotels'
+      else toolName = `search_${server.category}`
       
-      if (postContext) {
-        // For transportation category, always consider relevant for post context
-        if (server.category === 'taxi' || server.category === 'transportation') {
-          relevantForPostContext = true
-        }
-        
-        // For location-based services, check if the server might be relevant
-        if (postContext.location.toLowerCase().includes(server.name.toLowerCase()) ||
-            server.name.toLowerCase().includes(postContext.location.toLowerCase())) {
-          relevantForPostContext = true
-        }
-      }
+      // Extract location from post context if available
+      const location = postContext?.location || ''
       
-      const relevantData = await queryMCPServer(server, question, postContext?.location)
+      // Create a simple request that will return all data
+      const relevantData = await queryMCPServer(server, toolName, question, location)
       if (relevantData) {
         mcpData.push(`${server.name} (${server.category}): ${relevantData}`)
       }
@@ -387,57 +383,18 @@ ${mcpData.join('\n\n')}
 This is real-time business information that can help provide current details about services, availability, and offerings.`
 }
 
-async function queryMCPServer(server: MCPServer, question: string, postLocation?: string): Promise<string | null> {
+async function queryMCPServer(server: MCPServer, toolName: string, question: string, location: string): Promise<string | null> {
   try {
-    console.log(`Querying MCP server: ${server.name} (${server.category})`)
-    console.log(`Question: ${question}`)
+    console.log(`Querying MCP server: ${server.name} (${server.category}) with tool: ${toolName}`)
     
-    // Extract location and search terms from question for better search
-    const extractedLocation = postLocation || extractLocationFromQuestion(question)
-    const searchQuery = extractRestaurantSearchQuery(question)
-    
-    console.log(`Extracted location: ${extractedLocation}`)
-    console.log(`Extracted search query: ${searchQuery}`)
-    
-    // Create MCP request based on server category and question content
-    let mcpRequest: any
-    
-    if (server.category === 'restaurant') {
-      // Use the correct tool name for restaurant servers
-      mcpRequest = {
-        method: 'tools/call',
-        params: {
-          name: 'search_restaurants',
-          arguments: {
-            query: searchQuery || question,
-            ...(extractedLocation && { location: extractedLocation })
-          }
-        }
-      }
-    } else if (server.category === 'taxi' || server.category === 'transportation') {
-      // For transportation services
-      mcpRequest = {
-        method: 'tools/call',
-        params: {
-          name: 'search_transportation',
-          arguments: {
-            query: question,
-            ...(extractedLocation && { location: extractedLocation }),
-            type: 'taxi'
-          }
-        }
-      }
-    } else {
-      // For other categories, try to use a generic search tool
-      mcpRequest = {
-        method: 'tools/call',
-        params: {
-          name: 'search',
-          arguments: {
-            query: searchQuery || question,
-            category: server.category,
-            ...(extractedLocation && { location: extractedLocation })
-          }
+    // Create a generic MCP request that will return all data
+    const mcpRequest = {
+      method: 'tools/call',
+      params: {
+        name: toolName,
+        arguments: {
+          query: question,
+          location: location
         }
       }
     }
@@ -449,7 +406,10 @@ async function queryMCPServer(server: MCPServer, question: string, postLocation?
     }
 
     // Only add Authorization header if API key is provided and it's not a mock server
-    const isMockServer = server.endpoint.includes('mock-mcp-server')
+    const isMockServer = server.endpoint.includes('mock-mcp-server') || 
+                         server.endpoint.includes('mock-flight-server') || 
+                         server.endpoint.includes('mock-taxi-server') || 
+                         server.endpoint.includes('mock-hotel-server')
     if (!isMockServer && server.api_key?.trim()) {
       headers['Authorization'] = `Bearer ${server.api_key.trim()}`
     }

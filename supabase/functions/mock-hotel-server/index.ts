@@ -192,48 +192,21 @@ Deno.serve(async (req) => {
               tools: [
                 {
                   name: 'search_hotels',
-                  description: 'Search for hotels by location, price range, or amenities',
+                  description: 'Search for hotels (returns all hotel data regardless of parameters)',
                   inputSchema: {
                     type: 'object',
                     properties: {
                       location: {
                         type: 'string',
-                        description: 'City or area to search for hotels'
+                        description: 'City or area to search for hotels (optional)'
                       },
                       price_range: {
                         type: 'string',
-                        description: 'Price range ($ for budget, $$ for mid-range, $$$ for luxury)'
+                        description: 'Price range (optional)'
                       },
-                      amenities: {
+                      query: {
                         type: 'string',
-                        description: 'Comma-separated list of desired amenities'
-                      }
-                    }
-                  }
-                },
-                {
-                  name: 'get_hotel_details',
-                  description: 'Get detailed information about a specific hotel',
-                  inputSchema: {
-                    type: 'object',
-                    properties: {
-                      hotel_id: {
-                        type: 'string',
-                        description: 'Hotel ID'
-                      }
-                    },
-                    required: ['hotel_id']
-                  }
-                },
-                {
-                  name: 'check_hotel_availability',
-                  description: 'Check availability for hotels in a location',
-                  inputSchema: {
-                    type: 'object',
-                    properties: {
-                      location: {
-                        type: 'string',
-                        description: 'Location to check hotel availability'
+                        description: 'General search query (optional)'
                       }
                     }
                   }
@@ -250,130 +223,46 @@ Deno.serve(async (req) => {
         const args = mcpRequest.params?.arguments || {}
         console.log('Tool name:', toolName, 'Args:', args)
 
-        switch (toolName) {
-          case 'search_hotels':
-            const location = args.location?.toLowerCase() || ''
-            const priceRange = args.price_range?.toLowerCase() || ''
-            const amenities = args.amenities?.toLowerCase().split(',').map((a: string) => a.trim()) || []
-            
-            let filteredHotels = mockHotels
-            
-            if (location || priceRange || amenities.length > 0) {
-              filteredHotels = mockHotels.filter(hotel => {
-                const matchesLocation = !location || 
-                  hotel.location.toLowerCase().includes(location)
-                
-                const matchesPriceRange = !priceRange || 
-                  hotel.priceRange.toLowerCase().includes(priceRange)
-                
-                const matchesAmenities = amenities.length === 0 || 
-                  amenities.every(amenity => 
-                    hotel.amenities.some(a => a.toLowerCase().includes(amenity))
-                  )
-                
-                return matchesLocation && matchesPriceRange && matchesAmenities
-              })
-            }
+        if (toolName === 'search_hotels') {
+          // ALWAYS return all hotel data regardless of parameters
+          console.log('Returning all hotel data for AI processing')
+          
+          const formattedHotels = mockHotels.map(h => 
+            `🏨 **${h.name}** (${h.stars}⭐)\n` +
+            `   Location: ${h.location}\n` +
+            `   Address: ${h.address}\n` +
+            `   Price Range: ${h.priceRange} | Rating: ${h.rating}/5 (${h.reviews} reviews)\n` +
+            `   Room Types: ${h.roomTypes.join(', ')}\n` +
+            `   Key Amenities: ${h.amenities.join(', ')}\n` +
+            `   Nearby: ${h.nearbyAttractions.join(', ')}\n` +
+            `   Availability: ${h.availability}\n` +
+            `   ${h.description}\n`
+          ).join('\n')
 
-            console.log('Hotel search results:', filteredHotels.length, 'hotels found')
-
-            return new Response(
-              JSON.stringify({
-                result: {
-                  content: [
-                    {
-                      type: 'text',
-                      text: `Found ${filteredHotels.length} hotels:\n\n${filteredHotels.map(h => 
-                        `🏨 **${h.name}** (${h.stars}⭐)\n` +
-                        `   Location: ${h.location}\n` +
-                        `   Price Range: ${h.priceRange} | Rating: ${h.rating}/5 (${h.reviews} reviews)\n` +
-                        `   Room Types: ${h.roomTypes.join(', ')}\n` +
-                        `   Key Amenities: ${h.amenities.slice(0, 3).join(', ')}${h.amenities.length > 3 ? '...' : ''}\n` +
-                        `   Availability: ${h.availability}\n` +
-                        `   ${h.description}\n`
-                      ).join('\n')}`
-                    }
-                  ]
-                }
-              }),
-              { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-            )
-
-          case 'get_hotel_details':
-            const hotelId = args.hotel_id
-            const hotel = mockHotels.find(h => h.id === hotelId)
-            
-            if (!hotel) {
-              return new Response(
-                JSON.stringify({
-                  error: {
-                    code: -1,
-                    message: 'Hotel not found'
+          return new Response(
+            JSON.stringify({
+              result: {
+                content: [
+                  {
+                    type: 'text',
+                    text: `Here is our complete hotel database (${mockHotels.length} hotels):\n\n${formattedHotels}\n\nNote: This is mock hotel data. The AI should extract relevant information based on the user's query and location.`
                   }
-                }),
-                { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-              )
-            }
-
-            return new Response(
-              JSON.stringify({
-                result: {
-                  content: [
-                    {
-                      type: 'text',
-                      text: `🏨 **${hotel.name}**\n\n` +
-                            `📍 Location: ${hotel.location}\n` +
-                            `🏢 Address: ${hotel.address}\n` +
-                            `⭐ Rating: ${hotel.stars} stars (${hotel.rating}/5 from ${hotel.reviews} reviews)\n` +
-                            `💰 Price Range: ${hotel.priceRange}\n` +
-                            `🛏️ Room Types: ${hotel.roomTypes.join(', ')}\n` +
-                            `📅 Availability: ${hotel.availability}\n\n` +
-                            `**Amenities:**\n${hotel.amenities.map(a => `• ${a}`).join('\n')}\n\n` +
-                            `**Nearby Attractions:**\n${hotel.nearbyAttractions.map(a => `• ${a}`).join('\n')}\n\n` +
-                            `**Description:** ${hotel.description}`
-                    }
-                  ]
-                }
-              }),
-              { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-            )
-
-          case 'check_hotel_availability':
-            const checkLocation = args.location?.toLowerCase() || ''
-            const availableHotels = mockHotels.filter(h => 
-              h.availability === 'Available' && 
-              (!checkLocation || h.location.toLowerCase().includes(checkLocation))
-            )
-
-            return new Response(
-              JSON.stringify({
-                result: {
-                  content: [
-                    {
-                      type: 'text',
-                      text: `🟢 **Available Hotels** ${checkLocation ? `in ${args.location}` : ''}:\n\n${availableHotels.map(h => 
-                        `• **${h.name}** (${h.stars}⭐) - ${h.location}\n` +
-                        `  Price Range: ${h.priceRange} | Rating: ${h.rating}/5 | Room Types: ${h.roomTypes.join(', ')}`
-                      ).join('\n')}\n\n` +
-                      `Total available hotels: ${availableHotels.length}`
-                    }
-                  ]
-                }
-              }),
-              { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-            )
-
-          default:
-            console.log('Unknown tool:', toolName)
-            return new Response(
-              JSON.stringify({
-                error: {
-                  code: -1,
-                  message: `Unknown tool: ${toolName}`
-                }
-              }),
-              { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-            )
+                ]
+              }
+            }),
+            { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          )
+        } else {
+          console.log('Unknown tool:', toolName)
+          return new Response(
+            JSON.stringify({
+              error: {
+                code: -1,
+                message: `Unknown tool: ${toolName}. Available tools: search_hotels`
+              }
+            }),
+            { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          )
         }
 
       default:
