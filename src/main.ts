@@ -388,7 +388,10 @@ class TravelSocialApp {
         (userId) => this.handleFollow(userId),
         (userId) => this.handleUnfollow(userId),
         true, // Show follow button in feed
-        (userId) => this.navigateToProfile(userId) // Navigate to user profile when clicked
+        (userId) => this.navigateToProfile(userId), // Navigate to user profile when clicked
+        false, // Not own profile
+        undefined, // No delete handler in feed
+        (post) => this.navigateToAIChat(post) // Navigate to AI chat with post context
       );
       feedSection.appendChild(postCard);
     });

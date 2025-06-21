@@ -12,7 +12,8 @@ export function createPostCard(
   showFollowButton: boolean = false,
   onUserClick?: (userId: string) => void,
   isOwnProfile: boolean = false,
-  onDelete?: (postId: string) => void
+  onDelete?: (postId: string) => void,
+  onAskAI?: (post: Post) => void
 ): HTMLElement {
   const card = document.createElement('div');
   card.className = 'post-card';
@@ -135,6 +136,12 @@ export function createPostCard(
           <span class="icon">💬</span>
           <span class="count">${post.comments?.length || 0}</span>
         </button>
+        ${authState.isAuthenticated && onAskAI ? `
+          <button class="action-btn ask-ai-btn" data-post-id="${post.id}">
+            <span class="icon">🤖</span>
+            <span class="text">Ask AI</span>
+          </button>
+        ` : ''}
       </div>
       
       <div class="comments-section">
@@ -223,6 +230,18 @@ export function createPostCard(
         }
         
         updatePostCard();
+      });
+    }
+    
+    // Ask AI functionality
+    const askAIBtn = card.querySelector('.ask-ai-btn') as HTMLButtonElement;
+    if (askAIBtn && onAskAI) {
+      askAIBtn.addEventListener('click', () => {
+        if (!authState.isAuthenticated) {
+          showAuthModal();
+          return;
+        }
+        onAskAI(post);
       });
     }
     

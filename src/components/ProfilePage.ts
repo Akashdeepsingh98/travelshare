@@ -12,7 +12,8 @@ export function createProfilePage(
   onNavigateToFollowing?: (userId: string, userName: string) => void,
   onNavigateToFollowers?: (userId: string, userName: string) => void,
   viewUserId?: string, // Optional: view another user's profile
-  onUserClick?: (userId: string) => void
+  onUserClick?: (userId: string) => void,
+  onAskAI?: (post: Post) => void
 ): HTMLElement {
   const container = document.createElement('div');
   container.className = 'profile-page';
@@ -338,9 +339,6 @@ export function createProfilePage(
       border-radius: 0.5rem;
       cursor: pointer;
       font-weight: 500;
-      display: inline-flex;
-      align-items: center;
-      gap: 0.5rem;
       transition: all 0.2s;
     }
 
@@ -1160,7 +1158,8 @@ export function createProfilePage(
       false, // Don't show follow button in profile
       onUserClick,
       isOwnProfile, // Pass whether this is own profile
-      (postId) => handleDeletePost(postId) // Pass delete handler
+      (postId) => handleDeletePost(postId), // Pass delete handler
+      onAskAI // Pass Ask AI handler
     );
     tempContainer.appendChild(postCard);
     return tempContainer.innerHTML;
@@ -1312,6 +1311,12 @@ export function createProfilePage(
       const likeBtn = card.querySelector('.like-btn') as HTMLButtonElement;
       if (likeBtn) {
         likeBtn.addEventListener('click', () => handleLike(post.id));
+      }
+      
+      // Ask AI button
+      const askAIBtn = card.querySelector('.ask-ai-btn') as HTMLButtonElement;
+      if (askAIBtn && onAskAI) {
+        askAIBtn.addEventListener('click', () => onAskAI(post));
       }
       
       // Comment functionality
