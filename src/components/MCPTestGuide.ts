@@ -1,3 +1,5 @@
+import { createMCPManager } from './MCPManager';
+
 export function createMCPTestGuide(): HTMLElement {
   const guide = document.createElement('div');
   guide.className = 'mcp-test-guide';
@@ -8,13 +10,26 @@ export function createMCPTestGuide(): HTMLElement {
     ? currentOrigin.replace('5173', '54321') + '/functions/v1/mock-mcp-server-static'
     : `${currentOrigin}/functions/v1/mock-mcp-server-static`;
   
+  const mockFlightUrl = currentOrigin.includes('localhost:5173') 
+    ? currentOrigin.replace('5173', '54321') + '/functions/v1/mock-flight-server'
+    : `${currentOrigin}/functions/v1/mock-flight-server`;
+  
+  const mockTaxiUrl = currentOrigin.includes('localhost:5173') 
+    ? currentOrigin.replace('5173', '54321') + '/functions/v1/mock-taxi-server'
+    : `${currentOrigin}/functions/v1/mock-taxi-server`;
+  
+  const mockHotelUrl = currentOrigin.includes('localhost:5173') 
+    ? currentOrigin.replace('5173', '54321') + '/functions/v1/mock-hotel-server'
+    : `${currentOrigin}/functions/v1/mock-hotel-server`;
+  
   guide.innerHTML = `
     <div class="mcp-guide-content">
-      <h2>🔌 MCP Server Testing Guide (Static Data)</h2>
+      <h2>🔌 MCP Server Testing Guide</h2>
       
       <div class="guide-section">
-        <h3>Step 1: Add Static Mock MCP Server</h3>
-        <p>Go to your Profile → Manage MCP Servers and add this test server:</p>
+        <h3>Step 1: Add Mock MCP Servers</h3>
+        <p>Go to your Profile → Manage MCP Servers and add these test servers:</p>
+        
         <div class="code-block">
           <strong>Name:</strong> Static Restaurant Data<br>
           <strong>Description:</strong> Fixed restaurant data for AI extraction testing<br>
@@ -22,106 +37,120 @@ export function createMCPTestGuide(): HTMLElement {
           <strong>Endpoint:</strong> ${mockServerUrl}<br>
           <strong>API Key:</strong> (leave empty - no authentication required)
         </div>
+        
+        <div class="code-block">
+          <strong>Name:</strong> Flight Booking Service<br>
+          <strong>Description:</strong> Flight search and booking information<br>
+          <strong>Category:</strong> Flight<br>
+          <strong>Endpoint:</strong> ${mockFlightUrl}<br>
+          <strong>API Key:</strong> (leave empty - no authentication required)
+        </div>
+        
+        <div class="code-block">
+          <strong>Name:</strong> Taxi & Transportation<br>
+          <strong>Description:</strong> Taxi and transportation services<br>
+          <strong>Category:</strong> Taxi<br>
+          <strong>Endpoint:</strong> ${mockTaxiUrl}<br>
+          <strong>API Key:</strong> (leave empty - no authentication required)
+        </div>
+        
+        <div class="code-block">
+          <strong>Name:</strong> Hotel Booking Service<br>
+          <strong>Description:</strong> Hotel search and booking information<br>
+          <strong>Category:</strong> Hotel<br>
+          <strong>Endpoint:</strong> ${mockHotelUrl}<br>
+          <strong>API Key:</strong> (leave empty - no authentication required)
+        </div>
+        
         <div class="guide-note">
-          <strong>Important:</strong> Leave the API Key field empty. This mock server doesn't require authentication and always returns the same data.
+          <strong>Important:</strong> Leave the API Key field empty for all mock servers. These mock servers don't require authentication and always return the same data.
         </div>
       </div>
       
       <div class="guide-section">
-        <h3>Step 2: Test Connection</h3>
-        <p>Click "Test Connection" to verify the MCP server is working. You should see:</p>
+        <h3>Step 2: Test Connections</h3>
+        <p>Click "Test Connection" for each MCP server to verify they are working. You should see:</p>
         <ul>
           <li>✅ Connection successful!</li>
-          <li>Server name: TravelShare Static Mock MCP Server</li>
-          <li>Available tools: search_restaurants</li>
+          <li>Server names and available tools will be displayed</li>
+          <li>Each server provides different capabilities based on its category</li>
         </ul>
       </div>
       
       <div class="guide-section">
-        <h3>Step 3: Try AI Chat Queries</h3>
-        <p>Go to AI Chat and try these example queries. The AI will receive the <strong>entire fixed dataset</strong> from the mock server and then use Gemini to extract and summarize the information:</p>
+        <h3>Step 3: Try AI Chat with Post Context</h3>
+        <p>There are two ways to use the AI chat with MCP data:</p>
+        <ol>
+          <li><strong>From a post:</strong> Click the "Ask AI" button on any post to start a chat with that post as context</li>
+          <li><strong>Direct AI chat:</strong> Use the AI Chat tab in the main navigation</li>
+        </ol>
+        
+        <p>Try these example queries with a post about a specific location:</p>
         <ul>
-          <li>"What restaurants are available?"</li>
-          <li>"Show me Italian restaurants"</li>
-          <li>"Find restaurants in London"</li>
-          <li>"What's the highest rated restaurant?"</li>
-          <li>"Which restaurants are available for booking?"</li>
-          <li>"Tell me about Japanese cuisine options"</li>
-          <li>"What are the price ranges of the restaurants?"</li>
-          <li>"Which restaurant serves the best sushi?"</li>
+          <li>"How can I get to this place?"</li>
+          <li>"What restaurants are near this location?"</li>
+          <li>"Find me flights to this destination"</li>
+          <li>"What hotels are available here?"</li>
+          <li>"What's the best way to get around this area?"</li>
         </ul>
       </div>
       
       <div class="guide-section">
         <h3>How It Works</h3>
-        <p>This static mock server demonstrates AI extraction capabilities:</p>
+        <p>The mock MCP servers demonstrate how AI can integrate with business data:</p>
         <ul>
-          <li><strong>Fixed Data:</strong> The server always returns the same 5 restaurants regardless of the query</li>
-          <li><strong>AI Processing:</strong> Gemini receives the full dataset and extracts relevant information based on your question</li>
-          <li><strong>Smart Filtering:</strong> The AI understands context and provides targeted answers from the complete data</li>
-          <li><strong>No Server Logic:</strong> All intelligence comes from the AI, not the mock server</li>
+          <li><strong>Restaurant Server:</strong> Provides fixed restaurant data for different cuisines and locations</li>
+          <li><strong>Flight Server:</strong> Offers flight information between major cities</li>
+          <li><strong>Taxi Server:</strong> Provides transportation options in various cities</li>
+          <li><strong>Hotel Server:</strong> Offers accommodation information in different locations</li>
         </ul>
+        <p>When you ask a question about a post, the AI:</p>
+        <ol>
+          <li>Analyzes the post content and location</li>
+          <li>Queries relevant MCP servers based on your question</li>
+          <li>Combines the post context, MCP data, and general knowledge</li>
+          <li>Provides a comprehensive response with real-time information</li>
+        </ol>
       </div>
       
       <div class="guide-section">
-        <h3>Static Data Provided to AI</h3>
-        <p>The mock server always provides this complete dataset to the AI:</p>
+        <h3>Example Scenarios</h3>
+        
+        <h4>Scenario 1: Restaurant Recommendations</h4>
+        <p>For a post about Tokyo:</p>
         <div class="code-block">
-          🍽️ <strong>Global Eats Cafe</strong> (New York, USA)<br>
-          &nbsp;&nbsp;&nbsp;Cuisine: International | Rating: 4.5⭐ | Price: $$<br>
-          &nbsp;&nbsp;&nbsp;Specialties: World Fusion Bowl, International Tapas, Global Street Food<br>
-          &nbsp;&nbsp;&nbsp;Hours: 8:00 AM - 10:00 PM | Status: Available<br><br>
-          
-          🍽️ <strong>Spice Route Bistro</strong> (London, UK)<br>
-          &nbsp;&nbsp;&nbsp;Cuisine: Indian | Rating: 4.7⭐ | Price: $$$<br>
-          &nbsp;&nbsp;&nbsp;Specialties: Butter Chicken, Biryani, Tandoori Platter<br>
-          &nbsp;&nbsp;&nbsp;Hours: 12:00 PM - 11:00 PM | Status: Limited Seats<br><br>
-          
-          🍽️ <strong>La Petite Creperie</strong> (Paris, France)<br>
-          &nbsp;&nbsp;&nbsp;Cuisine: French | Rating: 4.2⭐ | Price: $$<br>
-          &nbsp;&nbsp;&nbsp;Specialties: Sweet Crepes, Savory Galettes, French Onion Soup<br>
-          &nbsp;&nbsp;&nbsp;Hours: 7:00 AM - 9:00 PM | Status: Available<br><br>
-          
-          🍽️ <strong>Sakura Sushi Bar</strong> (Tokyo, Japan)<br>
-          &nbsp;&nbsp;&nbsp;Cuisine: Japanese | Rating: 4.8⭐ | Price: $$$$<br>
-          &nbsp;&nbsp;&nbsp;Specialties: Omakase, Fresh Sashimi, Specialty Rolls<br>
-          &nbsp;&nbsp;&nbsp;Hours: 5:00 PM - 12:00 AM | Status: Fully Booked<br><br>
-          
-          🍽️ <strong>Mama Mia Pizzeria</strong> (Rome, Italy)<br>
-          &nbsp;&nbsp;&nbsp;Cuisine: Italian | Rating: 4.4⭐ | Price: $<br>
-          &nbsp;&nbsp;&nbsp;Specialties: Margherita Pizza, Carbonara, Tiramisu<br>
-          &nbsp;&nbsp;&nbsp;Hours: 11:00 AM - 11:00 PM | Status: Available
+          <strong>Ask:</strong> "What restaurants should I try near here?"<br>
+          <strong>AI will:</strong> Query the restaurant MCP server and recommend Japanese restaurants like Sakura Sushi Bar
         </div>
-      </div>
-      
-      <div class="guide-section">
-        <h3>Testing Different Query Types</h3>
-        <p>Try these specific queries to test AI extraction capabilities:</p>
-        <ul>
-          <li><strong>Location-based:</strong> "What restaurants are in Europe?"</li>
-          <li><strong>Cuisine-based:</strong> "Show me Asian restaurants"</li>
-          <li><strong>Price-based:</strong> "What are the budget-friendly options?"</li>
-          <li><strong>Availability-based:</strong> "Which restaurants can I book right now?"</li>
-          <li><strong>Rating-based:</strong> "What's the best rated restaurant?"</li>
-          <li><strong>Time-based:</strong> "Which restaurants are open for breakfast?"</li>
-          <li><strong>Specialty-based:</strong> "Where can I get good pizza?"</li>
-        </ul>
+        
+        <h4>Scenario 2: Transportation Options</h4>
+        <p>For a post about London:</p>
+        <div class="code-block">
+          <strong>Ask:</strong> "How can I get around this city?"<br>
+          <strong>AI will:</strong> Query the taxi MCP server and suggest London Black Cabs and other transportation options
+        </div>
+        
+        <h4>Scenario 3: Travel Planning</h4>
+        <p>For a post about Rome:</p>
+        <div class="code-block">
+          <strong>Ask:</strong> "How can I plan a trip here from New York?"<br>
+          <strong>AI will:</strong> Query the flight MCP server for New York to Rome flights and the hotel MCP server for accommodations
+        </div>
       </div>
       
       <div class="guide-section">
         <h3>Troubleshooting</h3>
         <p>If you encounter issues:</p>
         <ul>
-          <li><strong>Authentication failed:</strong> Make sure the API Key field is empty</li>
-          <li><strong>Connection timeout:</strong> Check that the endpoint URL is correct</li>
-          <li><strong>Server not found:</strong> Verify the URL format and try again</li>
-          <li><strong>No MCP data in AI chat:</strong> Ensure the server is marked as "Active"</li>
-          <li><strong>AI not using MCP data:</strong> Try more specific restaurant-related queries</li>
+          <li><strong>Connection failed:</strong> Make sure the endpoint URLs are correct</li>
+          <li><strong>No MCP data in AI chat:</strong> Ensure the servers are marked as "Active"</li>
+          <li><strong>AI not using MCP data:</strong> Try more specific questions related to restaurants, flights, taxis, or hotels</li>
+          <li><strong>Post context not working:</strong> Make sure you're clicking the "Ask AI" button on a post</li>
         </ul>
       </div>
       
       <div class="guide-note">
-        <strong>Note:</strong> This static mock server demonstrates how AI can extract and filter information from a complete dataset, simulating real-world scenarios where MCP servers provide comprehensive data that needs intelligent processing.
+        <strong>Note:</strong> These mock servers demonstrate how AI can integrate with business data sources to provide real-time information. In a production environment, these would connect to actual business systems with live data.
       </div>
     </div>
   `;
