@@ -29,6 +29,7 @@ class TravelSocialApp {
   private postViewerData: { post: Post; allPosts: Post[] } | null = null;
   private viewData: ViewData = {};
   private boltBadge: HTMLElement;
+  private aiChatContextPost: Post | null = null;
 
   constructor() {
     this.appContainer = document.querySelector('#app')!;
@@ -182,12 +183,14 @@ class TravelSocialApp {
   private navigateToProfile(userId?: string) {
     this.currentView = 'profile';
     this.viewData = { userId };
+    this.aiChatContextPost = null;
     this.render();
   }
 
   private navigateToFeed() {
     this.currentView = 'feed';
     this.viewData = {};
+    this.aiChatContextPost = null;
     this.render();
     this.loadPosts();
   }
@@ -195,30 +198,35 @@ class TravelSocialApp {
   private navigateToExplore() {
     this.currentView = 'explore';
     this.viewData = {};
+    this.aiChatContextPost = null;
     this.render();
   }
 
-  private navigateToAIChat() {
+  private navigateToAIChat(postContext?: Post) {
     this.currentView = 'ai-chat';
     this.viewData = {};
+    this.aiChatContextPost = postContext || null;
     this.render();
   }
 
   private navigateToAbout() {
     this.currentView = 'about';
     this.viewData = {};
+    this.aiChatContextPost = null;
     this.render();
   }
 
   private navigateToFollowing(userId: string, userName: string) {
     this.currentView = 'following';
     this.viewData = { userId, userName };
+    this.aiChatContextPost = null;
     this.render();
   }
 
   private navigateToFollowers(userId: string, userName: string) {
     this.currentView = 'followers';
     this.viewData = { userId, userName };
+    this.aiChatContextPost = null;
     this.render();
   }
 
@@ -246,7 +254,8 @@ class TravelSocialApp {
         (postId) => this.handleLike(postId),
         (postId, comment) => this.handleComment(postId, comment),
         (userId) => this.handleFollow(userId),
-        (userId) => this.handleUnfollow(userId)
+        (userId) => this.handleUnfollow(userId),
+        (post) => this.navigateToAIChat(post)
       );
       this.appContainer.appendChild(postViewer);
       document.body.style.overflow = 'hidden';
@@ -259,7 +268,7 @@ class TravelSocialApp {
         this.appContainer.appendChild(aboutPage);
       } else if (this.currentView === 'ai-chat') {
         // AI Chat page
-        const aiPage = createAIPage(() => this.navigateToFeed());
+        const aiPage = createAIPage(() => this.navigateToFeed(), this.aiChatContextPost);
         this.appContainer.appendChild(aiPage);
       } else if (this.currentView === 'profile') {
         // Profile page

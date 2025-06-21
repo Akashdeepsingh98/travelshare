@@ -7,9 +7,21 @@ const corsHeaders = {
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
 }
 
+interface PostContext {
+  id: string;
+  location: string;
+  content: string;
+  image_url?: string;
+  media_urls?: string[];
+  media_types?: string[];
+  user_name?: string;
+  created_at: string;
+}
+
 interface ChatRequest {
   question: string;
   userId?: string;
+  postContext?: PostContext;
 }
 
 interface MCPServer {
@@ -34,7 +46,7 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
 
-    const { question, userId }: ChatRequest = await req.json()
+    const { question, userId, postContext }: ChatRequest = await req.json()
 
     if (!question?.trim()) {
       return new Response(
@@ -105,16 +117,22 @@ Deno.serve(async (req) => {
     // Prepare context from posts
     const postsContext = prepareTravelContext(posts || [])
     
+    // Prepare post-specific context if provided
+    const postSpecificContext = postContext ? preparePostContext(postContext) : null
+    
     // Prepare MCP context
-    const mcpContext = await prepareMCPContext(mcpServers, question)
+    const mcpContext = await prepareMCPContext(mcpServers, question, postContext)
 
-    // Analyze relevant images from posts
-    const imageAnalysis = await analyzeRelevantImages(posts || [], question, apiKey)
+    // Analyze relevant images from posts (including the specific post if provided)
+    const imageAnalysis = await analyzeRelevantImages(posts || [], question, apiKey, postContext)
 
     // Create the prompt for Gemini
     const prompt = `You are TravelShare AI, a helpful travel assistant that provides personalized recommendations based on real traveler experiences from a travel social media platform, real-time business data through MCP servers, and visual analysis of travel photos.
 
-CONTEXT FROM REAL TRAVELER POSTS:
+${postSpecificContext ? `SPECIFIC POST CONTEXT:
+${postSpecificContext}
+
+` : ''}CONTEXT FROM REAL TRAVELER POSTS:
 ${postsContext}
 
 ${mcpContext ? `REAL-TIME BUSINESS DATA (via MCP):
@@ -127,7 +145,7 @@ ${imageAnalysis}
 
 Your role:
 - Answer travel-related questions using the provided real traveler data, MCP business data, and visual insights from photos
-- Provide helpful, accurate, and engaging travel advice
+- ${postSpecificContext ? 'Pay special attention to the specific post context provided and answer questions related to that location and experience' : 'Provide helpful, accurate, and engaging travel advice'}
 - Reference specific locations and experiences from the community when relevant
 - Use real-time business data from MCP servers when available (restaurants, hotels, flights, etc.)
 - Incorporate visual insights from travel photos to enhance recommendations
@@ -137,7 +155,7 @@ Your role:
 
 Guidelines:
 - Use the real post data to provide authentic recommendations
-- Leverage MCP business data for current information (menus, availability, prices, etc.)
+- ${postSpecificContext ? 'When answering about the specific post, reference the location, content, and any visual elements from that post' : 'Leverage MCP business data for current information (menus, availability, prices, etc.)'}
 - Reference visual elements from photos when relevant (architecture, landscapes, food, activities)
 - Mention specific destinations that travelers have visited
 - Reference popular spots based on likes and engagement
@@ -147,6 +165,7 @@ Guidelines:
 - Limit response to about 600-700 words
 - When using MCP data, mention that it's real-time business information
 - When referencing visual analysis, mention insights from traveler photos
+- ${postSpecificContext ? 'If asked about transportation or services related to the post location, use MCP data if available' : ''}
 
 Please provide a helpful response to the user's travel question.`
 
@@ -168,7 +187,8 @@ Please provide a helpful response to the user's travel question.`
           postsCount: posts?.length || 0,
           mcpServersUsed: mcpServers.length,
           imagesAnalyzed: imageAnalysis ? 'Yes' : 'No',
-          provider: 'gemini-mcp-vision'
+          provider: 'gemini-mcp-vision',
+          postContextUsed: postContext ? 'Yes' : 'No'
         }),
         { 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
@@ -250,6 +270,27 @@ Please provide a helpful response to the user's travel question.`
   }
 })
 
+function preparePostContext(postContext: PostContext): string {
+  const date = new Date(postContext.created_at).toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
+  })
+  
+  const hasMedia = postContext.image_url || (postContext.media_urls && postContext.media_urls.length > 0)
+  
+  return `USER IS ASKING ABOUT THIS SPECIFIC POST:
+- Location: ${postContext.location}
+- Posted by: ${postContext.user_name || 'Unknown user'}
+- Date: ${date}
+- Contains media: ${hasMedia ? 'Yes' : 'No'}
+- Post content: "${postContext.content}"
+
+This post is the main context for the user's question. Focus your answer on this specific location and content.
+If the user is asking about transportation, accommodations, or services related to this location, use MCP data if available.
+If the post contains media that has been analyzed, reference visual elements from the analysis.`
+}
+
 function prepareTravelContext(posts: any[]): string {
   if (!posts || posts.length === 0) {
     return "No travel posts available in the community yet."
@@ -300,17 +341,33 @@ Use this real data to provide authentic, community-based travel recommendations.
   return context
 }
 
-async function prepareMCPContext(mcpServers: MCPServer[], question: string): Promise<string | null> {
+async function prepareMCPContext(mcpServers: MCPServer[], question: string, postContext?: PostContext): Promise<string | null> {
   if (!mcpServers || mcpServers.length === 0) {
     return null
   }
 
   let mcpData: string[] = []
 
-  // Query relevant MCP servers based on question content
+  // Query relevant MCP servers based on question content and post context
   for (const server of mcpServers) {
     try {
-      const relevantData = await queryMCPServer(server, question)
+      // If we have post context, prioritize servers that match the location or category
+      let relevantForPostContext = false
+      
+      if (postContext) {
+        // For transportation category, always consider relevant for post context
+        if (server.category === 'taxi' || server.category === 'transportation') {
+          relevantForPostContext = true
+        }
+        
+        // For location-based services, check if the server might be relevant
+        if (postContext.location.toLowerCase().includes(server.name.toLowerCase()) ||
+            server.name.toLowerCase().includes(postContext.location.toLowerCase())) {
+          relevantForPostContext = true
+        }
+      }
+      
+      const relevantData = await queryMCPServer(server, question, postContext?.location)
       if (relevantData) {
         mcpData.push(`${server.name} (${server.category}): ${relevantData}`)
       }
@@ -330,13 +387,13 @@ ${mcpData.join('\n\n')}
 This is real-time business information that can help provide current details about services, availability, and offerings.`
 }
 
-async function queryMCPServer(server: MCPServer, question: string): Promise<string | null> {
+async function queryMCPServer(server: MCPServer, question: string, postLocation?: string): Promise<string | null> {
   try {
     console.log(`Querying MCP server: ${server.name} (${server.category})`)
     console.log(`Question: ${question}`)
     
     // Extract location and search terms from question for better search
-    const extractedLocation = extractLocationFromQuestion(question)
+    const extractedLocation = postLocation || extractLocationFromQuestion(question)
     const searchQuery = extractRestaurantSearchQuery(question)
     
     console.log(`Extracted location: ${extractedLocation}`)
@@ -354,6 +411,19 @@ async function queryMCPServer(server: MCPServer, question: string): Promise<stri
           arguments: {
             query: searchQuery || question,
             ...(extractedLocation && { location: extractedLocation })
+          }
+        }
+      }
+    } else if (server.category === 'taxi' || server.category === 'transportation') {
+      // For transportation services
+      mcpRequest = {
+        method: 'tools/call',
+        params: {
+          name: 'search_transportation',
+          arguments: {
+            query: question,
+            ...(extractedLocation && { location: extractedLocation }),
+            type: 'taxi'
           }
         }
       }
@@ -532,16 +602,40 @@ function extractRestaurantSearchQuery(question: string): string | null {
   return null
 }
 
-async function analyzeRelevantImages(posts: any[], question: string, apiKey: string): Promise<string | null> {
+async function analyzeRelevantImages(posts: any[], question: string, apiKey: string, postContext?: PostContext): Promise<string | null> {
   try {
+    // If we have a post context with media, prioritize analyzing that
+    let relevantPosts = []
+    
+    if (postContext && (postContext.image_url || (postContext.media_urls && postContext.media_urls.length > 0))) {
+      // Create a post-like object from the post context
+      const contextPost = {
+        id: postContext.id,
+        location: postContext.location,
+        content: postContext.content,
+        image_url: postContext.image_url,
+        media_urls: postContext.media_urls,
+        media_types: postContext.media_types,
+        user: { name: postContext.user_name || 'Unknown' },
+        likes_count: 0
+      }
+      
+      relevantPosts.push(contextPost)
+    }
+    
     // Filter posts that have images and are relevant to the question
     const postsWithImages = posts.filter(post => {
       const hasImages = post.image_url || (post.media_urls && post.media_urls.length > 0)
       if (!hasImages) return false
       
-      // Check if post is relevant to the question
+      // Check if post is relevant to the question or the post context
       const questionLower = question.toLowerCase()
       const postText = `${post.location} ${post.content}`.toLowerCase()
+      
+      // If we have post context, prioritize posts from the same location
+      if (postContext && post.location.toLowerCase().includes(postContext.location.toLowerCase())) {
+        return true
+      }
       
       // Simple relevance check - can be enhanced with more sophisticated matching
       const keywords = questionLower.split(' ').filter(word => word.length > 3)
@@ -550,14 +644,27 @@ async function analyzeRelevantImages(posts: any[], question: string, apiKey: str
       return isRelevant
     })
 
-    if (postsWithImages.length === 0) {
-      return null
+    // Add other relevant posts, but limit the total
+    if (postsWithImages.length > 0) {
+      // Sort by relevance (likes count as a proxy for relevance)
+      const sortedPosts = postsWithImages
+        .sort((a, b) => (b.likes_count || 0) - (a.likes_count || 0))
+        .slice(0, 4) // Limit to top 4 since we might already have the context post
+      
+      // Add these posts to our analysis list, avoiding duplicates
+      for (const post of sortedPosts) {
+        if (!relevantPosts.some(p => p.id === post.id)) {
+          relevantPosts.push(post)
+        }
+      }
     }
 
-    // Limit to top 5 most relevant posts to avoid API limits
-    const relevantPosts = postsWithImages
-      .sort((a, b) => (b.likes_count || 0) - (a.likes_count || 0))
-      .slice(0, 5)
+    // Limit to 5 posts total to avoid API limits
+    relevantPosts = relevantPosts.slice(0, 5)
+    
+    if (relevantPosts.length === 0) {
+      return null
+    }
 
     const genAI = new GoogleGenerativeAI(apiKey)
     const visionModel = genAI.getGenerativeModel({ model: "gemini-2.5-flash-preview-05-20" })
@@ -611,7 +718,12 @@ Context: "${post.content}"`
         ])
 
         const analysis = await result.response.text()
-        imageAnalyses.push(`📍 ${post.location}: ${analysis}`)
+        
+        // Mark if this is from the post context
+        const isContextPost = postContext && post.id === postContext.id
+        const postPrefix = isContextPost ? '📌 FROM CURRENT POST - ' : '📍 '
+        
+        imageAnalyses.push(`${postPrefix}${post.location}: ${analysis}`)
 
       } catch (imageError) {
         console.error(`Error analyzing image for post ${post.id}:`, imageError)

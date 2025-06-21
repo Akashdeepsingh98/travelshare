@@ -10,7 +10,8 @@ export function createPostViewer(
   onLike: (postId: string) => void,
   onComment: (postId: string, comment: string) => void,
   onFollow: (userId: string) => void,
-  onUnfollow: (userId: string) => void
+  onUnfollow: (userId: string) => void,
+  onAskAI?: (post: Post) => void
 ): HTMLElement {
   const container = document.createElement('div');
   container.className = 'post-viewer-modal';
@@ -137,6 +138,12 @@ export function createPostViewer(
                 <span class="icon">💬</span>
                 <span class="count">${currentPost.comments?.length || 0}</span>
               </button>
+              ${authState.isAuthenticated && onAskAI ? `
+                <button class="action-btn ask-ai-btn" data-post-id="${currentPost.id}">
+                  <span class="icon">🤖</span>
+                  <span class="text">Ask AI</span>
+                </button>
+              ` : ''}
             </div>
             
             <div class="post-viewer-comments">
@@ -174,6 +181,7 @@ export function createPostViewer(
     const nextBtn = container.querySelector('.next-btn') as HTMLButtonElement;
     const likeBtn = container.querySelector('.like-btn') as HTMLButtonElement;
     const followBtn = container.querySelector('.follow-btn') as HTMLButtonElement;
+    const askAIBtn = container.querySelector('.ask-ai-btn') as HTMLButtonElement;
     
     backdrop.addEventListener('click', onClose);
     closeBtn.addEventListener('click', onClose);
@@ -228,6 +236,17 @@ export function createPostViewer(
         }
         
         renderPostViewer();
+      });
+    }
+    
+    // Ask AI functionality
+    if (askAIBtn && onAskAI) {
+      askAIBtn.addEventListener('click', () => {
+        if (!authState.isAuthenticated) {
+          showAuthModal();
+          return;
+        }
+        onAskAI(currentPost);
       });
     }
     

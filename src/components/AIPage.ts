@@ -1,5 +1,6 @@
 import { authManager } from '../auth';
 import { showAuthModal } from './AuthModal';
+import { Post } from '../types';
 
 interface ChatMessage {
   id: string;
@@ -8,7 +9,7 @@ interface ChatMessage {
   timestamp: Date;
 }
 
-export function createAIPage(onNavigateBack: () => void): HTMLElement {
+export function createAIPage(onNavigateBack: () => void, postContext?: Post | null): HTMLElement {
   const container = document.createElement('div');
   container.className = 'ai-page';
   
@@ -49,13 +50,38 @@ export function createAIPage(onNavigateBack: () => void): HTMLElement {
               <div class="feature-badge">🔌 MCP Integration</div>
               <div class="feature-badge">💡 Smart Recommendations</div>
             </div>
+            ${postContext ? `
+              <div class="post-context-info">
+                <h4>💬 Asking about this post:</h4>
+                <div class="context-post-preview">
+                  <div class="context-post-header">
+                    <span class="context-location">📍 ${postContext.location}</span>
+                    <span class="context-author">by ${postContext.user?.name || 'Unknown'}</span>
+                  </div>
+                  <div class="context-post-content">"${postContext.content.length > 100 ? postContext.content.substring(0, 100) + '...' : postContext.content}"</div>
+                  ${(postContext.image_url || (postContext.media_urls && postContext.media_urls.length > 0)) ? `
+                    <div class="context-post-media">
+                      <img src="${postContext.image_url || postContext.media_urls![0]}" alt="Post media" class="context-media-preview">
+                    </div>
+                  ` : ''}
+                </div>
+              </div>
+            ` : ''}
             <div class="suggestion-chips">
-              <button class="suggestion-chip" data-question="What are the most popular travel destinations in our community?">Most popular destinations</button>
-              <button class="suggestion-chip" data-question="Tell me about travel experiences in Japan with photos">Japan experiences</button>
-              <button class="suggestion-chip" data-question="What are some hidden gems for travel?">Hidden gems</button>
-              <button class="suggestion-chip" data-question="Best places for photography based on community posts?">Photography spots</button>
-              <button class="suggestion-chip" data-question="What should I know before traveling to Europe?">Europe travel tips</button>
-              <button class="suggestion-chip" data-question="Budget travel advice from the community">Budget travel tips</button>
+              ${postContext ? `
+                <button class="suggestion-chip" data-question="Tell me more about ${postContext.location}">About this location</button>
+                <button class="suggestion-chip" data-question="How can I get to ${postContext.location}?">How to get there</button>
+                <button class="suggestion-chip" data-question="What are the best things to do in ${postContext.location}?">Things to do</button>
+                <button class="suggestion-chip" data-question="Where can I eat near ${postContext.location}?">Food & dining</button>
+                <button class="suggestion-chip" data-question="What's the best time to visit ${postContext.location}?">Best time to visit</button>
+              ` : `
+                <button class="suggestion-chip" data-question="What are the most popular travel destinations in our community?">Most popular destinations</button>
+                <button class="suggestion-chip" data-question="Tell me about travel experiences in Japan with photos">Japan experiences</button>
+                <button class="suggestion-chip" data-question="What are some hidden gems for travel?">Hidden gems</button>
+                <button class="suggestion-chip" data-question="Best places for photography based on community posts?">Photography spots</button>
+                <button class="suggestion-chip" data-question="What should I know before traveling to Europe?">Europe travel tips</button>
+                <button class="suggestion-chip" data-question="Budget travel advice from the community">Budget travel tips</button>
+              `}
             </div>
           </div>
         </div>
@@ -110,7 +136,7 @@ export function createAIPage(onNavigateBack: () => void): HTMLElement {
         <button class="back-btn">← Back</button>
         <div class="ai-header-content">
           <h1>🤖 TravelShare AI</h1>
-          <p class="ai-subtitle">Ask me anything about travel destinations and experiences!</p>
+          <p class="ai-subtitle">${postContext ? `Ask me about this post from ${postContext.location}` : 'Ask me anything about travel destinations and experiences!'}</p>
         </div>
       </div>
       
@@ -151,7 +177,7 @@ export function createAIPage(onNavigateBack: () => void): HTMLElement {
               <div class="chat-input-wrapper">
                 <input 
                   type="text" 
-                  placeholder="Ask me about travel destinations, experiences, tips..." 
+                  placeholder="${postContext ? `Ask about ${postContext.location}...` : 'Ask me about travel destinations, experiences, tips...'}" 
                   class="chat-input" 
                   id="chat-input" 
                   ${isLoading ? 'disabled' : ''}
@@ -237,16 +263,32 @@ export function createAIPage(onNavigateBack: () => void): HTMLElement {
     try {
       const authState = authManager.getAuthState();
       
+      const requestBody: any = {
+        question,
+        userId: authState.currentUser?.id
+      };
+      
+      // Include post context if available
+      if (postContext) {
+        requestBody.postContext = {
+          id: postContext.id,
+          location: postContext.location,
+          content: postContext.content,
+          image_url: postContext.image_url,
+          media_urls: postContext.media_urls,
+          media_types: postContext.media_types,
+          user_name: postContext.user?.name,
+          created_at: postContext.created_at
+        };
+      }
+      
       const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-chat-mcp`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
         },
-        body: JSON.stringify({
-          question,
-          userId: authState.currentUser?.id
-        })
+        body: JSON.stringify(requestBody)
       });
 
       // Get response text for better error handling
@@ -297,9 +339,10 @@ export function createAIPage(onNavigateBack: () => void): HTMLElement {
       let aiResponseContent = data.answer;
       
       // Add metadata about the analysis
-      if (data.imagesAnalyzed === 'Yes' || data.mcpServersUsed > 0) {
+      if (data.imagesAnalyzed === 'Yes' || data.mcpServersUsed > 0 || postContext) {
         aiResponseContent += '\n\n---\n*Enhanced with: ';
         const enhancements = [];
+        if (postContext) enhancements.push('📍 Post context');
         if (data.imagesAnalyzed === 'Yes') enhancements.push('📷 Photo analysis');
         if (data.mcpServersUsed > 0) enhancements.push(`🔌 ${data.mcpServersUsed} MCP server${data.mcpServersUsed > 1 ? 's' : ''}`);
         if (data.postsCount > 0) enhancements.push(`📊 ${data.postsCount} community posts`);
