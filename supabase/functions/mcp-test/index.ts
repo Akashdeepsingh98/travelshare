@@ -32,8 +32,12 @@ Deno.serve(async (req) => {
     console.log(`Testing MCP server at: ${endpoint}`)
     console.log(`API Key provided: ${apiKey ? 'Yes' : 'No'}`)
 
-    // Check if this is the mock server
-    const isMockServer = endpoint.includes('mock-mcp-server')
+    // Check if this is any of our mock servers
+    // Updated to include all mock server types: mock-mcp-server, mock-flight-server, mock-taxi-server, mock-hotel-server
+    const isMockServer = endpoint.includes('mock-mcp-server') || 
+                         endpoint.includes('mock-flight-server') || 
+                         endpoint.includes('mock-taxi-server') || 
+                         endpoint.includes('mock-hotel-server')
     console.log(`Is mock server: ${isMockServer}`)
 
     // Test MCP server connection by calling the initialize method
