@@ -333,6 +333,41 @@ export function createExplorePage(
       box-shadow: 0 12px 24px rgba(0, 0, 0, 0.15);
     }
 
+    .text-only-post {
+      background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+      border: 2px solid #cbd5e1;
+    }
+
+    .text-only-post .grid-item-image {
+      display: none;
+    }
+
+    .text-only-post .grid-item-info {
+      padding: 2rem 1.5rem;
+    }
+
+    .text-only-preview {
+      background: white;
+      border-radius: 0.75rem;
+      padding: 1.5rem;
+      margin-bottom: 1rem;
+      border-left: 4px solid #667eea;
+    }
+
+    .text-only-preview h3 {
+      color: #1e293b;
+      font-size: 1.125rem;
+      font-weight: 600;
+      margin-bottom: 0.75rem;
+      line-height: 1.4;
+    }
+
+    .text-only-preview p {
+      color: #475569;
+      line-height: 1.6;
+      margin: 0;
+    }
+
     .grid-item-image {
       position: relative;
       aspect-ratio: 4/3;
@@ -449,41 +484,6 @@ export function createExplorePage(
       color: #64748b;
       font-size: 0.875rem;
       line-height: 1.5;
-      margin: 0;
-    }
-
-    .text-only-post {
-      background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
-      border: 2px solid #cbd5e1;
-    }
-
-    .text-only-post .grid-item-image {
-      display: none;
-    }
-
-    .text-only-post .grid-item-info {
-      padding: 2rem 1.5rem;
-    }
-
-    .text-only-preview {
-      background: white;
-      border-radius: 0.75rem;
-      padding: 1.5rem;
-      margin-bottom: 1rem;
-      border-left: 4px solid #667eea;
-    }
-
-    .text-only-preview h3 {
-      color: #1e293b;
-      font-size: 1.125rem;
-      font-weight: 600;
-      margin-bottom: 0.75rem;
-      line-height: 1.4;
-    }
-
-    .text-only-preview p {
-      color: #475569;
-      line-height: 1.6;
       margin: 0;
     }
 
