@@ -34,6 +34,11 @@ export function createPostViewer(
     return [];
   }
   
+  // Check if post has media
+  function hasMedia(post: Post): boolean {
+    return (post.media_urls && post.media_urls.length > 0) || !!post.image_url;
+  }
+  
   // Load follow status for all users
   async function loadFollowStatus() {
     const authState = authManager.getAuthState();
@@ -68,13 +73,14 @@ export function createPostViewer(
     const isOwnPost = currentUser?.id === currentPost.user_id;
     const isFollowing = userFollowStatus[currentPost.user_id] || false;
     const mediaItems = getMediaItems(currentPost);
+    const isTextOnly = !hasMedia(currentPost);
     
     // Reset media index when switching posts
     currentMediaIndex = 0;
     
     container.innerHTML = `
       <div class="post-viewer-backdrop"></div>
-      <div class="post-viewer-content">
+      <div class="post-viewer-content ${isTextOnly ? 'post-viewer-text-only' : ''}">
         <div class="post-viewer-header">
           <button class="post-viewer-close">✕</button>
           <div class="post-navigation">
@@ -89,9 +95,17 @@ export function createPostViewer(
         </div>
         
         <div class="post-viewer-body">
-          <div class="post-viewer-media">
-            ${createMediaViewer(mediaItems)}
-          </div>
+          ${!isTextOnly ? `
+            <div class="post-viewer-media">
+              ${createMediaViewer(mediaItems)}
+            </div>
+          ` : `
+            <div class="post-viewer-text-content">
+              <div class="text-content-display">
+                <h2>${currentPost.content}</h2>
+              </div>
+            </div>
+          `}
           
           <div class="post-viewer-sidebar">
             <div class="post-viewer-user">
@@ -108,9 +122,11 @@ export function createPostViewer(
               ` : ''}
             </div>
             
-            <div class="post-viewer-content-text">
-              <p>${currentPost.content}</p>
-            </div>
+            ${!isTextOnly ? `
+              <div class="post-viewer-content-text">
+                <p>${currentPost.content}</p>
+              </div>
+            ` : ''}
             
             <div class="post-viewer-actions">
               <button class="action-btn like-btn ${isLiked ? 'liked' : ''}" data-post-id="${currentPost.id}">

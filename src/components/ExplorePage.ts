@@ -452,6 +452,41 @@ export function createExplorePage(
       margin: 0;
     }
 
+    .text-only-post {
+      background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+      border: 2px solid #cbd5e1;
+    }
+
+    .text-only-post .grid-item-image {
+      display: none;
+    }
+
+    .text-only-post .grid-item-info {
+      padding: 2rem 1.5rem;
+    }
+
+    .text-only-preview {
+      background: white;
+      border-radius: 0.75rem;
+      padding: 1.5rem;
+      margin-bottom: 1rem;
+      border-left: 4px solid #667eea;
+    }
+
+    .text-only-preview h3 {
+      color: #1e293b;
+      font-size: 1.125rem;
+      font-weight: 600;
+      margin-bottom: 0.75rem;
+      line-height: 1.4;
+    }
+
+    .text-only-preview p {
+      color: #475569;
+      line-height: 1.6;
+      margin: 0;
+    }
+
     .explore-loading {
       text-align: center;
       padding: 4rem 2rem;
@@ -1026,10 +1061,8 @@ export function createExplorePage(
     const userAvatarUrl = post.user?.avatar_url || 'https://images.pexels.com/photos/1040880/pexels-photo-1040880.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&fit=crop';
     const userName = post.user?.name || 'Unknown User';
     
-    // Get the first media URL (either from media_urls or image_url)
-    const imageUrl = (post.media_urls && post.media_urls.length > 0) 
-      ? post.media_urls[0] 
-      : post.image_url || 'https://images.pexels.com/photos/1761279/pexels-photo-1761279.jpeg?auto=compress&cs=tinysrgb&w=800';
+    // Check if this is a text-only post (no media)
+    const hasMedia = (post.media_urls && post.media_urls.length > 0) || post.image_url;
     
     // Calculate distance if nearby search is enabled and user location is available
     let distanceBadge = '';
@@ -1042,6 +1075,46 @@ export function createExplorePage(
       );
       distanceBadge = `<span class="distance-badge">${formatDistance(distance)}</span>`;
     }
+    
+    if (!hasMedia) {
+      // Text-only post layout
+      return `
+        <div class="post-grid-item text-only-post" data-post-id="${post.id}">
+          <div class="grid-item-info">
+            <div class="grid-item-user">
+              <img src="${userAvatarUrl}" alt="${userName}" class="grid-user-avatar">
+              <div class="grid-user-details">
+                <span class="grid-user-name">${userName}</span>
+                <span class="grid-location">
+                  📍 ${post.location}${distanceBadge}
+                </span>
+              </div>
+            </div>
+            
+            <div class="text-only-preview">
+              <h3>${post.content.length > 80 ? post.content.substring(0, 80) + '...' : post.content}</h3>
+              ${post.content.length > 80 ? `<p>${post.content.substring(80, 200)}${post.content.length > 200 ? '...' : ''}</p>` : ''}
+            </div>
+            
+            <div class="grid-item-stats">
+              <span class="stat-item">
+                <span class="stat-icon">❤️</span>
+                <span class="stat-count">${post.likes_count || 0}</span>
+              </span>
+              <span class="stat-item">
+                <span class="stat-icon">💬</span>
+                <span class="stat-count">${post.comments?.length || 0}</span>
+              </span>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+    
+    // Media post layout
+    const imageUrl = (post.media_urls && post.media_urls.length > 0) 
+      ? post.media_urls[0] 
+      : post.image_url || 'https://images.pexels.com/photos/1761279/pexels-photo-1761279.jpeg?auto=compress&cs=tinysrgb&w=800';
     
     return `
       <div class="post-grid-item" data-post-id="${post.id}">
