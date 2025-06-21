@@ -533,6 +533,8 @@ export function createPostForm(onPostCreate: (post: Post) => void): HTMLElement 
             postData.longitude = selectedLocation.lng;
           }
           
+          console.log('Creating post with data:', postData);
+          
           const { data, error } = await supabase
             .from('posts')
             .insert(postData)
@@ -542,7 +544,12 @@ export function createPostForm(onPostCreate: (post: Post) => void): HTMLElement 
             `)
             .single();
 
-          if (error) throw error;
+          if (error) {
+            console.error('Database error:', error);
+            throw error;
+          }
+
+          console.log('Post created successfully:', data);
 
           // Create the Post object with proper structure
           const newPost: Post = {
@@ -560,17 +567,22 @@ export function createPostForm(onPostCreate: (post: Post) => void): HTMLElement 
             user_has_liked: false
           };
           
+          console.log('Calling onPostCreate with:', newPost);
           onPostCreate(newPost);
           closeModal();
-        } catch (error) {
+        } catch (error: any) {
           console.error('Error creating post:', error);
           setLoading(false);
           
           // Show user-friendly error message
           if (error.message?.includes('new row violates row-level security policy')) {
             alert('Your account needs to be approved before you can create posts. Please wait for admin approval.');
+          } else if (error.message?.includes('violates foreign key constraint')) {
+            alert('There was an issue with your account. Please try logging out and back in.');
+          } else if (error.message?.includes('violates check constraint')) {
+            alert('Invalid data provided. Please check your input and try again.');
           } else {
-            alert('Failed to create post. Please try again.');
+            alert('Failed to create post. Please try again. Error: ' + (error.message || 'Unknown error'));
           }
         }
       }
