@@ -16,7 +16,7 @@ class AuthManager {
 
   private async init() {
     try {
-      // Test Supabase connection first
+      // Test Supabase connection first with a simple health check
       const { error: connectionError } = await supabase
         .from('profiles')
         .select('count')
@@ -113,11 +113,17 @@ class AuthManager {
       }
     }
     
-    // Provide detailed error information
+    // Provide detailed error information for CORS and network issues
     if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
-      console.error('Network error - this is likely a CORS issue. Please check your Supabase project settings.');
-      console.error('Make sure to add http://localhost:5173 to your Supabase project\'s allowed origins.');
-      console.error('Go to: Supabase Dashboard > Authentication > Settings > Site URL');
+      console.error('🚨 CORS/Network Error Detected');
+      console.error('This is likely a CORS configuration issue. To fix this:');
+      console.error('1. Go to your Supabase Dashboard');
+      console.error('2. Navigate to Authentication > Settings');
+      console.error('3. Add "http://localhost:5173" to the Site URL field');
+      console.error('4. Save the changes and refresh this page');
+      console.error('');
+      console.error('Current Supabase URL:', import.meta.env.VITE_SUPABASE_URL);
+      console.error('If the URL looks incorrect, check your .env file');
     }
     
     this.authState = {
@@ -160,6 +166,7 @@ class AuthManager {
     } catch (error) {
       console.error('Error fetching user profile:', error);
       await this.handleConnectionError(error);
+      return; // Don't notify listeners if there's an error
     }
     
     this.notifyListeners();
@@ -215,7 +222,7 @@ class AuthManager {
       if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
         return { 
           success: false, 
-          error: 'Connection failed. Please check your internet connection and ensure your Supabase project allows requests from this domain.' 
+          error: 'Connection failed. Please check the setup instructions in the browser console and ensure your Supabase project is configured correctly.' 
         };
       }
       
@@ -246,7 +253,7 @@ class AuthManager {
       if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
         return { 
           success: false, 
-          error: 'Connection failed. Please check your internet connection and ensure your Supabase project allows requests from this domain.' 
+          error: 'Connection failed. Please check the setup instructions in the browser console and ensure your Supabase project is configured correctly.' 
         };
       }
       
