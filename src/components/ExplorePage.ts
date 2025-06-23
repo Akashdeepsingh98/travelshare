@@ -1,4 +1,4 @@
-import { Post } from '../types';
+import { Post, User } from '../types';
 import { authManager } from '../auth';
 import { supabase } from '../lib/supabase';
 import { getCurrentPosition, calculateDistance, formatDistance, GeolocationPosition } from '../utils/geolocation';
@@ -312,6 +312,84 @@ export function createExplorePage(
       background: rgba(255, 255, 255, 0.3);
     }
 
+    .profile-search-results {
+      margin-bottom: 2rem;
+    }
+
+    .profiles-section-header {
+      color: white;
+      font-size: 1.25rem;
+      font-weight: 600;
+      margin-bottom: 1rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .profiles-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 1rem;
+      margin-bottom: 2rem;
+    }
+
+    .user-grid-item {
+      background: white;
+      border-radius: 1rem;
+      padding: 1.5rem;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .user-grid-item:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 12px 24px rgba(0, 0, 0, 0.15);
+    }
+
+    .user-grid-avatar {
+      width: 60px;
+      height: 60px;
+      border-radius: 50%;
+      object-fit: cover;
+      flex-shrink: 0;
+      border: 3px solid #667eea;
+    }
+
+    .user-grid-info {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .user-grid-name {
+      font-size: 1.125rem;
+      font-weight: 600;
+      color: #1e293b;
+      margin: 0 0 0.25rem 0;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .user-grid-meta {
+      color: #64748b;
+      font-size: 0.875rem;
+      margin: 0;
+    }
+
+    .user-grid-badge {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 0.25rem 0.75rem;
+      border-radius: 1rem;
+      font-size: 0.75rem;
+      font-weight: 600;
+      flex-shrink: 0;
+    }
+
     .posts-grid {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
@@ -615,6 +693,11 @@ export function createExplorePage(
         gap: 1rem;
       }
 
+      .profiles-grid {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+      }
+
       .search-suggestions {
         gap: 0.5rem;
       }
@@ -700,6 +783,7 @@ export function createExplorePage(
   
   let allPosts: Post[] = [];
   let filteredPosts: Post[] = [];
+  let filteredProfiles: User[] = [];
   let isLoading = false;
   let currentSearchQuery = '';
   let nearbySearchEnabled = false;
@@ -804,9 +888,10 @@ export function createExplorePage(
       });
     }
     
-    // Apply text search filter
+    // Apply text search filter for posts
     if (!currentSearchQuery) {
       filteredPosts = postsToFilter;
+      filteredProfiles = [];
     } else {
       filteredPosts = postsToFilter.filter(post => {
         // Search in post content
@@ -831,9 +916,38 @@ export function createExplorePage(
         
         return contentMatch || locationMatch || userMatch || hashtagMatch || commentMatch;
       });
+      
+      // Search for profiles
+      searchProfiles(currentSearchQuery);
     }
     
     renderExplorePage();
+  }
+  
+  async function searchProfiles(query: string) {
+    if (!query.trim()) {
+      filteredProfiles = [];
+      return;
+    }
+    
+    try {
+      const { data: profiles, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .ilike('name', `%${query}%`)
+        .limit(10);
+      
+      if (error) {
+        console.error('Error searching profiles:', error);
+        filteredProfiles = [];
+        return;
+      }
+      
+      filteredProfiles = profiles || [];
+    } catch (error) {
+      console.error('Error searching profiles:', error);
+      filteredProfiles = [];
+    }
   }
   
   function renderExplorePage() {
@@ -845,11 +959,13 @@ export function createExplorePage(
       ? ` for "${currentSearchQuery}"` 
       : '';
     
+    const totalResults = filteredPosts.length + filteredProfiles.length;
+    
     container.innerHTML = `
       <div class="explore-content">
         <div class="explore-header">
           <h2>Explore</h2>
-          <p class="explore-subtitle">Discover amazing travel experiences from around the world</p>
+          <p class="explore-subtitle">Discover amazing travel experiences and connect with fellow travelers</p>
           
           <div class="search-section">
             <div class="search-container">
@@ -921,18 +1037,36 @@ export function createExplorePage(
             
             ${currentSearchQuery || nearbySearchEnabled ? `
               <div class="search-results-info">
-                <span class="results-count">${filteredPosts.length} result${filteredPosts.length === 1 ? '' : 's'}${searchResultsText}${nearbyResultsText}</span>
+                <span class="results-count">${totalResults} result${totalResults === 1 ? '' : 's'}${searchResultsText}${nearbyResultsText}</span>
                 <button class="clear-search-btn">Clear search</button>
               </div>
             ` : ''}
           </div>
         </div>
         
-        <div class="posts-grid">
-          ${filteredPosts.map(post => createPostGridItem(post)).join('')}
-        </div>
+        ${filteredProfiles.length > 0 ? `
+          <div class="profile-search-results">
+            <h3 class="profiles-section-header">
+              <span>👥</span>
+              Profiles (${filteredProfiles.length})
+            </h3>
+            <div class="profiles-grid">
+              ${filteredProfiles.map(profile => createUserGridItem(profile)).join('')}
+            </div>
+          </div>
+        ` : ''}
         
-        ${filteredPosts.length === 0 && (currentSearchQuery || nearbySearchEnabled) ? `
+        ${filteredPosts.length > 0 ? `
+          <h3 class="profiles-section-header">
+            <span>📸</span>
+            Posts (${filteredPosts.length})
+          </h3>
+          <div class="posts-grid">
+            ${filteredPosts.map(post => createPostGridItem(post)).join('')}
+          </div>
+        ` : ''}
+        
+        ${filteredPosts.length === 0 && filteredProfiles.length === 0 && (currentSearchQuery || nearbySearchEnabled) ? `
           <div class="no-search-results">
             <div class="no-results-content">
               <div class="no-results-icon">🔍</div>
@@ -957,8 +1091,18 @@ export function createExplorePage(
     setupSearchListeners();
     
     // Add click handlers for grid items
-    const gridItems = container.querySelectorAll('.post-grid-item');
-    gridItems.forEach((item, index) => {
+    const userGridItems = container.querySelectorAll('.user-grid-item');
+    userGridItems.forEach((item) => {
+      item.addEventListener('click', () => {
+        const userId = item.getAttribute('data-user-id');
+        if (userId && onUserClick) {
+          onUserClick(userId);
+        }
+      });
+    });
+    
+    const postGridItems = container.querySelectorAll('.post-grid-item');
+    postGridItems.forEach((item, index) => {
       item.addEventListener('click', (e) => {
         // Check if click was on user info area
         const userInfoArea = (e.target as HTMLElement).closest('.grid-item-user');
@@ -1055,6 +1199,21 @@ export function createExplorePage(
         performSearch(query);
       });
     });
+  }
+  
+  function createUserGridItem(user: User): string {
+    const avatarUrl = user.avatar_url || 'https://images.pexels.com/photos/1040880/pexels-photo-1040880.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&fit=crop';
+    
+    return `
+      <div class="user-grid-item" data-user-id="${user.id}">
+        <img src="${avatarUrl}" alt="${user.name}" class="user-grid-avatar">
+        <div class="user-grid-info">
+          <h4 class="user-grid-name">${user.name}</h4>
+          <p class="user-grid-meta">Traveler</p>
+        </div>
+        <span class="user-grid-badge">Profile</span>
+      </div>
+    `;
   }
   
   function createPostGridItem(post: Post): string {
