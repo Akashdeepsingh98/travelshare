@@ -13,7 +13,8 @@ export function createProfilePage(
   onNavigateToFollowers?: (userId: string, userName: string) => void,
   viewUserId?: string, // Optional: view another user's profile
   onUserClick?: (userId: string) => void,
-  onAskAI?: (post: Post) => void
+  onAskAI?: (post: Post) => void,
+  onAskAIAboutProfile?: (user: User) => void // New callback for profile AI summary
 ): HTMLElement {
   const container = document.createElement('div');
   container.className = 'profile-page';
@@ -67,7 +68,7 @@ export function createProfilePage(
       gap: 0.5rem;
     }
 
-    .edit-profile-btn, .profile-follow-btn {
+    .edit-profile-btn, .profile-follow-btn, .ask-ai-profile-btn {
       background: rgba(255, 255, 255, 0.2);
       color: white;
       border: none;
@@ -76,15 +77,26 @@ export function createProfilePage(
       cursor: pointer;
       font-weight: 500;
       transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
     }
 
-    .edit-profile-btn:hover, .profile-follow-btn:hover {
+    .edit-profile-btn:hover, .profile-follow-btn:hover, .ask-ai-profile-btn:hover {
       background: rgba(255, 255, 255, 0.3);
       transform: translateY(-1px);
     }
 
     .profile-follow-btn.following {
       background: rgba(34, 197, 94, 0.8);
+    }
+
+    .ask-ai-profile-btn {
+      background: rgba(102, 126, 234, 0.8);
+    }
+
+    .ask-ai-profile-btn:hover {
+      background: rgba(90, 103, 216, 0.9);
     }
 
     .profile-content {
@@ -974,6 +986,12 @@ export function createProfilePage(
             <button class="profile-follow-btn ${isFollowing ? 'following' : ''}" data-user-id="${profileUser.id}">
               ${isFollowing ? 'Following' : 'Follow'}
             </button>
+            ${authState.isAuthenticated && onAskAIAboutProfile ? `
+              <button class="ask-ai-profile-btn" data-user-id="${profileUser.id}">
+                <span class="ai-icon">🤖</span>
+                <span>Ask AI</span>
+              </button>
+            ` : ''}
           `}
         </div>
       </div>
@@ -1254,6 +1272,16 @@ export function createProfilePage(
           renderProfilePage();
         } catch (error) {
           console.error('Error toggling follow:', error);
+        }
+      });
+    }
+    
+    // Ask AI about profile button
+    const askAIProfileBtn = container.querySelector('.ask-ai-profile-btn') as HTMLButtonElement;
+    if (askAIProfileBtn && !isOwnProfile && onAskAIAboutProfile) {
+      askAIProfileBtn.addEventListener('click', () => {
+        if (profileUser && onAskAIAboutProfile) {
+          onAskAIAboutProfile(profileUser);
         }
       });
     }
