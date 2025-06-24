@@ -100,7 +100,7 @@ class TravelSocialApp {
 
       if (error) {
         console.error('Error fetching posts:', error);
-        if (error.message && error.message.includes('Failed to fetch')) {
+        if (error.message && (error.message.includes('Failed to fetch') || error.message.includes('fetch'))) {
           await this.showConnectionError();
         } else {
           this.showGenericError('Failed to load posts. Please try refreshing the page.');
@@ -138,7 +138,7 @@ class TravelSocialApp {
       console.error('Error stack:', error?.stack);
       
       // Provide more specific error messages based on error type
-      if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
+      if (error instanceof TypeError && (error.message.includes('Failed to fetch') || error.message.includes('fetch') || error.name === 'TypeError')) {
         await this.showConnectionError();
       } else {
         this.showGenericError('An unexpected error occurred while loading posts. Please try again.');
