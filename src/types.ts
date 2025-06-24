@@ -113,18 +113,3 @@ export interface AppCategory {
   icon: string;
   description: string;
 }
-
-// Profile Context for AI
-export interface ProfileContext {
-  id: string;
-  name: string;
-  avatar_url: string | null;
-  created_at: string;
-  is_approved?: boolean;
-  posts_count: number;
-  followers_count: number;
-  following_count: number;
-  mini_apps_count: number;
-  recent_posts?: Post[];
-  mini_apps?: MiniApp[];
-}
