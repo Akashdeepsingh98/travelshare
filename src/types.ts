@@ -17,9 +17,15 @@ export interface Comment {
 export interface MediaItem {
   url: string;
   type: 'image' | 'video';
+  userContext?: UserContext;
 }
 
 export interface Post {
+export interface UserContext {
+  id: string;
+  name?: string;
+}
+
   id: string;
   user_id: string;
   location: string;

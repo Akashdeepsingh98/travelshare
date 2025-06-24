@@ -13,7 +13,8 @@ export function createProfilePage(
   onNavigateToFollowers?: (userId: string, userName: string) => void,
   viewUserId?: string, // Optional: view another user's profile
   onUserClick?: (userId: string) => void,
-  onAskAI?: (post: Post) => void
+  onAskAI?: (post: Post) => void,
+  onAskAIAboutUser?: (userId: string, userName: string) => void
 ): HTMLElement {
   const container = document.createElement('div');
   container.className = 'profile-page';
@@ -1160,7 +1161,12 @@ export function createProfilePage(
         <div class="profile-actions">
           ${isOwnProfile ? `
             <button class="edit-profile-btn">Edit</button>
-          ` : `
+          ` : `${authState.isAuthenticated ? `
+            <button class="ask-ai-about-user-btn" title="Ask AI about ${profileUser.name}">
+              <span class="ai-icon">🤖</span>
+              <span class="ai-text">Ask AI</span>
+            </button>
+          ` : ''}
             <button class="profile-follow-btn ${isFollowing ? 'following' : ''}" data-user-id="${profileUser.id}">
               ${isFollowing ? 'Following' : 'Follow'}
             </button>
@@ -1396,6 +1402,16 @@ export function createProfilePage(
     // Navigation
     const backBtn = container.querySelector('.back-btn') as HTMLButtonElement;
     backBtn.addEventListener('click', onNavigateBack);
+
+    // Ask AI about user button
+    if (!isOwnProfile && authState.isAuthenticated && onAskAIAboutUser) {
+      const askAIBtn = container.querySelector('.ask-ai-about-user-btn') as HTMLButtonElement;
+      if (askAIBtn) {
+        askAIBtn.addEventListener('click', () => {
+          onAskAIAboutUser(profileUser!.id, profileUser!.name);
+        });
+      }
+    }
     
     // Follow stats navigation
     const followersBtn = container.querySelector('.followers-btn') as HTMLButtonElement;

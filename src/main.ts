@@ -31,6 +31,7 @@ class TravelSocialApp {
   private viewData: ViewData = {};
   private boltBadge: HTMLElement;
   private aiChatContextPost: Post | null = null;
+  private aiChatUserContext: { id: string; name: string } | null = null;
 
   constructor() {
     this.appContainer = document.querySelector('#app')!;
@@ -262,6 +263,7 @@ class TravelSocialApp {
     this.currentView = 'profile';
     this.viewData = { userId };
     this.aiChatContextPost = null;
+    this.aiChatUserContext = null;
     this.render();
   }
 
@@ -269,6 +271,7 @@ class TravelSocialApp {
     this.currentView = 'feed';
     this.viewData = {};
     this.aiChatContextPost = null;
+    this.aiChatUserContext = null;
     this.render();
     this.loadPosts();
   }
@@ -277,20 +280,27 @@ class TravelSocialApp {
     this.currentView = 'explore';
     this.viewData = {};
     this.aiChatContextPost = null;
+    this.aiChatUserContext = null;
     this.render();
   }
 
-  private navigateToAIChat(postContext?: Post) {
+  private navigateToAIChat(postContext?: Post, userContext?: { id: string; name: string }) {
     this.currentView = 'ai-chat';
     this.viewData = {};
     this.aiChatContextPost = postContext || null;
+    this.aiChatUserContext = userContext || null;
     this.render();
+  }
+
+  private navigateToAIChatForUser(userId: string, userName: string) {
+    this.navigateToAIChat(undefined, { id: userId, name: userName });
   }
 
   private navigateToAbout() {
     this.currentView = 'about';
     this.viewData = {};
     this.aiChatContextPost = null;
+    this.aiChatUserContext = null;
     this.render();
   }
 
@@ -298,6 +308,7 @@ class TravelSocialApp {
     this.currentView = 'following';
     this.viewData = { userId, userName };
     this.aiChatContextPost = null;
+    this.aiChatUserContext = null;
     this.render();
   }
 
@@ -305,6 +316,7 @@ class TravelSocialApp {
     this.currentView = 'followers';
     this.viewData = { userId, userName };
     this.aiChatContextPost = null;
+    this.aiChatUserContext = null;
     this.render();
   }
 
@@ -346,7 +358,7 @@ class TravelSocialApp {
         this.appContainer.appendChild(aboutPage);
       } else if (this.currentView === 'ai-chat') {
         // AI Chat page
-        const aiPage = createAIPage(() => this.navigateToFeed(), this.aiChatContextPost);
+        const aiPage = createAIPage(() => this.navigateToFeed(), this.aiChatContextPost, this.aiChatUserContext);
         this.appContainer.appendChild(aiPage);
       } else if (this.currentView === 'profile') {
         // Profile page
@@ -356,7 +368,8 @@ class TravelSocialApp {
           (userId, userName) => this.navigateToFollowers(userId, userName),
           this.viewData.userId, // Pass the userId to view another user's profile
           (userId) => this.navigateToProfile(userId) // Pass user click handler
-        );
+          (post) => this.navigateToAIChat(post), // Pass Ask AI handler for posts
+          (userId, userName) => this.navigateToAIChatForUser(userId, userName) // Pass Ask AI handler for users
         this.appContainer.appendChild(profilePage);
       } else if (this.currentView === 'following') {
         // Following page
