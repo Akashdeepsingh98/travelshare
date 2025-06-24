@@ -370,6 +370,7 @@ class TravelSocialApp {
           (userId) => this.navigateToProfile(userId) // Pass user click handler
           (post) => this.navigateToAIChat(post), // Pass Ask AI handler for posts
           (userId, userName) => this.navigateToAIChatForUser(userId, userName) // Pass Ask AI handler for users
+        )
         this.appContainer.appendChild(profilePage);
       } else if (this.currentView === 'following') {
         // Following page

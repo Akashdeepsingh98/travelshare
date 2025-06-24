@@ -9,7 +9,11 @@ interface ChatMessage {
   timestamp: Date;
 }
 
-export function createAIPage(onNavigateBack: () => void, postContext?: Post | null): HTMLElement {
+export function createAIPage(
+  onNavigateBack: () => void, 
+  postContext?: Post | null,
+  userContext?: { id: string; name: string } | null
+): HTMLElement {
   const container = document.createElement('div');
   container.className = 'ai-page';
   
@@ -42,8 +46,14 @@ export function createAIPage(onNavigateBack: () => void, postContext?: Post | nu
         <div class="welcome-message">
           <div class="ai-avatar">🤖</div>
           <div class="welcome-content">
-            <h3>Welcome to TravelShare AI!</h3>
-            <p>I'm powered by Google Gemini with vision capabilities and have access to real travel experiences from your community. I can analyze photos from posts and connect to business data through MCP servers for real-time information!</p>
+            <h3>${userContext 
+              ? `Ask me about ${userContext.name}` 
+              : postContext 
+                ? `Ask me about this post from ${postContext.location}` 
+                : 'Welcome to TravelShare AI!'}</h3>
+            <p>${userContext 
+              ? `I can provide insights about ${userContext.name}'s travel experiences, preferences, and shared content based on their profile and posts.` 
+              : `I'm powered by Google Gemini with vision capabilities and have access to real travel experiences from your community. I can analyze photos from posts and connect to business data through MCP servers for real-time information!`}</p>
             <div class="ai-features">
               <div class="feature-badge">📷 Photo Analysis</div>
               <div class="feature-badge">🌍 Community Data</div>
@@ -67,8 +77,26 @@ export function createAIPage(onNavigateBack: () => void, postContext?: Post | nu
                 </div>
               </div>
             ` : ''}
+            ${userContext ? `
+              <div class="user-context-info">
+                <h4>👤 Asking about ${userContext.name}:</h4>
+                <div class="context-user-preview">
+                  <div class="context-user-header">
+                    <span class="context-user-name">${userContext.name}</span>
+                    <span class="context-user-id">Profile ID: ${userContext.id}</span>
+                  </div>
+                  <div class="context-user-content">I'll analyze this user's profile, posts, and activities to provide insights about their travel experiences and preferences.</div>
+                </div>
+              </div>
+            ` : ''}
             <div class="suggestion-chips">
-              ${postContext ? `
+              ${userContext ? `
+                <button class="suggestion-chip" data-question="What are ${userContext.name}'s favorite travel destinations?">Favorite destinations</button>
+                <button class="suggestion-chip" data-question="What kind of travel experiences does ${userContext.name} enjoy?">Travel preferences</button>
+                <button class="suggestion-chip" data-question="What travel recommendations would you give based on ${userContext.name}'s history?">Personalized recommendations</button>
+                <button class="suggestion-chip" data-question="Summarize ${userContext.name}'s travel style">Travel style</button>
+                <button class="suggestion-chip" data-question="What are some interesting facts about ${userContext.name}'s travels?">Interesting facts</button>
+              ` : postContext ? `
                 <button class="suggestion-chip" data-question="Tell me more about ${postContext.location}">About this location</button>
                 <button class="suggestion-chip" data-question="How can I get to ${postContext.location}?">How to get there</button>
                 <button class="suggestion-chip" data-question="What are the best things to do in ${postContext.location}?">Things to do</button>
@@ -135,8 +163,11 @@ export function createAIPage(onNavigateBack: () => void, postContext?: Post | nu
       <div class="ai-page-header">
         <button class="back-btn">← Back</button>
         <div class="ai-header-content">
-          <h1>🤖 TravelShare AI</h1>
-          <p class="ai-subtitle">${postContext ? `Ask me about this post from ${postContext.location}` : 'Ask me anything about travel destinations and experiences!'}</p>
+          <h1>🤖 TravelShare AI</h1>${userContext 
+            ? `<p class="ai-subtitle">Ask me about ${userContext.name}'s travel experiences!</p>` 
+            : postContext 
+              ? `<p class="ai-subtitle">Ask me about this post from ${postContext.location}</p>` 
+              : `<p class="ai-subtitle">Ask me anything about travel destinations and experiences!</p>`}
         </div>
       </div>
       
@@ -279,6 +310,14 @@ export function createAIPage(onNavigateBack: () => void, postContext?: Post | nu
           media_types: postContext.media_types,
           user_name: postContext.user?.name,
           created_at: postContext.created_at
+        };
+      }
+
+      // Include user context if available
+      if (userContext) {
+        requestBody.userContext = {
+          id: userContext.id,
+          name: userContext.name
         };
       }
       

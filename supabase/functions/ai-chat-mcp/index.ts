@@ -21,6 +21,10 @@ interface PostContext {
 interface ChatRequest {
   question: string;
   userId?: string;
+  userContext?: {
+    id: string;
+    name?: string;
+  };
   postContext?: PostContext;
 }
 
@@ -46,7 +50,7 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
 
-    const { question, userId, postContext }: ChatRequest = await req.json()
+    const { question, userId, postContext, userContext }: ChatRequest = await req.json()
 
     if (!question?.trim()) {
       return new Response(
@@ -119,6 +123,12 @@ Deno.serve(async (req) => {
     
     // Prepare post-specific context if provided
     const postSpecificContext = postContext ? preparePostContext(postContext) : null
+
+    // Prepare user-specific context if provided
+    let userSpecificContext = null
+    if (userContext) {
+      userSpecificContext = await prepareUserContext(userContext.id, supabaseClient)
+    }
     
     // Prepare MCP context
     const mcpContext = await prepareMCPContext(mcpServers, question, postContext)
@@ -129,10 +139,14 @@ Deno.serve(async (req) => {
     // Create the prompt for Gemini
     const prompt = `You are TravelShare AI, a helpful travel assistant that provides personalized recommendations based on real traveler experiences from a travel social media platform, real-time business data through MCP servers, and visual analysis of travel photos.
 
+${userSpecificContext ? `USER PROFILE CONTEXT:
+${userSpecificContext}
+
+` : ''}${postSpecificContext ? `SPECIFIC POST CONTEXT:
 ${postSpecificContext ? `SPECIFIC POST CONTEXT:
 ${postSpecificContext}
 
-` : ''}CONTEXT FROM REAL TRAVELER POSTS:
+` : ''}` : ''}CONTEXT FROM REAL TRAVELER POSTS:
 ${postsContext}
 
 ${mcpContext ? `REAL-TIME BUSINESS DATA (via MCP):
@@ -145,6 +159,7 @@ ${imageAnalysis}
 
 Your role:
 - Answer travel-related questions using the provided real traveler data, MCP business data, and visual insights from photos
+${userSpecificContext ? '- Focus on providing insights about the specific user based on their profile, posts, and activities' : ''}
 - ${postSpecificContext ? 'Pay special attention to the specific post context provided and answer questions related to that location and experience' : 'Provide helpful, accurate, and engaging travel advice'}
 - Reference specific locations and experiences from the community when relevant
 - Use real-time business data from MCP servers when available (restaurants, hotels, flights, etc.)
@@ -155,6 +170,7 @@ Your role:
 
 Guidelines:
 - Use the real post data to provide authentic recommendations
+${userSpecificContext ? '- When answering about the specific user, reference their travel history, preferences, and patterns from their posts' : ''}
 - ${postSpecificContext ? 'When answering about the specific post, reference the location, content, and any visual elements from that post' : 'Leverage MCP business data for current information (menus, availability, prices, etc.)'}
 - Reference visual elements from photos when relevant (architecture, landscapes, food, activities)
 - Mention specific destinations that travelers have visited
@@ -164,6 +180,7 @@ Guidelines:
 - Format responses clearly with sections when helpful
 - Limit response to about 600-700 words
 - When using MCP data, mention that it's real-time business information
+${userSpecificContext ? '- Personalize your responses to reflect the specific user\'s travel style and preferences' : ''}
 - When referencing visual analysis, mention insights from traveler photos
 - ${postSpecificContext ? 'If asked about transportation or services related to the post location, use MCP data if available' : ''}
 
@@ -186,6 +203,7 @@ Please provide a helpful response to the user's travel question.`
           answer: aiResponse,
           postsCount: posts?.length || 0,
           mcpServersUsed: mcpServers.length,
+          userContextUsed: userContext ? 'Yes' : 'No',
           imagesAnalyzed: imageAnalysis ? 'Yes' : 'No',
           provider: 'gemini-mcp-vision',
           postContextUsed: postContext ? 'Yes' : 'No'
@@ -339,6 +357,163 @@ VISUAL CONTENT AVAILABLE:
 Use this real data to provide authentic, community-based travel recommendations.`
 
   return context
+}
+
+async function prepareUserContext(userId: string, supabaseClient: any): Promise<string | null> {
+  try {
+    // Get user profile
+    const { data: profile, error: profileError } = await supabaseClient
+      .from('profiles')
+      .select('*')
+      .eq('id', userId)
+      .single()
+
+    if (profileError) {
+      console.error('Error fetching user profile:', profileError)
+      return null
+    }
+
+    // Get user's posts
+    const { data: userPosts, error: postsError } = await supabaseClient
+      .from('posts')
+      .select('*')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false })
+
+    if (postsError) {
+      console.error('Error fetching user posts:', postsError)
+      return null
+    }
+
+    // Get user's mini apps
+    const { data: miniApps, error: miniAppsError } = await supabaseClient
+      .from('mini_apps')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('is_active', true)
+
+    if (miniAppsError) {
+      console.error('Error fetching user mini apps:', miniAppsError)
+      // Continue without mini apps data
+    }
+
+    // Get user's follows
+    const { data: following, error: followingError } = await supabaseClient
+      .from('follows')
+      .select('following_id')
+      .eq('follower_id', userId)
+
+    if (followingError) {
+      console.error('Error fetching user following:', followingError)
+      // Continue without following data
+    }
+
+    // Get user's followers
+    const { data: followers, error: followersError } = await supabaseClient
+      .from('follows')
+      .select('follower_id')
+      .eq('following_id', userId)
+
+    if (followersError) {
+      console.error('Error fetching user followers:', followersError)
+      // Continue without followers data
+    }
+
+    // Extract locations from user's posts
+    const locations = userPosts?.map(post => post.location) || []
+    const uniqueLocations = [...new Set(locations)]
+
+    // Format user context
+    let context = `USER PROFILE: ${profile.name}
+- Member since: ${new Date(profile.created_at).toLocaleDateString('en-US', { year: 'numeric', month: 'long' })}
+- Total posts: ${userPosts?.length || 0}
+- Following: ${following?.length || 0} users
+- Followers: ${followers?.length || 0} users
+${miniApps?.length ? `- Has ${miniApps.length} mini apps: ${miniApps.map(app => app.name).join(', ')}` : ''}
+
+TRAVEL HISTORY:
+${uniqueLocations.length > 0 
+  ? `- Visited locations: ${uniqueLocations.join(', ')}`
+  : '- No specific locations mentioned in posts yet'}
+
+RECENT POSTS:
+${userPosts && userPosts.length > 0
+  ? userPosts.slice(0, 10).map((post, i) => {
+      const excerpt = post.content.length > 100 ? post.content.substring(0, 100) + '...' : post.content
+      const hasMedia = post.image_url || (post.media_urls && post.media_urls.length > 0)
+      return `${i + 1}. ${post.location}: "${excerpt}"${hasMedia ? ' [with photos]' : ''}`
+    }).join('\n')
+  : '- No posts yet'}
+
+TRAVEL PREFERENCES:
+${userPosts && userPosts.length > 0
+  ? `Based on their posts, this user appears to enjoy:
+${analyzeUserPreferences(userPosts)}`
+  : '- Not enough data to determine travel preferences yet'}
+
+Use this information to provide personalized insights about this specific user's travel experiences, preferences, and style.`
+
+    return context
+  } catch (error) {
+    console.error('Error preparing user context:', error)
+    return null
+  }
+}
+
+function analyzeUserPreferences(posts: any[]): string {
+  if (!posts || posts.length === 0) return '- Not enough data to determine preferences'
+
+  // Simple keyword-based analysis
+  const keywords = {
+    nature: ['nature', 'mountain', 'hiking', 'forest', 'beach', 'ocean', 'lake', 'river', 'outdoor'],
+    culture: ['museum', 'history', 'art', 'culture', 'temple', 'church', 'architecture', 'heritage'],
+    food: ['food', 'restaurant', 'cuisine', 'eat', 'dining', 'breakfast', 'lunch', 'dinner', 'cafe'],
+    adventure: ['adventure', 'trek', 'hike', 'climb', 'surf', 'dive', 'kayak', 'extreme'],
+    luxury: ['luxury', 'resort', 'spa', 'five-star', '5-star', 'premium', 'exclusive'],
+    budget: ['budget', 'affordable', 'cheap', 'hostel', 'backpack', 'saving']
+  }
+
+  const counts = {
+    nature: 0,
+    culture: 0,
+    food: 0,
+    adventure: 0,
+    luxury: 0,
+    budget: 0
+  }
+
+  // Count keyword occurrences in posts
+  posts.forEach(post => {
+    const content = post.content.toLowerCase()
+    Object.entries(keywords).forEach(([category, words]) => {
+      if (words.some(word => content.includes(word))) {
+        counts[category] += 1
+      }
+    })
+  })
+
+  // Get top 3 preferences
+  const preferences = Object.entries(counts)
+    .filter(([_, count]) => count > 0)
+    .sort(([_, countA], [__, countB]) => countB - countA)
+    .slice(0, 3)
+    .map(([category]) => category)
+
+  if (preferences.length === 0) {
+    return '- General travel experiences'
+  }
+
+  // Format preferences
+  const preferenceDescriptions = {
+    nature: '- Nature and outdoor experiences',
+    culture: '- Cultural and historical attractions',
+    food: '- Food and culinary experiences',
+    adventure: '- Adventure and active experiences',
+    luxury: '- Luxury and premium experiences',
+    budget: '- Budget-friendly and affordable travel'
+  }
+
+  return preferences.map(pref => preferenceDescriptions[pref]).join('\n')
 }
 
 async function prepareMCPContext(mcpServers: MCPServer[], question: string, postContext?: PostContext): Promise<string | null> {

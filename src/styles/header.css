@@ -186,6 +186,31 @@
   transform: translateY(-1px);
 }
 
+.ask-ai-about-user-btn {
+  background: #10b981;
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  font-size: 0.875rem;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: all 0.2s;
+  margin-right: 0.5rem;
+}
+
+.ask-ai-about-user-btn:hover {
+  background: #059669;
+  transform: translateY(-1px);
+}
+
+.ai-icon {
+  font-size: 1rem;
+}
+
 /* Responsive design */
 @media (max-width: 1024px) {
   .header-content {
