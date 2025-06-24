@@ -147,7 +147,7 @@ class TravelSocialApp {
   }
 
   private async showConnectionError() {
-    console.log('🔍 Running connection diagnostics...');
+    console.log('🔍 Analyzing connection issue...');
     
     // Run connection test
     let testResult;
@@ -163,15 +163,28 @@ class TravelSocialApp {
         <div class="error-message connection-error">
           <div class="error-content">
             <div class="error-icon">🚫</div>
-            <h3>Cannot Connect to Supabase</h3>
-            <p>Unable to reach your Supabase project. This could be due to network connectivity, CORS configuration, or project settings.</p>
+            <h3>Connection Failed</h3>
+            <p>Unable to connect to your Supabase project. This is most likely a <strong>CORS configuration issue</strong>.</p>
+            
+            <div class="cors-solution">
+              <h4>🔧 Quick Fix (2 minutes):</h4>
+              <ol>
+                <li>Open <a href="https://supabase.com/dashboard" target="_blank" rel="noopener noreferrer">Supabase Dashboard</a></li>
+                <li>Select your project</li>
+                <li>Go to <strong>Settings → API</strong></li>
+                <li>Find <strong>CORS</strong> section</li>
+                <li>Add <code>${window.location.origin}</code> to allowed origins</li>
+                <li>Save and refresh this page</li>
+              </ol>
+            </div>
+            
             <div class="quick-fixes">
-              <h4>Quick Fixes to Try:</h4>
+              <h4>Other things to try:</h4>
               <ol>
                 <li>Refresh the page (Ctrl+F5 or Cmd+Shift+R)</li>
-                <li>Check if you're using the correct protocol (HTTP vs HTTPS)</li>
                 <li>Verify your Supabase project is active in the dashboard</li>
-                <li>Ensure <code>${window.location.origin}</code> is added to your Supabase CORS settings</li>
+                <li>Check your internet connection</li>
+                <li>Try disabling VPN if active</li>
               </ol>
             </div>
             ${displayConnectionDiagnostics()}

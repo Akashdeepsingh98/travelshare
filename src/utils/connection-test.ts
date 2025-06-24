@@ -95,9 +95,27 @@ export async function testSupabaseConnection(): Promise<{
 export function displayConnectionDiagnostics() {
   const diagnosticsHtml = `
     <div class="connection-diagnostics">
-      <h3>🔧 Connection Diagnostics</h3>
+      <h3>🔧 Connection Issue Detected</h3>
+      
+      <div class="cors-warning">
+        <h4>🚨 Most Likely Cause: CORS Configuration</h4>
+        <p>The "Failed to fetch" error typically indicates that your Supabase project needs to allow requests from this domain.</p>
+        
+        <div class="cors-fix-steps">
+          <h5>Quick Fix (2 minutes):</h5>
+          <ol>
+            <li>Open <a href="https://supabase.com/dashboard" target="_blank" rel="noopener noreferrer">Supabase Dashboard</a></li>
+            <li>Select your project</li>
+            <li>Go to <strong>Settings → API</strong></li>
+            <li>Find the <strong>CORS</strong> section</li>
+            <li>Add <code>${window.location.origin}</code> to allowed origins</li>
+            <li>Save changes and refresh this page</li>
+          </ol>
+        </div>
+      </div>
+      
       <div class="diagnostic-steps">
-        <h4>Please check the following:</h4>
+        <h4>Other things to check if CORS fix doesn't work:</h4>
         <ol>
           <li>
             <strong>Supabase Project Status:</strong>

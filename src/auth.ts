@@ -85,19 +85,47 @@ class AuthManager {
   private async handleConnectionError(error: any) {
     console.error('Connection error details:', error);
     
-    // Run connection diagnostics
-    console.error('🚨 Supabase Connection Error - Running diagnostics...');
+    // Enhanced CORS error detection and guidance
+    console.error('🚨 Supabase Connection Error - Analyzing issue...');
     
     try {
       const testResult = await testSupabaseConnection();
       if (!testResult.success) {
-        console.error('Connection test failed:', testResult.error);
-        console.error('Test details:', testResult.details);
+        console.error('❌ Connection test failed:', testResult.error);
+        console.error('📊 Test details:', testResult.details);
+        
+        // Provide specific CORS guidance
+        if (testResult.error?.includes('Failed to fetch') || 
+            testResult.error?.includes('Network connectivity') ||
+            error?.message?.includes('Failed to fetch')) {
+          console.error('');
+          console.error('🔧 CORS CONFIGURATION REQUIRED:');
+          console.error('This error typically means your Supabase project needs CORS configuration.');
+          console.error('');
+          console.error('📋 Steps to fix:');
+          console.error('1. Go to https://supabase.com/dashboard');
+          console.error('2. Select your project');
+          console.error('3. Go to Settings → API');
+          console.error('4. Under "Configuration", find "CORS"');
+          console.error(`5. Add this URL to allowed origins: ${window.location.origin}`);
+          console.error('6. Save changes and refresh this page');
+          console.error('');
+        }
       } else {
-        console.log('✅ Connection test passed - issue may be intermittent');
+        console.log('✅ Connection test passed - issue may be intermittent or resolved');
       }
     } catch (testError) {
       console.error('Failed to run connection test:', testError);
+      
+      // Even if test fails, provide CORS guidance for fetch errors
+      if (error?.message?.includes('Failed to fetch')) {
+        console.error('');
+        console.error('🔧 LIKELY CORS ISSUE:');
+        console.error('The "Failed to fetch" error usually indicates a CORS configuration problem.');
+        console.error(`Please add ${window.location.origin} to your Supabase CORS settings.`);
+        console.error('Visit: https://supabase.com/dashboard → Your Project → Settings → API → CORS');
+        console.error('');
+      }
     }
     
     // Check for refresh token errors first
