@@ -164,7 +164,16 @@ class TravelSocialApp {
           <div class="error-content">
             <div class="error-icon">🚫</div>
             <h3>Cannot Connect to Supabase</h3>
-            <p>Unable to reach your Supabase project. This appears to be a network connectivity issue.</p>
+            <p>Unable to reach your Supabase project. This could be due to network connectivity, CORS configuration, or project settings.</p>
+            <div class="quick-fixes">
+              <h4>Quick Fixes to Try:</h4>
+              <ol>
+                <li>Refresh the page (Ctrl+F5 or Cmd+Shift+R)</li>
+                <li>Check if you're using the correct protocol (HTTP vs HTTPS)</li>
+                <li>Verify your Supabase project is active in the dashboard</li>
+                <li>Ensure <code>${window.location.origin}</code> is added to your Supabase CORS settings</li>
+              </ol>
+            </div>
             ${displayConnectionDiagnostics()}
           </div>
         </div>

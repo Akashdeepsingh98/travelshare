@@ -137,7 +137,18 @@ export function displayConnectionDiagnostics() {
         <h4>Current Configuration:</h4>
         <p><strong>Supabase URL:</strong> <code>${import.meta.env.VITE_SUPABASE_URL}</code></p>
         <p><strong>Environment:</strong> <code>${import.meta.env.MODE}</code></p>
-        <p><strong>Local URL:</strong> <code>http://localhost:5173</code></p>
+        <p><strong>Local URL:</strong> <code>${window.location.origin}</code></p>
+        <p><strong>Current Protocol:</strong> <code>${window.location.protocol}</code></p>
+      </div>
+      
+      <div class="troubleshooting-tips">
+        <h4>Common Issues:</h4>
+        <ul>
+          <li><strong>HTTPS/HTTP Mismatch:</strong> If you're using HTTPS locally, ensure your Supabase project allows HTTPS connections</li>
+          <li><strong>CORS Issues:</strong> Add <code>${window.location.origin}</code> to your Supabase project's allowed origins</li>
+          <li><strong>Network Blocking:</strong> Check if your firewall or antivirus is blocking the connection</li>
+          <li><strong>Project Status:</strong> Verify your Supabase project is active and not paused</li>
+        </ul>
       </div>
       
       <div class="test-actions">

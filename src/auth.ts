@@ -142,7 +142,13 @@ class AuthManager {
           console.error('User profile not found. This might happen if the profile creation trigger failed.');
         }
         
-        throw error;
+        // Don't throw connection errors, handle them gracefully
+        if (error.message && error.message.includes('Failed to fetch')) {
+          await this.handleConnectionError(error);
+          return;
+        } else {
+          throw error;
+        }
       }
 
       this.authState = {
@@ -154,13 +160,24 @@ class AuthManager {
         },
         loading: false
       };
+      
+      this.notifyListeners();
     } catch (error) {
       console.error('Error fetching user profile:', error);
-      await this.handleConnectionError(error);
-      return; // Don't notify listeners if there's an error
+      
+      // Handle connection errors gracefully
+      if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
+        await this.handleConnectionError(error);
+      } else {
+        // For other errors, set unauthenticated state
+        this.authState = {
+          isAuthenticated: false,
+          currentUser: null,
+          loading: false
+        };
+        this.notifyListeners();
+      }
     }
-    
-    this.notifyListeners();
   }
 
   async refreshCurrentUser(): Promise<void> {
