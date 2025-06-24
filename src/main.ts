@@ -166,18 +166,24 @@ class TravelSocialApp {
         <div class="error-message cors-error">
           <div class="error-content">
             <div class="error-icon">🚫</div>
-            <h3>CORS Configuration Required</h3>
-            <p>Your Supabase project needs to be configured to allow requests from this local development server.</p>
+            <h3>Supabase Connection Error</h3>
+            <p>Unable to connect to your Supabase project. This could be due to several reasons.</p>
             
             <div class="setup-steps">
-              <h4>To fix this issue:</h4>
+              <h4>Troubleshooting steps:</h4>
               <ol>
-                <li>Go to your <a href="https://supabase.com/dashboard" target="_blank" rel="noopener noreferrer">Supabase Dashboard</a></li>
-                <li>Select your project</li>
-                <li>Navigate to <strong>Authentication</strong> → <strong>Settings</strong></li>
-                <li>In the <strong>Site URL</strong> field, add: <code>http://localhost:5173</code></li>
-                <li>Click <strong>Save</strong></li>
-                <li>Refresh this page</li>
+                <li><strong>Check your internet connection</strong> - Ensure you're connected to the internet</li>
+                <li><strong>Verify Supabase project status</strong> - Check if your project is paused or experiencing downtime at the <a href="https://supabase.com/dashboard" target="_blank" rel="noopener noreferrer">Supabase Dashboard</a></li>
+                <li><strong>Confirm CORS configuration:</strong>
+                  <ul>
+                    <li>Go to your Supabase project</li>
+                    <li>Navigate to <strong>Authentication</strong> → <strong>Settings</strong></li>
+                    <li>In the <strong>Site URL</strong> field, ensure it includes: <code>http://localhost:5173</code></li>
+                    <li>Click <strong>Save</strong></li>
+                  </ul>
+                </li>
+                <li><strong>Check environment variables</strong> - Verify your Supabase URL and API key are correct</li>
+                <li>Refresh this page after making changes</li>
               </ol>
             </div>
             
@@ -188,8 +194,8 @@ class TravelSocialApp {
             
             <div class="error-actions">
               <button class="retry-btn">Try Again</button>
-              <a href="https://supabase.com/docs/guides/api/cors" target="_blank" rel="noopener noreferrer" class="setup-guide-btn">
-                View CORS Guide
+              <a href="https://supabase.com/dashboard" target="_blank" rel="noopener noreferrer" class="setup-guide-btn">
+                Open Supabase Dashboard
               </a>
             </div>
           </div>
