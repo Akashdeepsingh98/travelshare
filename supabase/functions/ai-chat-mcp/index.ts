@@ -479,7 +479,7 @@ async function prepareMCPContext(mcpServers: MCPServer[], question: string, post
       else if (server.category === 'flight') toolName = 'search_flights'
       else if (server.category === 'taxi') toolName = 'search_transportation'
       else if (server.category === 'hotel') toolName = 'search_hotels'
-      else toolName = `search_${server.category}`;
+      else toolName = `search_${server.category}`
       
       // Extract location from post context if available
       const location = postContext?.location || ''
