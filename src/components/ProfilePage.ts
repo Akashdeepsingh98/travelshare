@@ -18,13 +18,203 @@ export function createProfilePage(
   const container = document.createElement('div');
   container.className = 'profile-page';
   
-  // Add component styles
+  // Add component styles directly to the component
   const style = document.createElement('style');
   style.textContent = `
     .profile-page {
       min-height: 100vh;
       background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
       padding: 2rem 1rem;
+    }
+
+    .profile-content {
+      max-width: 1200px;
+      margin: 0 auto;
+      background: white;
+      border-radius: 1rem;
+      padding: 2rem;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+    }
+
+    .profile-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 2rem;
+      background: rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(10px);
+      padding: 1rem 1.5rem;
+      border-radius: 1rem;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .profile-header h1 {
+      color: white;
+      font-size: 1.5rem;
+      font-weight: 600;
+      margin: 0;
+    }
+
+    .back-btn {
+      background: rgba(255, 255, 255, 0.2);
+      color: white;
+      border: none;
+      padding: 0.5rem 1rem;
+      border-radius: 0.5rem;
+      cursor: pointer;
+      font-weight: 500;
+      transition: all 0.2s;
+    }
+
+    .back-btn:hover {
+      background: rgba(255, 255, 255, 0.3);
+      transform: translateY(-1px);
+    }
+
+    .profile-loading, .profile-error {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 50vh;
+      text-align: center;
+      color: white;
+      padding: 2rem;
+    }
+
+    .loading-spinner {
+      width: 40px;
+      height: 40px;
+      border: 3px solid rgba(255, 255, 255, 0.3);
+      border-top: 3px solid white;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin-bottom: 1rem;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    .profile-error p {
+      margin-bottom: 1.5rem;
+      font-size: 1.125rem;
+    }
+
+    .profile-avatar-section {
+      text-align: center;
+      margin-bottom: 2rem;
+    }
+
+    .profile-avatar-large {
+      width: 120px;
+      height: 120px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 4px solid #667eea;
+      margin-bottom: 1rem;
+    }
+
+    .profile-stats {
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 2rem;
+      justify-content: center;
+    }
+
+    .stat-item {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border: none;
+      padding: 1rem;
+      border-radius: 0.75rem;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s;
+      min-width: 80px;
+    }
+
+    .stat-item:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(102, 126, 234, 0.3);
+    }
+
+    .stat-item:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    .stat-number {
+      display: block;
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: white;
+    }
+
+    .stat-label {
+      display: block;
+      font-size: 0.875rem;
+      color: rgba(255, 255, 255, 0.95);
+      font-weight: 500;
+      text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+    }
+
+    .profile-field {
+      margin-bottom: 1.5rem;
+    }
+
+    .profile-field label {
+      display: block;
+      font-weight: 600;
+      color: #374151;
+      margin-bottom: 0.5rem;
+    }
+
+    .profile-value {
+      color: #6b7280;
+      font-size: 1rem;
+    }
+
+    /* Responsive design */
+    @media (max-width: 768px) {
+      .profile-page {
+        padding: 1rem;
+      }
+
+      .profile-content {
+        padding: 1.5rem;
+      }
+
+      .profile-stats {
+        flex-wrap: wrap;
+      }
+
+      .stat-item {
+        min-width: calc(50% - 0.5rem);
+      }
+    }
+
+    @media (max-width: 480px) {
+      .profile-page {
+        padding: 0.5rem;
+      }
+
+      .profile-content {
+        padding: 1rem;
+      }
+
+      .profile-header {
+        padding: 0.75rem 1rem;
+      }
+
+      .profile-header h1 {
+        font-size: 1.25rem;
+      }
+
+      .stat-item {
+        min-width: 100%;
+      }
     }
 
     .profile-header {
@@ -1581,7 +1771,8 @@ export function createProfilePage(
   function renderLoadingState() {
     container.innerHTML = `
       <div class="profile-loading">
-        <div class="loading-spinner">Loading profile...</div>
+        <div class="loading-spinner"></div>
+        <p>Loading profile...</p>
       </div>
     `;
   }
@@ -1589,6 +1780,7 @@ export function createProfilePage(
   function renderErrorState(message: string) {
     container.innerHTML = `
       <div class="profile-error">
+        <div class="error-icon">⚠️</div>
         <p>${message}</p>
         <button class="back-btn">Go Back</button>
       </div>
