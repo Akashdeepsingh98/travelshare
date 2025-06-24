@@ -173,7 +173,10 @@ class TravelSocialApp {
                 <li>Select your project</li>
                 <li>Go to <strong>Settings → API</strong></li>
                 <li>Find <strong>CORS</strong> section</li>
-                <li>Add <code>${window.location.origin}</code> to allowed origins</li>
+                <li>Add <code>${window.location.origin}</code> to allowed origins
+                  <br><small style="color: #666;">Current origin: <strong>${window.location.origin}</strong></small>
+                  <br><small style="color: #666;">Also try adding: <code>http://localhost:5173</code> and <code>https://localhost:5173</code></small>
+                </li>
                 <li>Save and refresh this page</li>
               </ol>
             </div>
