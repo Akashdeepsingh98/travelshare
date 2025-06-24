@@ -14,6 +14,7 @@ import { createAIPage } from './components/AIPage';
 import { createAboutPage } from './components/AboutPage';
 import { createBoltBadge } from './components/BoltBadge';
 import { supabase } from './lib/supabase';
+import { testSupabaseConnection, displayConnectionDiagnostics } from './utils/connection-test';
 
 type AppView = 'feed' | 'profile' | 'explore' | 'post-viewer' | 'following' | 'followers' | 'ai-chat' | 'about';
 
@@ -100,9 +101,9 @@ class TravelSocialApp {
       if (error) {
         console.error('Error fetching posts:', error);
         if (error.message && error.message.includes('Failed to fetch')) {
-          this.showCORSError();
+          await this.showConnectionError();
         } else {
-          this.showConnectionError('Failed to load posts. Please try refreshing the page.');
+          this.showGenericError('Failed to load posts. Please try refreshing the page.');
         }
         return;
       }
@@ -138,70 +139,77 @@ class TravelSocialApp {
       
       // Provide more specific error messages based on error type
       if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
-        this.showCORSError();
+        await this.showConnectionError();
       } else {
-        this.showConnectionError('An unexpected error occurred while loading posts. Please try again.');
+        this.showGenericError('An unexpected error occurred while loading posts. Please try again.');
       }
     }
   }
 
-  private showCORSError() {
+  private async showConnectionError() {
+    console.log('🔍 Running connection diagnostics...');
+    
+    // Run connection test
+    let testResult;
+    try {
+      testResult = await testSupabaseConnection();
+    } catch (error) {
+      console.error('Failed to run connection test:', error);
+    }
+
     const feedSection = document.querySelector('#posts-feed') as HTMLElement;
     if (feedSection) {
       feedSection.innerHTML = `
-        <div class="error-message cors-error">
+        <div class="error-message connection-error">
           <div class="error-content">
             <div class="error-icon">🚫</div>
-            <h3>Supabase Connection Error</h3>
-            <p>Unable to connect to your Supabase project. This could be due to several reasons.</p>
-            
-            <div class="setup-steps">
-              <h4>Troubleshooting steps:</h4>
-              <ol>
-                <li><strong>Check your internet connection</strong> - Ensure you're connected to the internet</li>
-                <li><strong>Verify Supabase project status</strong> - Check if your project is active at the <a href="https://supabase.com/dashboard" target="_blank" rel="noopener noreferrer">Supabase Dashboard</a></li>
-                <li><strong>Test direct access</strong> - Try opening <a href="${import.meta.env.VITE_SUPABASE_URL}" target="_blank" rel="noopener noreferrer">your Supabase URL</a> in a new tab</li>
-                <li><strong>Confirm CORS configuration:</strong>
-                  <ul>
-                    <li>Go to your Supabase project</li>
-                    <li>Navigate to <strong>Authentication</strong> → <strong>Settings</strong></li>
-                    <li>In the <strong>Site URL</strong> field, ensure it includes: <code>http://localhost:5173</code></li>
-                    <li>Click <strong>Save</strong></li>
-                  </ul>
-                </li>
-                <li><strong>Check environment variables</strong> - Verify your Supabase URL and API key are correct</li>
-                <li><strong>Clear browser cache</strong> - Try hard refresh (Ctrl+F5 or Cmd+Shift+R)</li>
-                <li>Refresh this page after making changes</li>
-              </ol>
-            </div>
-            
-            <div class="current-config">
-              <p><strong>Current Supabase URL:</strong> <code>${import.meta.env.VITE_SUPABASE_URL}</code></p>
-              <p><strong>Development URL:</strong> <code>http://localhost:5173</code></p>
-              <p><strong>Environment:</strong> <code>${import.meta.env.MODE}</code></p>
-            </div>
-            
-            <div class="error-actions">
-              <button class="retry-btn">Try Again</button>
-              <a href="https://supabase.com/dashboard" target="_blank" rel="noopener noreferrer" class="setup-guide-btn">
-                Open Supabase Dashboard
-              </a>
-              <a href="${import.meta.env.VITE_SUPABASE_URL}" target="_blank" rel="noopener noreferrer" class="test-url-btn">
-                Test Supabase URL
-              </a>
-            </div>
+            <h3>Cannot Connect to Supabase</h3>
+            <p>Unable to reach your Supabase project. This appears to be a network connectivity issue.</p>
+            ${displayConnectionDiagnostics()}
           </div>
         </div>
       `;
       
+      // Add event listeners for diagnostic buttons
       const retryBtn = feedSection.querySelector('.retry-btn') as HTMLButtonElement;
       if (retryBtn) {
         retryBtn.addEventListener('click', () => this.loadPosts());
       }
+      
+      const testBtn = feedSection.querySelector('#run-connection-test') as HTMLButtonElement;
+      if (testBtn) {
+        testBtn.addEventListener('click', async () => {
+          const resultsDiv = feedSection.querySelector('#test-results') as HTMLElement;
+          resultsDiv.style.display = 'block';
+          resultsDiv.innerHTML = '<p>Running connection test...</p>';
+          
+          try {
+            const result = await testSupabaseConnection();
+            resultsDiv.innerHTML = `
+              <h4>Test Results:</h4>
+              <p><strong>Status:</strong> ${result.success ? '✅ Success' : '❌ Failed'}</p>
+              ${result.error ? `<p><strong>Error:</strong> ${result.error}</p>` : ''}
+              <details>
+                <summary>Technical Details</summary>
+                <pre>${JSON.stringify(result.details, null, 2)}</pre>
+              </details>
+            `;
+          } catch (error) {
+            resultsDiv.innerHTML = `<p>❌ Test failed: ${error}</p>`;
+          }
+        });
+      }
+      
+      const retryConnectionBtn = feedSection.querySelector('#retry-connection') as HTMLButtonElement;
+      if (retryConnectionBtn) {
+        retryConnectionBtn.addEventListener('click', () => {
+          window.location.reload();
+        });
+      }
     }
   }
 
-  private showConnectionError(message: string) {
+  private showGenericError(message: string) {
     const feedSection = document.querySelector('#posts-feed') as HTMLElement;
     if (feedSection) {
       feedSection.innerHTML = `

@@ -1,5 +1,6 @@
 import { supabase } from './lib/supabase';
 import { User, AuthState } from './types';
+import { testSupabaseConnection, displayConnectionDiagnostics } from './utils/connection-test';
 
 class AuthManager {
   private authState: AuthState = {
@@ -84,13 +85,20 @@ class AuthManager {
   private async handleConnectionError(error: any) {
     console.error('Connection error details:', error);
     
-    // Log detailed error information for debugging
-    console.error('🚨 Supabase Connection Error');
-    console.error('Error type:', typeof error);
-    console.error('Error message:', error?.message);
-    console.error('Error code:', error?.code);
-    console.error('Current Supabase URL:', import.meta.env.VITE_SUPABASE_URL);
-    console.error('Current environment:', import.meta.env.MODE);
+    // Run connection diagnostics
+    console.error('🚨 Supabase Connection Error - Running diagnostics...');
+    
+    try {
+      const testResult = await testSupabaseConnection();
+      if (!testResult.success) {
+        console.error('Connection test failed:', testResult.error);
+        console.error('Test details:', testResult.details);
+      } else {
+        console.log('✅ Connection test passed - issue may be intermittent');
+      }
+    } catch (testError) {
+      console.error('Failed to run connection test:', testError);
+    }
     
     // Check for refresh token errors first
     if (error && typeof error === 'object' && (
@@ -107,24 +115,6 @@ class AuthManager {
       } catch (signOutError) {
         console.error('Error signing out:', signOutError);
       }
-    }
-    
-    // Provide detailed error information for CORS and network issues
-    if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
-      console.error('🚨 CORS/Network Error Detected');
-      console.error('This is likely a CORS configuration issue. To fix this:');
-      console.error('1. Go to your Supabase Dashboard');
-      console.error('2. Navigate to Authentication > Settings');
-      console.error('3. Add "http://localhost:5173" to the Site URL field');
-      console.error('4. Save the changes and refresh this page');
-      console.error('');
-      console.error('Current Supabase URL:', import.meta.env.VITE_SUPABASE_URL);
-      console.error('If the URL looks incorrect, check your .env file');
-      console.error('');
-      console.error('Additional troubleshooting:');
-      console.error('- Check if your Supabase project is active at https://supabase.com/dashboard');
-      console.error('- Verify your internet connection');
-      console.error('- Try accessing your Supabase URL directly in a browser');
     }
     
     this.authState = {
