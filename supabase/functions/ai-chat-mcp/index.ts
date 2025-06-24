@@ -411,10 +411,7 @@ Based on this information, provide a comprehensive profile summary that highligh
 5. Overall engagement in the community
 
 The summary should be personalized, insightful, and highlight what makes this profile unique in the travel community.`
-  } catch (error) {
-    console.error('Error preparing profile context:', error)
-    return `Error loading profile data for ${profileContext.name}`
-  }
+}
 }
 
 function prepareTravelContext(posts: any[]): string {
