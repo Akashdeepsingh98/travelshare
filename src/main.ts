@@ -367,7 +367,7 @@ class TravelSocialApp {
           (userId, userName) => this.navigateToFollowing(userId, userName),
           (userId, userName) => this.navigateToFollowers(userId, userName),
           this.viewData.userId, // Pass the userId to view another user's profile
-          (userId) => this.navigateToProfile(userId) // Pass user click handler
+          (userId) => this.navigateToProfile(userId), // Pass user click handler
           (post) => this.navigateToAIChat(post), // Pass Ask AI handler for posts
           (userId, userName) => this.navigateToAIChatForUser(userId, userName) // Pass Ask AI handler for users
         )
