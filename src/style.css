@@ -10,3 +10,151 @@
 @import './styles/mcp-guide.css';
 @import './styles/mcp-manager.css';
 @import './styles/responsive.css';
+
+/* CORS Error Styling */
+.cors-solution {
+  background: #f0f9ff;
+  border: 1px solid #0ea5e9;
+  border-radius: 6px;
+  padding: 1rem;
+  margin: 1rem 0;
+  text-align: left;
+}
+
+.cors-solution h4 {
+  color: #0369a1;
+  margin: 0 0 0.5rem 0;
+}
+
+.cors-solution ol {
+  margin: 0.5rem 0 0 1rem;
+  padding: 0;
+}
+
+.cors-solution li {
+  margin: 0.25rem 0;
+}
+
+.cors-solution code {
+  background: #e0f2fe;
+  padding: 2px 4px;
+  border-radius: 3px;
+  font-family: monospace;
+  font-size: 0.9em;
+}
+
+.cors-warning {
+  background: #fef3c7;
+  border: 1px solid #f59e0b;
+  border-radius: 6px;
+  padding: 1rem;
+  margin: 1rem 0;
+}
+
+.cors-warning h4 {
+  color: #92400e;
+  margin: 0 0 0.5rem 0;
+}
+
+.cors-fix-steps {
+  margin-top: 1rem;
+}
+
+.cors-fix-steps h5 {
+  color: #92400e;
+  margin: 0 0 0.5rem 0;
+}
+
+.cors-fix-steps ol {
+  margin: 0.5rem 0 0 1rem;
+  padding: 0;
+}
+
+.cors-fix-steps li {
+  margin: 0.25rem 0;
+}
+
+.cors-error {
+  max-width: 600px;
+  margin: 2rem auto;
+}
+
+.cors-error .error-content {
+  text-align: left;
+}
+
+.cors-error .setup-steps {
+  background: #f8f9fa;
+  border: 1px solid #e9ecef;
+  border-radius: 8px;
+  padding: 1rem;
+  margin: 1rem 0;
+}
+
+.cors-error .setup-steps h4 {
+  margin: 0 0 0.5rem 0;
+  color: #495057;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.cors-error .setup-steps ol {
+  margin: 0;
+  padding-left: 1.2rem;
+}
+
+.cors-error .setup-steps li {
+  margin: 0.3rem 0;
+  font-size: 0.85rem;
+  line-height: 1.4;
+}
+
+.cors-error .setup-steps code {
+  background: #e9ecef;
+  padding: 0.1rem 0.3rem;
+  border-radius: 3px;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  font-size: 0.8rem;
+}
+
+.cors-error .current-config {
+  background: #fff3cd;
+  border: 1px solid #ffeaa7;
+  border-radius: 6px;
+  padding: 0.8rem;
+  margin: 1rem 0;
+  font-size: 0.8rem;
+}
+
+.cors-error .current-config p {
+  margin: 0.2rem 0;
+}
+
+.cors-error .current-config code {
+  background: #fff;
+  padding: 0.1rem 0.3rem;
+  border-radius: 3px;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  border: 1px solid #ddd;
+}
+
+.cors-error .error-actions {
+  display: flex;
+  gap: 0.8rem;
+  margin-top: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.cors-error .setup-guide-btn {
+  background: #0066cc;
+  color: white;
+  text-decoration: none;
+  padding: 0.6rem 1rem;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  transition: background-color 0.2s;
+}
+
+.cors-error .setup-guide-btn:hover {
+  background: #0052a3;
+}

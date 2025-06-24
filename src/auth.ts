@@ -1,5 +1,6 @@
 import { supabase } from './lib/supabase';
 import { User, AuthState } from './types';
+import { testSupabaseConnection, displayConnectionDiagnostics } from './utils/connection-test';
 
 class AuthManager {
   private authState: AuthState = {
@@ -16,24 +17,12 @@ class AuthManager {
 
   private async init() {
     try {
-      // Test Supabase connection first with a simple health check
-      const { error: connectionError } = await supabase
-        .from('profiles')
-        .select('count')
-        .limit(1);
-
-      if (connectionError) {
-        console.error('Supabase connection test failed:', connectionError);
-        await this.handleConnectionError(connectionError);
-        return;
-      }
-
       // Get initial session
       const { data: { session }, error: sessionError } = await supabase.auth.getSession();
       
       if (sessionError) {
         console.error('Session error:', sessionError);
-        await this.handleAuthError(sessionError);
+        await this.handleConnectionError(sessionError);
         return;
       }
       
@@ -96,6 +85,49 @@ class AuthManager {
   private async handleConnectionError(error: any) {
     console.error('Connection error details:', error);
     
+    // Enhanced CORS error detection and guidance
+    console.error('🚨 Supabase Connection Error - Analyzing issue...');
+    
+    try {
+      const testResult = await testSupabaseConnection();
+      if (!testResult.success) {
+        console.error('❌ Connection test failed:', testResult.error);
+        console.error('📊 Test details:', testResult.details);
+        
+        // Provide specific CORS guidance
+        if (testResult.error?.includes('Failed to fetch') || 
+            testResult.error?.includes('Network connectivity') ||
+            error?.message?.includes('Failed to fetch')) {
+          console.error('');
+          console.error('🔧 CORS CONFIGURATION REQUIRED:');
+          console.error('This error typically means your Supabase project needs CORS configuration.');
+          console.error('');
+          console.error('📋 Steps to fix:');
+          console.error('1. Go to https://supabase.com/dashboard');
+          console.error('2. Select your project');
+          console.error('3. Go to Settings → API');
+          console.error('4. Under "Configuration", find "CORS"');
+          console.error(`5. Add this URL to allowed origins: ${window.location.origin}`);
+          console.error('6. Save changes and refresh this page');
+          console.error('');
+        }
+      } else {
+        console.log('✅ Connection test passed - issue may be intermittent or resolved');
+      }
+    } catch (testError) {
+      console.error('Failed to run connection test:', testError);
+      
+      // Even if test fails, provide CORS guidance for fetch errors
+      if (error?.message?.includes('Failed to fetch')) {
+        console.error('');
+        console.error('🔧 LIKELY CORS ISSUE:');
+        console.error('The "Failed to fetch" error usually indicates a CORS configuration problem.');
+        console.error(`Please add ${window.location.origin} to your Supabase CORS settings.`);
+        console.error('Visit: https://supabase.com/dashboard → Your Project → Settings → API → CORS');
+        console.error('');
+      }
+    }
+    
     // Check for refresh token errors first
     if (error && typeof error === 'object' && (
       (error.message && (
@@ -111,19 +143,6 @@ class AuthManager {
       } catch (signOutError) {
         console.error('Error signing out:', signOutError);
       }
-    }
-    
-    // Provide detailed error information for CORS and network issues
-    if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
-      console.error('🚨 CORS/Network Error Detected');
-      console.error('This is likely a CORS configuration issue. To fix this:');
-      console.error('1. Go to your Supabase Dashboard');
-      console.error('2. Navigate to Authentication > Settings');
-      console.error('3. Add "http://localhost:5173" to the Site URL field');
-      console.error('4. Save the changes and refresh this page');
-      console.error('');
-      console.error('Current Supabase URL:', import.meta.env.VITE_SUPABASE_URL);
-      console.error('If the URL looks incorrect, check your .env file');
     }
     
     this.authState = {
@@ -151,7 +170,13 @@ class AuthManager {
           console.error('User profile not found. This might happen if the profile creation trigger failed.');
         }
         
-        throw error;
+        // Don't throw connection errors, handle them gracefully
+        if (error.message && error.message.includes('Failed to fetch')) {
+          await this.handleConnectionError(error);
+          return;
+        } else {
+          throw error;
+        }
       }
 
       this.authState = {
@@ -163,13 +188,24 @@ class AuthManager {
         },
         loading: false
       };
+      
+      this.notifyListeners();
     } catch (error) {
       console.error('Error fetching user profile:', error);
-      await this.handleConnectionError(error);
-      return; // Don't notify listeners if there's an error
+      
+      // Handle connection errors gracefully
+      if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
+        await this.handleConnectionError(error);
+      } else {
+        // For other errors, set unauthenticated state
+        this.authState = {
+          isAuthenticated: false,
+          currentUser: null,
+          loading: false
+        };
+        this.notifyListeners();
+      }
     }
-    
-    this.notifyListeners();
   }
 
   async refreshCurrentUser(): Promise<void> {

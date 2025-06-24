@@ -14,6 +14,7 @@ import { createAIPage } from './components/AIPage';
 import { createAboutPage } from './components/AboutPage';
 import { createBoltBadge } from './components/BoltBadge';
 import { supabase } from './lib/supabase';
+import { testSupabaseConnection, displayConnectionDiagnostics } from './utils/connection-test';
 
 type AppView = 'feed' | 'profile' | 'explore' | 'post-viewer' | 'following' | 'followers' | 'ai-chat' | 'about';
 
@@ -60,18 +61,6 @@ class TravelSocialApp {
 
   private async loadPosts() {
     try {
-      // Test Supabase connection first
-      const { data: testData, error: testError } = await supabase
-        .from('posts')
-        .select('count')
-        .limit(1);
-
-      if (testError) {
-        console.error('Supabase connection test failed:', testError);
-        this.showConnectionError('Unable to connect to the database. Please check your internet connection and try again.');
-        return;
-      }
-
       const authState = authManager.getAuthState();
       
       let query = supabase
@@ -111,7 +100,11 @@ class TravelSocialApp {
 
       if (error) {
         console.error('Error fetching posts:', error);
-        this.showConnectionError('Failed to load posts. Please try refreshing the page.');
+        if (error.message && error.message.includes('Failed to fetch')) {
+          await this.showConnectionError();
+        } else {
+          this.showGenericError('Failed to load posts. Please try refreshing the page.');
+        }
         return;
       }
 
@@ -140,23 +133,105 @@ class TravelSocialApp {
       }
     } catch (error) {
       console.error('Error loading posts:', error);
+      console.error('Error type:', typeof error);
+      console.error('Error message:', error?.message);
+      console.error('Error stack:', error?.stack);
       
       // Provide more specific error messages based on error type
-      if (error instanceof TypeError && error.message.includes('fetch')) {
-        this.showConnectionError(
-          'Connection failed. This might be due to:\n' +
-          '• Network connectivity issues\n' +
-          '• CORS configuration in Supabase\n' +
-          '• Invalid Supabase URL or API key\n\n' +
-          'Please check your Supabase project settings and ensure your local development URL is added to the allowed origins.'
-        );
+      if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
+        await this.showConnectionError();
       } else {
-        this.showConnectionError('An unexpected error occurred while loading posts. Please try again.');
+        this.showGenericError('An unexpected error occurred while loading posts. Please try again.');
       }
     }
   }
 
-  private showConnectionError(message: string) {
+  private async showConnectionError() {
+    console.log('🔍 Analyzing connection issue...');
+    
+    // Run connection test
+    let testResult;
+    try {
+      testResult = await testSupabaseConnection();
+    } catch (error) {
+      console.error('Failed to run connection test:', error);
+    }
+
+    const feedSection = document.querySelector('#posts-feed') as HTMLElement;
+    if (feedSection) {
+      feedSection.innerHTML = `
+        <div class="error-message connection-error">
+          <div class="error-content">
+            <div class="error-icon">🚫</div>
+            <h3>Connection Failed</h3>
+            <p>Unable to connect to your Supabase project. This is most likely a <strong>CORS configuration issue</strong>.</p>
+            
+            <div class="cors-solution">
+              <h4>🔧 Quick Fix (2 minutes):</h4>
+              <ol>
+                <li>Open <a href="https://supabase.com/dashboard" target="_blank" rel="noopener noreferrer">Supabase Dashboard</a></li>
+                <li>Select your project</li>
+                <li>Go to <strong>Settings → API</strong></li>
+                <li>Find <strong>CORS</strong> section</li>
+                <li>Add <code>${window.location.origin}</code> to allowed origins</li>
+                <li>Save and refresh this page</li>
+              </ol>
+            </div>
+            
+            <div class="quick-fixes">
+              <h4>Other things to try:</h4>
+              <ol>
+                <li>Refresh the page (Ctrl+F5 or Cmd+Shift+R)</li>
+                <li>Verify your Supabase project is active in the dashboard</li>
+                <li>Check your internet connection</li>
+                <li>Try disabling VPN if active</li>
+              </ol>
+            </div>
+            ${displayConnectionDiagnostics()}
+          </div>
+        </div>
+      `;
+      
+      // Add event listeners for diagnostic buttons
+      const retryBtn = feedSection.querySelector('.retry-btn') as HTMLButtonElement;
+      if (retryBtn) {
+        retryBtn.addEventListener('click', () => this.loadPosts());
+      }
+      
+      const testBtn = feedSection.querySelector('#run-connection-test') as HTMLButtonElement;
+      if (testBtn) {
+        testBtn.addEventListener('click', async () => {
+          const resultsDiv = feedSection.querySelector('#test-results') as HTMLElement;
+          resultsDiv.style.display = 'block';
+          resultsDiv.innerHTML = '<p>Running connection test...</p>';
+          
+          try {
+            const result = await testSupabaseConnection();
+            resultsDiv.innerHTML = `
+              <h4>Test Results:</h4>
+              <p><strong>Status:</strong> ${result.success ? '✅ Success' : '❌ Failed'}</p>
+              ${result.error ? `<p><strong>Error:</strong> ${result.error}</p>` : ''}
+              <details>
+                <summary>Technical Details</summary>
+                <pre>${JSON.stringify(result.details, null, 2)}</pre>
+              </details>
+            `;
+          } catch (error) {
+            resultsDiv.innerHTML = `<p>❌ Test failed: ${error}</p>`;
+          }
+        });
+      }
+      
+      const retryConnectionBtn = feedSection.querySelector('#retry-connection') as HTMLButtonElement;
+      if (retryConnectionBtn) {
+        retryConnectionBtn.addEventListener('click', () => {
+          window.location.reload();
+        });
+      }
+    }
+  }
+
+  private showGenericError(message: string) {
     const feedSection = document.querySelector('#posts-feed') as HTMLElement;
     if (feedSection) {
       feedSection.innerHTML = `
