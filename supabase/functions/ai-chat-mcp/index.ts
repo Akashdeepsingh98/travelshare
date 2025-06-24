@@ -412,6 +412,7 @@ Based on this information, provide a comprehensive profile summary that highligh
 
 The summary should be personalized, insightful, and highlight what makes this profile unique in the travel community.`
 }
+}
 
 function prepareTravelContext(posts: any[]): string {
   if (!posts || posts.length === 0) {
