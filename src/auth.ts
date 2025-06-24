@@ -16,24 +16,12 @@ class AuthManager {
 
   private async init() {
     try {
-      // Test Supabase connection first with a simple health check
-      const { error: connectionError } = await supabase
-        .from('profiles')
-        .select('count')
-        .limit(1);
-
-      if (connectionError) {
-        console.error('Supabase connection test failed:', connectionError);
-        await this.handleConnectionError(connectionError);
-        return;
-      }
-
       // Get initial session
       const { data: { session }, error: sessionError } = await supabase.auth.getSession();
       
       if (sessionError) {
         console.error('Session error:', sessionError);
-        await this.handleAuthError(sessionError);
+        await this.handleConnectionError(sessionError);
         return;
       }
       
@@ -96,6 +84,14 @@ class AuthManager {
   private async handleConnectionError(error: any) {
     console.error('Connection error details:', error);
     
+    // Log detailed error information for debugging
+    console.error('🚨 Supabase Connection Error');
+    console.error('Error type:', typeof error);
+    console.error('Error message:', error?.message);
+    console.error('Error code:', error?.code);
+    console.error('Current Supabase URL:', import.meta.env.VITE_SUPABASE_URL);
+    console.error('Current environment:', import.meta.env.MODE);
+    
     // Check for refresh token errors first
     if (error && typeof error === 'object' && (
       (error.message && (
@@ -124,6 +120,11 @@ class AuthManager {
       console.error('');
       console.error('Current Supabase URL:', import.meta.env.VITE_SUPABASE_URL);
       console.error('If the URL looks incorrect, check your .env file');
+      console.error('');
+      console.error('Additional troubleshooting:');
+      console.error('- Check if your Supabase project is active at https://supabase.com/dashboard');
+      console.error('- Verify your internet connection');
+      console.error('- Try accessing your Supabase URL directly in a browser');
     }
     
     this.authState = {

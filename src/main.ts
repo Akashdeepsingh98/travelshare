@@ -60,26 +60,6 @@ class TravelSocialApp {
 
   private async loadPosts() {
     try {
-      // Test Supabase connection first with better error handling
-      try {
-        const { data: testData, error: testError } = await supabase
-          .from('posts')
-          .select('count')
-          .limit(1);
-
-        if (testError) {
-          console.error('Supabase connection test failed:', testError);
-          throw testError;
-        }
-      } catch (connectionError) {
-        console.error('Connection test error:', connectionError);
-        if (connectionError instanceof TypeError && connectionError.message.includes('Failed to fetch')) {
-          this.showCORSError();
-          return;
-        }
-        throw connectionError;
-      }
-
       const authState = authManager.getAuthState();
       
       let query = supabase
@@ -119,7 +99,11 @@ class TravelSocialApp {
 
       if (error) {
         console.error('Error fetching posts:', error);
-        this.showConnectionError('Failed to load posts. Please try refreshing the page.');
+        if (error.message && error.message.includes('Failed to fetch')) {
+          this.showCORSError();
+        } else {
+          this.showConnectionError('Failed to load posts. Please try refreshing the page.');
+        }
         return;
       }
 
@@ -148,6 +132,9 @@ class TravelSocialApp {
       }
     } catch (error) {
       console.error('Error loading posts:', error);
+      console.error('Error type:', typeof error);
+      console.error('Error message:', error?.message);
+      console.error('Error stack:', error?.stack);
       
       // Provide more specific error messages based on error type
       if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
@@ -172,7 +159,8 @@ class TravelSocialApp {
               <h4>Troubleshooting steps:</h4>
               <ol>
                 <li><strong>Check your internet connection</strong> - Ensure you're connected to the internet</li>
-                <li><strong>Verify Supabase project status</strong> - Check if your project is paused or experiencing downtime at the <a href="https://supabase.com/dashboard" target="_blank" rel="noopener noreferrer">Supabase Dashboard</a></li>
+                <li><strong>Verify Supabase project status</strong> - Check if your project is active at the <a href="https://supabase.com/dashboard" target="_blank" rel="noopener noreferrer">Supabase Dashboard</a></li>
+                <li><strong>Test direct access</strong> - Try opening <a href="${import.meta.env.VITE_SUPABASE_URL}" target="_blank" rel="noopener noreferrer">your Supabase URL</a> in a new tab</li>
                 <li><strong>Confirm CORS configuration:</strong>
                   <ul>
                     <li>Go to your Supabase project</li>
@@ -182,6 +170,7 @@ class TravelSocialApp {
                   </ul>
                 </li>
                 <li><strong>Check environment variables</strong> - Verify your Supabase URL and API key are correct</li>
+                <li><strong>Clear browser cache</strong> - Try hard refresh (Ctrl+F5 or Cmd+Shift+R)</li>
                 <li>Refresh this page after making changes</li>
               </ol>
             </div>
@@ -189,12 +178,16 @@ class TravelSocialApp {
             <div class="current-config">
               <p><strong>Current Supabase URL:</strong> <code>${import.meta.env.VITE_SUPABASE_URL}</code></p>
               <p><strong>Development URL:</strong> <code>http://localhost:5173</code></p>
+              <p><strong>Environment:</strong> <code>${import.meta.env.MODE}</code></p>
             </div>
             
             <div class="error-actions">
               <button class="retry-btn">Try Again</button>
               <a href="https://supabase.com/dashboard" target="_blank" rel="noopener noreferrer" class="setup-guide-btn">
                 Open Supabase Dashboard
+              </a>
+              <a href="${import.meta.env.VITE_SUPABASE_URL}" target="_blank" rel="noopener noreferrer" class="test-url-btn">
+                Test Supabase URL
               </a>
             </div>
           </div>
