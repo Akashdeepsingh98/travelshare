@@ -61,16 +61,24 @@ class TravelSocialApp {
 
   private async loadPosts() {
     try {
-      // Test Supabase connection first
-      const { data: testData, error: testError } = await supabase
-        .from('posts')
-        .select('count')
-        .limit(1);
+      // Test Supabase connection first with better error handling
+      try {
+        const { data: testData, error: testError } = await supabase
+          .from('posts')
+          .select('count')
+          .limit(1);
 
-      if (testError) {
-        console.error('Supabase connection test failed:', testError);
-        this.showConnectionError('Unable to connect to the database. Please check your internet connection and try again.');
-        return;
+        if (testError) {
+          console.error('Supabase connection test failed:', testError);
+          throw testError;
+        }
+      } catch (connectionError) {
+        console.error('Connection test error:', connectionError);
+        if (connectionError instanceof TypeError && connectionError.message.includes('Failed to fetch')) {
+          this.showCORSError();
+          return;
+        }
+        throw connectionError;
       }
 
       const authState = authManager.getAuthState();
@@ -143,16 +151,54 @@ class TravelSocialApp {
       console.error('Error loading posts:', error);
       
       // Provide more specific error messages based on error type
-      if (error instanceof TypeError && error.message.includes('fetch')) {
-        this.showConnectionError(
-          'Connection failed. This might be due to:\n' +
-          '• Network connectivity issues\n' +
-          '• CORS configuration in Supabase\n' +
-          '• Invalid Supabase URL or API key\n\n' +
-          'Please check your Supabase project settings and ensure your local development URL is added to the allowed origins.'
-        );
+      if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
+        this.showCORSError();
       } else {
         this.showConnectionError('An unexpected error occurred while loading posts. Please try again.');
+      }
+    }
+  }
+
+  private showCORSError() {
+    const feedSection = document.querySelector('#posts-feed') as HTMLElement;
+    if (feedSection) {
+      feedSection.innerHTML = `
+        <div class="error-message cors-error">
+          <div class="error-content">
+            <div class="error-icon">🚫</div>
+            <h3>CORS Configuration Required</h3>
+            <p>Your Supabase project needs to be configured to allow requests from this local development server.</p>
+            
+            <div class="setup-steps">
+              <h4>To fix this issue:</h4>
+              <ol>
+                <li>Go to your <a href="https://supabase.com/dashboard" target="_blank" rel="noopener noreferrer">Supabase Dashboard</a></li>
+                <li>Select your project</li>
+                <li>Navigate to <strong>Authentication</strong> → <strong>Settings</strong></li>
+                <li>In the <strong>Site URL</strong> field, add: <code>http://localhost:5173</code></li>
+                <li>Click <strong>Save</strong></li>
+                <li>Refresh this page</li>
+              </ol>
+            </div>
+            
+            <div class="current-config">
+              <p><strong>Current Supabase URL:</strong> <code>${import.meta.env.VITE_SUPABASE_URL}</code></p>
+              <p><strong>Development URL:</strong> <code>http://localhost:5173</code></p>
+            </div>
+            
+            <div class="error-actions">
+              <button class="retry-btn">Try Again</button>
+              <a href="https://supabase.com/docs/guides/api/cors" target="_blank" rel="noopener noreferrer" class="setup-guide-btn">
+                View CORS Guide
+              </a>
+            </div>
+          </div>
+        </div>
+      `;
+      
+      const retryBtn = feedSection.querySelector('.retry-btn') as HTMLButtonElement;
+      if (retryBtn) {
+        retryBtn.addEventListener('click', () => this.loadPosts());
       }
     }
   }
