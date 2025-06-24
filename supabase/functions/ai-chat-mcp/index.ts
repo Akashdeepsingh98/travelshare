@@ -780,3 +780,4 @@ These visual analyses are based on actual photos shared by travelers in our comm
     return null
   }
 }
+}
