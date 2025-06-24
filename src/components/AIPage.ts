@@ -1,6 +1,6 @@
 import { authManager } from '../auth';
 import { showAuthModal } from './AuthModal';
-import { Post, ProfileContext } from '../types';
+import { Post } from '../types';
 
 interface ChatMessage {
   id: string;
@@ -9,11 +9,7 @@ interface ChatMessage {
   timestamp: Date;
 }
 
-export function createAIPage(
-  onNavigateBack: () => void, 
-  postContext?: Post | null,
-  profileContext?: ProfileContext | null
-): HTMLElement {
+export function createAIPage(onNavigateBack: () => void, postContext?: Post | null): HTMLElement {
   const container = document.createElement('div');
   container.className = 'ai-page';
   
@@ -71,25 +67,6 @@ export function createAIPage(
                 </div>
               </div>
             ` : ''}
-            ${profileContext ? `
-              <div class="profile-context-info">
-                <h4>👤 Summarizing this profile:</h4>
-                <div class="context-profile-preview">
-                  <div class="context-profile-header">
-                    <span class="context-profile-name">${profileContext.name}</span>
-                    <span class="context-profile-stats">${profileContext.posts_count} posts • ${profileContext.followers_count} followers • ${profileContext.following_count} following</span>
-                  </div>
-                  ${profileContext.avatar_url ? `
-                    <div class="context-profile-avatar">
-                      <img src="${profileContext.avatar_url}" alt="${profileContext.name}" class="context-avatar-preview">
-                    </div>
-                  ` : ''}
-                  <div class="context-profile-content">
-                    <p>I'll analyze ${profileContext.name}'s profile, posts, and activities to provide you with a comprehensive summary.</p>
-                  </div>
-                </div>
-              </div>
-            ` : ''}
             <div class="suggestion-chips">
               ${postContext ? `
                 <button class="suggestion-chip" data-question="Tell me more about ${postContext.location}">About this location</button>
@@ -97,12 +74,6 @@ export function createAIPage(
                 <button class="suggestion-chip" data-question="What are the best things to do in ${postContext.location}?">Things to do</button>
                 <button class="suggestion-chip" data-question="Where can I eat near ${postContext.location}?">Food & dining</button>
                 <button class="suggestion-chip" data-question="What's the best time to visit ${postContext.location}?">Best time to visit</button>
-              ` : profileContext ? `
-                <button class="suggestion-chip" data-question="Summarize ${profileContext.name}'s travel interests">Travel interests</button>
-                <button class="suggestion-chip" data-question="What destinations has ${profileContext.name} visited?">Visited destinations</button>
-                <button class="suggestion-chip" data-question="What services does ${profileContext.name} offer?">Services offered</button>
-                <button class="suggestion-chip" data-question="What type of traveler is ${profileContext.name}?">Traveler type</button>
-                <button class="suggestion-chip" data-question="What are ${profileContext.name}'s most popular posts?">Popular posts</button>
               ` : `
                 <button class="suggestion-chip" data-question="What are the most popular travel destinations in our community?">Most popular destinations</button>
                 <button class="suggestion-chip" data-question="Tell me about travel experiences in Japan with photos">Japan experiences</button>
@@ -165,13 +136,7 @@ export function createAIPage(
         <button class="back-btn">← Back</button>
         <div class="ai-header-content">
           <h1>🤖 TravelShare AI</h1>
-          <p class="ai-subtitle">
-            ${postContext 
-              ? `Ask me about this post from ${postContext.location}` 
-              : profileContext 
-                ? `Ask me about ${profileContext.name}'s profile` 
-                : 'Ask me anything about travel destinations and experiences!'}
-          </p>
+          <p class="ai-subtitle">${postContext ? `Ask me about this post from ${postContext.location}` : 'Ask me anything about travel destinations and experiences!'}</p>
         </div>
       </div>
       
@@ -212,11 +177,7 @@ export function createAIPage(
               <div class="chat-input-wrapper">
                 <input 
                   type="text" 
-                  placeholder="${postContext 
-                    ? `Ask about ${postContext.location}...` 
-                    : profileContext 
-                      ? `Ask about ${profileContext.name}'s profile...` 
-                      : 'Ask me about travel destinations, experiences, tips...'}" 
+                  placeholder="${postContext ? `Ask about ${postContext.location}...` : 'Ask me about travel destinations, experiences, tips...'}" 
                   class="chat-input" 
                   id="chat-input" 
                   ${isLoading ? 'disabled' : ''}
@@ -283,14 +244,6 @@ export function createAIPage(
     
     // Auto-focus input
     chatInput?.focus();
-    
-    // If we have a profile context, automatically trigger a profile summary
-    if (profileContext && chatMessages.length === 0) {
-      setTimeout(() => {
-        chatInput.value = `Summarize ${profileContext.name}'s profile`;
-        handleSendMessage();
-      }, 500);
-    }
   }
   
   async function handleSendMessage() {
@@ -326,20 +279,6 @@ export function createAIPage(
           media_types: postContext.media_types,
           user_name: postContext.user?.name,
           created_at: postContext.created_at
-        };
-      }
-      
-      // Include profile context if available
-      if (profileContext) {
-        requestBody.profileContext = {
-          id: profileContext.id,
-          name: profileContext.name,
-          avatar_url: profileContext.avatar_url,
-          created_at: profileContext.created_at,
-          posts_count: profileContext.posts_count,
-          followers_count: profileContext.followers_count,
-          following_count: profileContext.following_count,
-          mini_apps_count: profileContext.mini_apps_count
         };
       }
       
@@ -400,11 +339,10 @@ export function createAIPage(
       let aiResponseContent = data.answer;
       
       // Add metadata about the analysis
-      if (data.imagesAnalyzed === 'Yes' || data.mcpServersUsed > 0 || postContext || profileContext) {
+      if (data.imagesAnalyzed === 'Yes' || data.mcpServersUsed > 0 || postContext) {
         aiResponseContent += '\n\n---\n*Enhanced with: ';
         const enhancements = [];
         if (postContext) enhancements.push('📍 Post context');
-        if (profileContext) enhancements.push('👤 Profile context');
         if (data.imagesAnalyzed === 'Yes') enhancements.push('📷 Photo analysis');
         if (data.mcpServersUsed > 0) enhancements.push(`🔌 ${data.mcpServersUsed} MCP server${data.mcpServersUsed > 1 ? 's' : ''}`);
         if (data.postsCount > 0) enhancements.push(`📊 ${data.postsCount} community posts`);

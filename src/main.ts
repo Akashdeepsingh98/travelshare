@@ -1,5 +1,5 @@
 import './style.css';
-import { Post, Comment, User, ProfileContext } from './types';
+import { Post, Comment } from './types';
 import { authManager } from './auth';
 import { createHeader } from './components/Header';
 import { createPostForm } from './components/CreatePost';
@@ -30,7 +30,6 @@ class TravelSocialApp {
   private viewData: ViewData = {};
   private boltBadge: HTMLElement;
   private aiChatContextPost: Post | null = null;
-  private aiChatContextProfile: ProfileContext | null = null;
 
   constructor() {
     this.appContainer = document.querySelector('#app')!;
@@ -237,7 +236,6 @@ class TravelSocialApp {
     this.currentView = 'profile';
     this.viewData = { userId };
     this.aiChatContextPost = null;
-    this.aiChatContextProfile = null;
     this.render();
   }
 
@@ -245,7 +243,6 @@ class TravelSocialApp {
     this.currentView = 'feed';
     this.viewData = {};
     this.aiChatContextPost = null;
-    this.aiChatContextProfile = null;
     this.render();
     this.loadPosts();
   }
@@ -254,87 +251,20 @@ class TravelSocialApp {
     this.currentView = 'explore';
     this.viewData = {};
     this.aiChatContextPost = null;
-    this.aiChatContextProfile = null;
     this.render();
   }
 
-  private navigateToAIChat(postContext?: Post, profileContext?: User) {
+  private navigateToAIChat(postContext?: Post) {
     this.currentView = 'ai-chat';
     this.viewData = {};
     this.aiChatContextPost = postContext || null;
-    
-    // If we have a profile context, fetch additional data to create a full profile context
-    if (profileContext) {
-      this.fetchProfileContextData(profileContext);
-    } else {
-      this.aiChatContextProfile = null;
-      this.render();
-    }
-  }
-  
-  private async fetchProfileContextData(user: User) {
-    try {
-      // Fetch follow stats
-      const { count: followersCount } = await supabase
-        .from('follows')
-        .select('*', { count: 'exact', head: true })
-        .eq('following_id', user.id);
-      
-      const { count: followingCount } = await supabase
-        .from('follows')
-        .select('*', { count: 'exact', head: true })
-        .eq('follower_id', user.id);
-      
-      // Fetch posts count
-      const { count: postsCount } = await supabase
-        .from('posts')
-        .select('*', { count: 'exact', head: true })
-        .eq('user_id', user.id);
-      
-      // Fetch mini apps count
-      const { count: miniAppsCount } = await supabase
-        .from('mini_apps')
-        .select('*', { count: 'exact', head: true })
-        .eq('user_id', user.id)
-        .eq('is_active', true);
-      
-      // Create profile context
-      this.aiChatContextProfile = {
-        id: user.id,
-        name: user.name,
-        avatar_url: user.avatar_url,
-        created_at: user.created_at || new Date().toISOString(),
-        posts_count: postsCount || 0,
-        followers_count: followersCount || 0,
-        following_count: followingCount || 0,
-        mini_apps_count: miniAppsCount || 0
-      };
-      
-      // Render the AI chat page with the profile context
-      this.render();
-      
-    } catch (error) {
-      console.error('Error fetching profile context data:', error);
-      // Fallback to basic profile context
-      this.aiChatContextProfile = {
-        id: user.id,
-        name: user.name,
-        avatar_url: user.avatar_url,
-        created_at: user.created_at || new Date().toISOString(),
-        posts_count: 0,
-        followers_count: 0,
-        following_count: 0,
-        mini_apps_count: 0
-      };
-      this.render();
-    }
+    this.render();
   }
 
   private navigateToAbout() {
     this.currentView = 'about';
     this.viewData = {};
     this.aiChatContextPost = null;
-    this.aiChatContextProfile = null;
     this.render();
   }
 
@@ -342,7 +272,6 @@ class TravelSocialApp {
     this.currentView = 'following';
     this.viewData = { userId, userName };
     this.aiChatContextPost = null;
-    this.aiChatContextProfile = null;
     this.render();
   }
 
@@ -350,7 +279,6 @@ class TravelSocialApp {
     this.currentView = 'followers';
     this.viewData = { userId, userName };
     this.aiChatContextPost = null;
-    this.aiChatContextProfile = null;
     this.render();
   }
 
@@ -392,11 +320,7 @@ class TravelSocialApp {
         this.appContainer.appendChild(aboutPage);
       } else if (this.currentView === 'ai-chat') {
         // AI Chat page
-        const aiPage = createAIPage(
-          () => this.navigateToFeed(), 
-          this.aiChatContextPost,
-          this.aiChatContextProfile
-        );
+        const aiPage = createAIPage(() => this.navigateToFeed(), this.aiChatContextPost);
         this.appContainer.appendChild(aiPage);
       } else if (this.currentView === 'profile') {
         // Profile page
@@ -405,9 +329,7 @@ class TravelSocialApp {
           (userId, userName) => this.navigateToFollowing(userId, userName),
           (userId, userName) => this.navigateToFollowers(userId, userName),
           this.viewData.userId, // Pass the userId to view another user's profile
-          (userId) => this.navigateToProfile(userId), // Pass user click handler
-          (post) => this.navigateToAIChat(post), // Pass Ask AI handler for posts
-          (user) => this.navigateToAIChat(undefined, user) // Pass Ask AI handler for profile
+          (userId) => this.navigateToProfile(userId) // Pass user click handler
         );
         this.appContainer.appendChild(profilePage);
       } else if (this.currentView === 'following') {
