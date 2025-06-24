@@ -18,10 +18,22 @@ interface PostContext {
   created_at: string;
 }
 
+interface ProfileContext {
+  id: string;
+  name: string;
+  avatar_url: string | null;
+  created_at: string;
+  posts_count: number;
+  followers_count: number;
+  following_count: number;
+  mini_apps_count: number;
+}
+
 interface ChatRequest {
   question: string;
   userId?: string;
   postContext?: PostContext;
+  profileContext?: ProfileContext;
 }
 
 interface MCPServer {
@@ -46,7 +58,7 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
 
-    const { question, userId, postContext }: ChatRequest = await req.json()
+    const { question, userId, postContext, profileContext }: ChatRequest = await req.json()
 
     if (!question?.trim()) {
       return new Response(
@@ -120,16 +132,25 @@ Deno.serve(async (req) => {
     // Prepare post-specific context if provided
     const postSpecificContext = postContext ? preparePostContext(postContext) : null
     
+    // Prepare profile-specific context if provided
+    let profileSpecificContext = null
+    if (profileContext) {
+      profileSpecificContext = await prepareProfileContext(profileContext, supabaseClient)
+    }
+    
     // Prepare MCP context
     const mcpContext = await prepareMCPContext(mcpServers, question, postContext)
 
     // Analyze relevant images from posts (including the specific post if provided)
-    const imageAnalysis = await analyzeRelevantImages(posts || [], question, apiKey, postContext)
+    const imageAnalysis = await analyzeRelevantImages(posts || [], question, apiKey, postContext, profileContext)
 
     // Create the prompt for Gemini
     const prompt = `You are TravelShare AI, a helpful travel assistant that provides personalized recommendations based on real traveler experiences from a travel social media platform, real-time business data through MCP servers, and visual analysis of travel photos.
 
-${postSpecificContext ? `SPECIFIC POST CONTEXT:
+${profileSpecificContext ? `PROFILE CONTEXT:
+${profileSpecificContext}
+
+` : ''}${postSpecificContext ? `SPECIFIC POST CONTEXT:
 ${postSpecificContext}
 
 ` : ''}CONTEXT FROM REAL TRAVELER POSTS:
@@ -144,8 +165,8 @@ ${imageAnalysis}
 ` : ''}USER QUESTION: ${question}
 
 Your role:
-- Answer travel-related questions using the provided real traveler data, MCP business data, and visual insights from photos
-- ${postSpecificContext ? 'Pay special attention to the specific post context provided and answer questions related to that location and experience' : 'Provide helpful, accurate, and engaging travel advice'}
+- ${profileSpecificContext ? 'Provide a comprehensive summary of the user profile based on their posts, activities, and services offered' : 'Answer travel-related questions using the provided real traveler data, MCP business data, and visual insights from photos'}
+- ${postSpecificContext ? 'Pay special attention to the specific post context provided and answer questions related to that location and experience' : profileSpecificContext ? 'Highlight their travel interests, posting patterns, and any business services they offer' : 'Provide helpful, accurate, and engaging travel advice'}
 - Reference specific locations and experiences from the community when relevant
 - Use real-time business data from MCP servers when available (restaurants, hotels, flights, etc.)
 - Incorporate visual insights from travel photos to enhance recommendations
@@ -154,8 +175,8 @@ Your role:
 - Always be helpful and encouraging about travel
 
 Guidelines:
-- Use the real post data to provide authentic recommendations
-- ${postSpecificContext ? 'When answering about the specific post, reference the location, content, and any visual elements from that post' : 'Leverage MCP business data for current information (menus, availability, prices, etc.)'}
+- ${profileSpecificContext ? 'Structure the profile summary in clear sections (e.g., Travel Style, Favorite Destinations, Services Offered)' : 'Use the real post data to provide authentic recommendations'}
+- ${postSpecificContext ? 'When answering about the specific post, reference the location, content, and any visual elements from that post' : profileSpecificContext ? 'Mention specific destinations they\'ve posted about and their apparent travel preferences' : 'Leverage MCP business data for current information (menus, availability, prices, etc.)'}
 - Reference visual elements from photos when relevant (architecture, landscapes, food, activities)
 - Mention specific destinations that travelers have visited
 - Reference popular spots based on likes and engagement
@@ -188,7 +209,8 @@ Please provide a helpful response to the user's travel question.`
           mcpServersUsed: mcpServers.length,
           imagesAnalyzed: imageAnalysis ? 'Yes' : 'No',
           provider: 'gemini-mcp-vision',
-          postContextUsed: postContext ? 'Yes' : 'No'
+          postContextUsed: postContext ? 'Yes' : 'No',
+          profileContextUsed: profileContext ? 'Yes' : 'No'
         }),
         { 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
@@ -289,6 +311,106 @@ function preparePostContext(postContext: PostContext): string {
 This post is the main context for the user's question. Focus your answer on this specific location and content.
 If the user is asking about transportation, accommodations, or services related to this location, use MCP data if available.
 If the post contains media that has been analyzed, reference visual elements from the analysis.`
+}
+
+async function prepareProfileContext(profileContext: ProfileContext, supabaseClient: any): Promise<string> {
+  try {
+    // Fetch user's recent posts
+    const { data: userPosts, error: postsError } = await supabaseClient
+      .from('posts')
+      .select(`
+        id,
+        location,
+        content,
+        image_url,
+        media_urls,
+        media_types,
+        created_at,
+        likes_count
+      `)
+      .eq('user_id', profileContext.id)
+      .order('created_at', { ascending: false })
+      .limit(10)
+    
+    if (postsError) {
+      console.error('Error fetching user posts for profile context:', postsError)
+    }
+    
+    // Fetch user's mini apps
+    const { data: miniApps, error: appsError } = await supabaseClient
+      .from('mini_apps')
+      .select('*')
+      .eq('user_id', profileContext.id)
+      .eq('is_active', true)
+      .order('created_at', { ascending: false })
+    
+    if (appsError) {
+      console.error('Error fetching mini apps for profile context:', appsError)
+    }
+    
+    // Format the profile context
+    const memberSince = new Date(profileContext.created_at).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long'
+    })
+    
+    // Extract locations from posts
+    const locations = userPosts?.map(post => post.location) || []
+    const uniqueLocations = [...new Set(locations)]
+    
+    // Get popular posts (by likes)
+    const popularPosts = userPosts
+      ?.filter(post => post.likes_count > 0)
+      .sort((a, b) => b.likes_count - a.likes_count)
+      .slice(0, 3) || []
+    
+    // Count posts with media
+    const postsWithMedia = userPosts?.filter(post => 
+      post.image_url || (post.media_urls && post.media_urls.length > 0)
+    ).length || 0
+    
+    // Format mini apps by category
+    const appsByCategory: Record<string, any[]> = {}
+    miniApps?.forEach(app => {
+      if (!appsByCategory[app.category]) {
+        appsByCategory[app.category] = []
+      }
+      appsByCategory[app.category].push(app)
+    })
+    
+    return `USER IS ASKING FOR A SUMMARY OF THIS PROFILE:
+- Name: ${profileContext.name}
+- Member since: ${memberSince}
+- Posts: ${profileContext.posts_count}
+- Followers: ${profileContext.followers_count}
+- Following: ${profileContext.following_count}
+- Mini Apps: ${profileContext.mini_apps_count}
+
+${userPosts && userPosts.length > 0 ? `POSTING ACTIVITY:
+- Total posts analyzed: ${userPosts.length}
+- Posts with visual content: ${postsWithMedia}
+- Unique destinations: ${uniqueLocations.length}
+- Locations mentioned: ${uniqueLocations.slice(0, 10).join(', ')}${uniqueLocations.length > 10 ? '...' : ''}
+
+${popularPosts.length > 0 ? `POPULAR POSTS:
+${popularPosts.map((post, i) => {
+  const excerpt = post.content.length > 100 ? post.content.substring(0, 100) + '...' : post.content
+  return `${i + 1}. ${post.location}: "${excerpt}" (${post.likes_count} likes)`
+}).join('\n')}` : ''}` : ''}
+
+${miniApps && miniApps.length > 0 ? `SERVICES OFFERED (MINI APPS):
+${Object.entries(appsByCategory).map(([category, apps]) => 
+  `- ${category.charAt(0).toUpperCase() + category.slice(1)} (${apps.length}): ${apps.map(app => app.name).join(', ')}`
+).join('\n')}` : ''}
+
+Based on this information, provide a comprehensive profile summary that highlights:
+1. Travel style and preferences
+2. Favorite or frequently visited destinations
+3. Types of content they share
+4. Services they offer through mini apps (if any)
+5. Overall engagement in the community
+
+The summary should be personalized, insightful, and highlight what makes this profile unique in the travel community.`
 }
 
 function prepareTravelContext(posts: any[]): string {
@@ -462,111 +584,56 @@ async function queryMCPServer(server: MCPServer, toolName: string, question: str
   }
 }
 
-function extractLocationFromQuestion(question: string): string | null {
-  const questionLower = question.toLowerCase()
-  
-  // Common travel destinations that might be mentioned
-  const locations = [
-    'tokyo', 'japan', 'kyoto', 'osaka',
-    'paris', 'france', 'lyon', 'marseille',
-    'rome', 'italy', 'milan', 'florence', 'venice',
-    'bangkok', 'thailand', 'phuket', 'chiang mai',
-    'mexico city', 'mexico', 'cancun', 'guadalajara',
-    'london', 'england', 'uk', 'manchester', 'liverpool',
-    'new york', 'usa', 'america', 'los angeles', 'chicago', 'san francisco',
-    'berlin', 'germany', 'munich', 'hamburg',
-    'madrid', 'spain', 'barcelona', 'seville',
-    'amsterdam', 'netherlands', 'rotterdam',
-    'sydney', 'australia', 'melbourne', 'brisbane',
-    'seoul', 'south korea', 'busan',
-    'beijing', 'china', 'shanghai', 'guangzhou',
-    'mumbai', 'india', 'delhi', 'bangalore', 'kolkata',
-    'istanbul', 'turkey', 'ankara',
-    'cairo', 'egypt', 'alexandria',
-    'dubai', 'uae', 'abu dhabi',
-    'singapore',
-    'hong kong',
-    'taipei', 'taiwan'
-  ]
-  
-  // Find the first location mentioned in the question
-  for (const location of locations) {
-    if (questionLower.includes(location)) {
-      // Return the properly capitalized version
-      return location.split(' ').map(word => 
-        word.charAt(0).toUpperCase() + word.slice(1)
-      ).join(' ')
-    }
-  }
-  
-  return null
-}
-
-function extractRestaurantSearchQuery(question: string): string | null {
-  const questionLower = question.toLowerCase()
-  
-  // Define cuisine types and food keywords that the mock server understands
-  const cuisineTypes = [
-    'japanese', 'italian', 'french', 'thai', 'mexican', 'chinese', 'indian', 'korean',
-    'american', 'mediterranean', 'greek', 'spanish', 'german', 'vietnamese', 'lebanese',
-    'turkish', 'moroccan', 'brazilian', 'argentinian', 'peruvian', 'ethiopian'
-  ]
-  
-  const foodKeywords = [
-    'ramen', 'sushi', 'pasta', 'pizza', 'burger', 'tacos', 'curry', 'noodles',
-    'soup', 'salad', 'steak', 'chicken', 'seafood', 'vegetarian', 'vegan',
-    'dessert', 'coffee', 'breakfast', 'lunch', 'dinner', 'brunch',
-    'pad thai', 'pho', 'dim sum', 'tapas', 'paella', 'risotto', 'gnocchi',
-    'tempura', 'yakitori', 'bibimbap', 'falafel', 'hummus', 'gyoza',
-    'carbonara', 'lasagna', 'tiramisu', 'gelato', 'croissant', 'baguette',
-    'enchiladas', 'quesadilla', 'guacamole', 'churros', 'paella',
-    'tom yum', 'green curry', 'massaman', 'spring rolls', 'satay'
-  ]
-  
-  // Check for cuisine types first
-  for (const cuisine of cuisineTypes) {
-    if (questionLower.includes(cuisine)) {
-      return cuisine
-    }
-  }
-  
-  // Check for specific food items
-  for (const food of foodKeywords) {
-    if (questionLower.includes(food)) {
-      return food
-    }
-  }
-  
-  // Check for restaurant-related terms
-  if (questionLower.includes('restaurant') || questionLower.includes('food') || 
-      questionLower.includes('eat') || questionLower.includes('dining')) {
-    
-    // Try to extract any meaningful food-related word
-    const words = questionLower.split(/\s+/)
-    for (const word of words) {
-      // Skip common words
-      if (['what', 'where', 'how', 'when', 'who', 'the', 'a', 'an', 'in', 'at', 'for', 
-           'with', 'restaurant', 'restaurants', 'food', 'eat', 'eating', 'dining',
-           'available', 'options', 'places', 'good', 'best', 'find', 'show', 'me',
-           'are', 'is', 'can', 'could', 'would', 'should', 'have', 'has'].includes(word)) {
-        continue
-      }
-      
-      // If it's a longer word that might be cuisine or food related, return it
-      if (word.length > 3) {
-        return word
-      }
-    }
-  }
-  
-  return null
-}
-
-async function analyzeRelevantImages(posts: any[], question: string, apiKey: string, postContext?: PostContext): Promise<string | null> {
+async function analyzeRelevantImages(
+  posts: any[], 
+  question: string, 
+  apiKey: string, 
+  postContext?: PostContext,
+  profileContext?: ProfileContext
+): Promise<string | null> {
   try {
-    // If we have a post context with media, prioritize analyzing that
     let relevantPosts = []
     
+    // If we have a profile context, prioritize analyzing posts from that user
+    if (profileContext) {
+      // We need to fetch posts for this specific user
+      try {
+        const supabaseClient = createClient(
+          Deno.env.get('SUPABASE_URL') ?? '',
+          Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+        )
+        
+        const { data: userPosts, error } = await supabaseClient
+          .from('posts')
+          .select(`
+            id,
+            location,
+            content,
+            image_url,
+            media_urls,
+            media_types,
+            created_at,
+            likes_count
+          `)
+          .eq('user_id', profileContext.id)
+          .order('likes_count', { ascending: false })
+          .limit(5)
+        
+        if (!error && userPosts && userPosts.length > 0) {
+          // Add user name to each post
+          const postsWithUser = userPosts.map(post => ({
+            ...post,
+            user: { name: profileContext.name }
+          }))
+          
+          relevantPosts = postsWithUser
+        }
+      } catch (error) {
+        console.error('Error fetching user posts for profile analysis:', error)
+      }
+    }
+    
+    // If we have a post context with media, prioritize analyzing that
     if (postContext && (postContext.image_url || (postContext.media_urls && postContext.media_urls.length > 0))) {
       // Create a post-like object from the post context
       const contextPost = {
@@ -580,41 +647,45 @@ async function analyzeRelevantImages(posts: any[], question: string, apiKey: str
         likes_count: 0
       }
       
-      relevantPosts.push(contextPost)
+      // Add to the beginning of the array
+      relevantPosts.unshift(contextPost)
     }
     
-    // Filter posts that have images and are relevant to the question
-    const postsWithImages = posts.filter(post => {
-      const hasImages = post.image_url || (post.media_urls && post.media_urls.length > 0)
-      if (!hasImages) return false
-      
-      // Check if post is relevant to the question or the post context
-      const questionLower = question.toLowerCase()
-      const postText = `${post.location} ${post.content}`.toLowerCase()
-      
-      // If we have post context, prioritize posts from the same location
-      if (postContext && post.location.toLowerCase().includes(postContext.location.toLowerCase())) {
-        return true
-      }
-      
-      // Simple relevance check - can be enhanced with more sophisticated matching
-      const keywords = questionLower.split(' ').filter(word => word.length > 3)
-      const isRelevant = keywords.some(keyword => postText.includes(keyword))
-      
-      return isRelevant
-    })
+    // If we don't have enough posts yet, add more from the general posts
+    if (relevantPosts.length < 5) {
+      // Filter posts that have images and are relevant to the question
+      const postsWithImages = posts.filter(post => {
+        const hasImages = post.image_url || (post.media_urls && post.media_urls.length > 0)
+        if (!hasImages) return false
+        
+        // Check if post is relevant to the question or the post context
+        const questionLower = question.toLowerCase()
+        const postText = `${post.location} ${post.content}`.toLowerCase()
+        
+        // If we have post context, prioritize posts from the same location
+        if (postContext && post.location.toLowerCase().includes(postContext.location.toLowerCase())) {
+          return true
+        }
+        
+        // Simple relevance check - can be enhanced with more sophisticated matching
+        const keywords = questionLower.split(' ').filter(word => word.length > 3)
+        const isRelevant = keywords.some(keyword => postText.includes(keyword))
+        
+        return isRelevant
+      })
 
-    // Add other relevant posts, but limit the total
-    if (postsWithImages.length > 0) {
-      // Sort by relevance (likes count as a proxy for relevance)
-      const sortedPosts = postsWithImages
-        .sort((a, b) => (b.likes_count || 0) - (a.likes_count || 0))
-        .slice(0, 4) // Limit to top 4 since we might already have the context post
-      
-      // Add these posts to our analysis list, avoiding duplicates
-      for (const post of sortedPosts) {
-        if (!relevantPosts.some(p => p.id === post.id)) {
-          relevantPosts.push(post)
+      // Add other relevant posts, but limit the total
+      if (postsWithImages.length > 0) {
+        // Sort by relevance (likes count as a proxy for relevance)
+        const sortedPosts = postsWithImages
+          .sort((a, b) => (b.likes_count || 0) - (a.likes_count || 0))
+          .slice(0, 5 - relevantPosts.length) // Only add enough to reach 5 total
+        
+        // Add these posts to our analysis list, avoiding duplicates
+        for (const post of sortedPosts) {
+          if (!relevantPosts.some(p => p.id === post.id)) {
+            relevantPosts.push(post)
+          }
         }
       }
     }
@@ -679,9 +750,13 @@ Context: "${post.content}"`
 
         const analysis = await result.response.text()
         
-        // Mark if this is from the post context
-        const isContextPost = postContext && post.id === postContext.id
-        const postPrefix = isContextPost ? '📌 FROM CURRENT POST - ' : '📍 '
+        // Mark if this is from the post context or profile context
+        let postPrefix = '📍 '
+        if (postContext && post.id === postContext.id) {
+          postPrefix = '📌 FROM CURRENT POST - '
+        } else if (profileContext && post.user?.name === profileContext.name) {
+          postPrefix = `👤 FROM ${profileContext.name.toUpperCase()}'S POSTS - `
+        }
         
         imageAnalyses.push(`${postPrefix}${post.location}: ${analysis}`)
 
