@@ -828,6 +828,7 @@ export function createProfilePage(
   let isOwnProfile = false;
   let postsLoading = false;
   let showMCPGuide = false;
+  let userPosts: Post[] = [];
   
   async function loadProfileData() {
     const authState = authManager.getAuthState();
