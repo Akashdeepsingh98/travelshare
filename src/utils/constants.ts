@@ -4,7 +4,7 @@ export const APP_CONFIG = {
   description: 'Share Your Travel Adventures',
   maxFileSize: 10, // MB
   maxMediaFiles: 10,
-  maxTextPostWords: 300, // Maximum words for text-only posts
+  maxTextPostWords: 2000, // Maximum words for text-only posts
   supportedImageTypes: ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/heic', 'image/heif'],
   supportedVideoTypes: ['video/mp4', 'video/webm', 'video/ogg', 'video/quicktime', 'video/x-msvideo'],
   defaultAvatarUrl: 'https://images.pexels.com/photos/1040880/pexels-photo-1040880.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&fit=crop'
