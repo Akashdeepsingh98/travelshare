@@ -3,7 +3,7 @@ import { authManager } from '../auth';
 import { supabase } from '../lib/supabase';
 
 export function createItineraryDetail(
-  itineraryId: string,
+  itinerary: Itinerary,
   onNavigateBack: () => void,
   onEdit?: (itineraryId: string) => void,
   onShare?: (itineraryId: string) => void,
@@ -11,49 +11,33 @@ export function createItineraryDetail(
 ): HTMLElement {
   const container = document.createElement('div');
   container.className = 'itinerary-detail-page';
-  
-  let itinerary: Itinerary | null = null;
+
   let itineraryItems: ItineraryItem[] = [];
   let isLoading = false;
   let isOwner = false;
-  
-  async function loadItineraryData() {
+
+  async function loadItineraryItems() {
     isLoading = true;
     renderItineraryDetail();
-    
+
     try {
-      // Load itinerary details
-      const { data: itineraryData, error: itineraryError } = await supabase
-        .from('itineraries')
-        .select(`
-          *,
-          user:profiles(*)
-        `)
-        .eq('id', itineraryId)
-        .single();
-      
-      if (itineraryError) throw itineraryError;
-      
-      itinerary = itineraryData;
-      
       // Check if user is the owner
       const authState = authManager.getAuthState();
       isOwner = authState.isAuthenticated && authState.currentUser?.id === itinerary.user_id;
-      
+
       // Load itinerary items
       const { data: itemsData, error: itemsError } = await supabase
         .from('itinerary_items')
         .select('*')
-        .eq('itinerary_id', itineraryId)
+        .eq('itinerary_id', itinerary.id)
         .order('day', { ascending: true })
         .order('order', { ascending: true });
-      
+
       if (itemsError) throw itemsError;
-      
+
       itineraryItems = itemsData || [];
-      
     } catch (error) {
-      console.error('Error loading itinerary data:', error);
+      console.error('Error loading itinerary items:', error);
     } finally {
       isLoading = false;
       renderItineraryDetail();
@@ -933,7 +917,7 @@ export function createItineraryDetail(
   }
   
   // Initial load
-  loadItineraryData();
+  loadItineraryItems();
   
   return container;
 }

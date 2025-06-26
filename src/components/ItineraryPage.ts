@@ -78,9 +78,7 @@ export function createItineraryPage(
       }
     } finally {
       isLoading = false;
-      if (!currentItinerary) {
-        renderItineraryPage();
-      }
+      renderItineraryPage();
     }
   }
   
@@ -118,7 +116,7 @@ export function createItineraryPage(
       // Render itinerary detail view
       container.innerHTML = '';
       const detailView = createItineraryDetail(
-        currentItinerary.id,
+        currentItinerary,
         () => {
           currentItinerary = null;
           renderItineraryPage();
