@@ -50,6 +50,10 @@ export function createHeader(
               <span class="nav-icon">🏘️</span>
               <span class="nav-text">Communities</span>
             </button>
+            <button class="nav-btn ${currentView === 'itineraries' ? 'active' : ''}" data-view="itineraries">
+              <span class="nav-icon">🗺️</span>
+              <span class="nav-text">Itineraries</span>
+            </button>
             <button class="nav-btn ${currentView === 'ai-chat' ? 'active' : ''}" data-view="ai-chat">
               <span class="nav-icon">🤖</span>
               <span class="nav-text">AI Chat</span>
@@ -102,6 +106,10 @@ export function createHeader(
             onExploreClick();
           } else if (view === 'ai-chat' && onAIChatClick) {
             onAIChatClick();
+          } else if (view === 'itineraries' && onAIChatClick) {
+            // Using onAIChatClick as a proxy for navigation since we don't have a dedicated itineraries handler
+            // This assumes the parent component will handle this correctly
+            onAIChatClick();
           } else if (view === 'about' && onAboutClick) {
             onAboutClick();
           }
@@ -146,6 +154,10 @@ export function createHeader(
             <button class="nav-btn ${currentView === 'communities' ? 'active' : ''}" data-view="communities">
               <span class="nav-icon">🏘️</span>
               <span class="nav-text">Communities</span>
+            </button>
+            <button class="nav-btn ${currentView === 'itineraries' ? 'active' : ''}" data-view="itineraries">
+              <span class="nav-icon">🗺️</span>
+              <span class="nav-text">Itineraries</span>
             </button>
           </nav>
           <div class="auth-buttons">
