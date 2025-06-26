@@ -8,7 +8,8 @@ import { createItineraryModal } from './CreateItineraryModal';
 export function createItineraryPage(
   itineraryId?: string,
   onNavigateBack: () => void,
-  onNavigateToProfile?: (userId: string) => void
+  onNavigateToProfile?: (userId: string) => void,
+  onError?: () => void
 ): HTMLElement {
   const container = document.createElement('div');
   container.className = 'itinerary-page';
@@ -62,10 +63,52 @@ export function createItineraryPage(
       
     } catch (error) {
       console.error('Error loading itineraries:', error);
+      
+      // Check if this is a network/connection error
+      if (error instanceof TypeError && (error.message.includes('Failed to fetch') || error.message.includes('fetch'))) {
+        if (onError) {
+          onError();
+          return;
+        }
+      }
+      
+      // For other errors, show a generic error message
+      if (!currentItinerary) {
+        renderErrorState('Failed to load itineraries. Please try again.');
+      }
     } finally {
       isLoading = false;
-      renderItineraryPage();
+      if (!currentItinerary) {
+        renderItineraryPage();
+      }
     }
+  }
+  
+  function renderErrorState(message: string) {
+    container.innerHTML = `
+      <div class="itinerary-page-header">
+        <button class="back-btn">← Back</button>
+        <h1>🗺️ Travel Itineraries</h1>
+      </div>
+      
+      <div class="itinerary-page-content">
+        <div class="error-message">
+          <div class="error-content">
+            <div class="error-icon">⚠️</div>
+            <h3>Error Loading Itineraries</h3>
+            <p>${message}</p>
+            <button class="retry-btn">Try Again</button>
+          </div>
+        </div>
+      </div>
+    `;
+    
+    // Add event listeners
+    const backBtn = container.querySelector('.back-btn') as HTMLButtonElement;
+    backBtn?.addEventListener('click', onNavigateBack);
+    
+    const retryBtn = container.querySelector('.retry-btn') as HTMLButtonElement;
+    retryBtn?.addEventListener('click', () => loadItineraries());
   }
   
   function renderItineraryPage() {

@@ -444,7 +444,8 @@ class TravelSocialApp {
         const itineraryPage = createItineraryPage(
           undefined,
           () => this.navigateToFeed(),
-          (userId) => this.navigateToProfile(userId)
+          (userId) => this.navigateToProfile(userId),
+          () => this.showConnectionError()
         );
         this.appContainer.appendChild(itineraryPage);
       } else if (this.currentView === 'itinerary-detail') {
@@ -452,7 +453,8 @@ class TravelSocialApp {
         const itineraryPage = createItineraryPage(
           this.viewData.itineraryId,
           () => this.navigateToItineraries(),
-          (userId) => this.navigateToProfile(userId)
+          (userId) => this.navigateToProfile(userId),
+          () => this.showConnectionError()
         );
         this.appContainer.appendChild(itineraryPage);
       } else if (this.currentView === 'communities') {
