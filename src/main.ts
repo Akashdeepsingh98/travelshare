@@ -109,7 +109,7 @@ class TravelSocialApp {
       if (error) {
         console.error('Error fetching posts:', error);
         if (error.message && (error.message.includes('Failed to fetch') || error.message.includes('fetch'))) {
-          await this.showConnectionError();
+          this.showConnectionError();
         } else {
           this.showGenericError('Failed to load posts. Please try refreshing the page.');
         }
