@@ -5,6 +5,7 @@ import { createMCPManager } from './MCPManager';
 import { createMiniAppManager } from './MiniAppManager';
 import { createItineraryList } from './ItineraryList';
 import { createMiniAppViewer } from './MiniAppViewer';
+import { createItineraryList } from './ItineraryList';
 import { createPostCard } from './PostCard';
 import { createMCPTestGuide } from './MCPTestGuide';
 
@@ -822,7 +823,7 @@ export function createProfilePage(
   let followStats = { followers: 0, following: 0, posts: 0 };
   let mcpServerCount = 0;
   let miniApps: MiniApp[] = [];
-  let userPosts: Post[] = [];
+  let activeTab: 'posts' | 'mini-apps' | 'mcp-servers' | 'itineraries' = 'posts';
   let isFollowing = false;
   let isOwnProfile = false;
   let postsLoading = false;
@@ -1180,6 +1181,10 @@ export function createProfilePage(
         <div class="profile-view-mode">
           <div class="profile-avatar-section">
             <img src="${avatarUrl}" alt="${profileUser.name}" class="profile-avatar-large">
+            <button class="profile-tab ${activeTab === 'itineraries' ? 'active' : ''}" data-tab="itineraries">
+              <span class="tab-icon">🗺️</span>
+              <span class="tab-text">Itineraries</span>
+            </button>
           </div>
           
           <div class="profile-info-section">
@@ -1292,6 +1297,10 @@ export function createProfilePage(
               <label>Member Since</label>
               <div class="profile-value">${formatDate(profileUser.created_at)}</div>
             </div>
+            
+            <div class="tab-pane ${activeTab === 'itineraries' ? 'active' : ''}" id="itineraries-tab">
+              <div id="itineraries-container"></div>
+            </div>
           </div>
         </div>
         
@@ -1345,6 +1354,24 @@ export function createProfilePage(
     
     // Render itineraries section
     renderItinerariesSection();
+    // Render itineraries tab content
+    if (activeTab === 'itineraries') {
+      const itinerariesContainer = document.getElementById('itineraries-container');
+      if (itinerariesContainer) {
+        itinerariesContainer.innerHTML = '';
+        const itineraryList = createItineraryList(
+          profileUserId,
+          (itineraryId) => {
+            // This would be handled by the parent component
+            // which will navigate to the itinerary detail page
+            const event = new CustomEvent('view-itinerary', { detail: { itineraryId } });
+            container.dispatchEvent(event);
+          }
+        );
+        itinerariesContainer.appendChild(itineraryList);
+      }
+    }
+    
     
     setupEventListeners();
   }
