@@ -5,7 +5,6 @@ import { createMCPManager } from './MCPManager';
 import { createMiniAppManager } from './MiniAppManager';
 import { createItineraryList } from './ItineraryList';
 import { createMiniAppViewer } from './MiniAppViewer';
-import { createItineraryList } from './ItineraryList';
 import { createPostCard } from './PostCard';
 import { createMCPTestGuide } from './MCPTestGuide';
 
@@ -16,7 +15,8 @@ export function createProfilePage(
   viewUserId?: string, // Optional: view another user's profile
   onUserClick?: (userId: string) => void,
   onAskAI?: (post: Post) => void,
-  onAskAIAboutUser?: (userId: string, userName: string) => void
+  onAskAIAboutUser?: (userId: string, userName: string) => void,
+  onViewItinerary?: (itineraryId: string) => void
 ): HTMLElement {
   const container = document.createElement('div');
   container.className = 'profile-page';
@@ -1357,12 +1357,11 @@ export function createProfilePage(
       if (itinerariesContainer) {
         itinerariesContainer.innerHTML = '';
         const itineraryList = createItineraryList(
-          profileUserId,
+          profileUser.id,
           (itineraryId) => {
-            // This would be handled by the parent component
-            // which will navigate to the itinerary detail page
-            const event = new CustomEvent('view-itinerary', { detail: { itineraryId } });
-            container.dispatchEvent(event);
+            if (onViewItinerary) {
+              onViewItinerary(itineraryId);
+            }
           }
         );
         itinerariesContainer.appendChild(itineraryList);
@@ -1380,10 +1379,9 @@ export function createProfilePage(
     const itineraryList = createItineraryList(
       profileUser!.id,
       (itineraryId) => {
-        // This would be handled by the parent component
-        // which will navigate to the itinerary detail page
-        const event = new CustomEvent('view-itinerary', { detail: { itineraryId } });
-        container.dispatchEvent(event);
+        if (onViewItinerary) {
+          onViewItinerary(itineraryId);
+        }
       }
     );
     

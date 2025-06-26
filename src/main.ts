@@ -498,8 +498,9 @@ class TravelSocialApp {
           (userId, userName) => this.navigateToFollowers(userId, userName),
           this.viewData.userId, // Pass the userId to view another user's profile
           (userId) => this.navigateToProfile(userId), // Pass user click handler
-          (post) => this.navigateToAIChat(post), // Pass Ask AI handler for posts
-          (userId, userName) => this.navigateToAIChatForUser(userId, userName) // Pass Ask AI handler for users
+          (post) => this.navigateToAIChat(post),  // Pass Ask AI handler for posts
+          (userId, userName) => this.navigateToAIChatForUser(userId, userName), // Pass Ask AI handler for users
+          (itineraryId) => this.navigateToItineraryDetail(itineraryId) // Pass itinerary view handler
         )
         this.appContainer.appendChild(profilePage);
       } else if (this.currentView === 'following') {
