@@ -6,6 +6,8 @@ import { createMiniAppManager } from './MiniAppManager';
 import { createMiniAppViewer } from './MiniAppViewer';
 import { createPostCard } from './PostCard';
 import { createMCPTestGuide } from './MCPTestGuide';
+import { createItineraryList } from './ItineraryList';
+import { createItineraryModal } from './CreateItineraryModal';
 
 export function createProfilePage(
   onNavigateBack: () => void,
@@ -1208,81 +1210,47 @@ export function createProfilePage(
               ` : ''}
             </div>
             
-            ${miniApps.length > 0 ? `
-              <div class="mini-apps-section">
-                <div class="mini-apps-header">
-                  <h3>${isOwnProfile ? 'Your Services' : `${profileUser.name}'s Services`}</h3>
-                  ${isOwnProfile ? `
-                    <button class="manage-apps-btn">
-                      <span class="manage-icon">⚙️</span>
-                      Manage
-                    </button>
-                  ` : ''}
-                </div>
-                <div class="mini-apps-grid">
-                  ${miniApps.map(app => createMiniAppCard(app)).join('')}
-                </div>
-              </div>
-            ` : isOwnProfile ? `
-              <div class="mini-apps-section">
-                <div class="mini-apps-empty">
-                  <div class="empty-apps-content">
-                    <div class="empty-apps-icon">📱</div>
-                    <h3>Share Your Services</h3>
-                    <p>Add mini apps to showcase your business services like transportation, food delivery, or booking platforms.</p>
-                    <button class="add-first-app-btn">
-                      <span class="add-icon">➕</span>
-                      Add Your First App
-                    </button>
-                  </div>
-                </div>
-              </div>
-            ` : ''}
+            <div class="profile-tabs">
+              <button class="profile-tab active" data-tab="posts">Posts</button>
+              <button class="profile-tab" data-tab="mini-apps">Mini Apps</button>
+              <button class="profile-tab" data-tab="itineraries">Itineraries</button>
+              ${isOwnProfile ? `
+                <button class="profile-tab" data-tab="mcp-servers">MCP Servers</button>
+              ` : ''}
+            </div>
+            
+            <div class="tab-content active" data-content="posts">
+              <div id="posts-container" class="tab-content-container"></div>
+            </div>
+            
+            <div class="tab-content" data-content="mini-apps">
+              <div id="mini-apps-container" class="tab-content-container"></div>
+            </div>
+            
+            <div class="tab-content" data-content="itineraries">
+              <div id="itineraries-container" class="tab-content-container"></div>
+            </div>
             
             ${isOwnProfile ? `
-              <div class="business-section">
-                <h3>Business Integration</h3>
-                <p class="business-description">
-                  Connect your business data through MCP (Model Context Protocol) to provide real-time information to AI chat.
-                </p>
-                <button class="manage-mcp-btn">
-                  🔌 Manage MCP Servers
-                </button>
-                <button class="show-mcp-guide-btn">
-                  📖 Testing Guide
-                </button>
+              <div class="tab-content" data-content="mcp-servers">
+                <div class="mcp-servers-container">
+                  <h3>Business Integration</h3>
+                  <p class="business-description">
+                    Connect your business data through MCP (Model Context Protocol) to provide real-time information to AI chat.
+                  </p>
+                  <button class="manage-mcp-btn">
+                    🔌 Manage MCP Servers
+                  </button>
+                  <button class="show-mcp-guide-btn">
+                    📖 Testing Guide
+                  </button>
+                  
+                  ${showMCPGuide ? `
+                    <div id="mcp-guide-container"></div>
+                  ` : ''}
+                </div>
               </div>
             ` : ''}
-            
-            ${showMCPGuide && isOwnProfile ? `
-              <div id="mcp-guide-container"></div>
-            ` : ''}
-            
-            <!-- Posts Section -->
-            <div class="profile-posts-section">
-              <div class="profile-posts-header">
-                <h3>${isOwnProfile ? 'Your Posts' : `${profileUser.name}'s Posts`}</h3>
-                <span class="posts-count">${followStats.posts} post${followStats.posts === 1 ? '' : 's'}</span>
-              </div>
-              
-              ${postsLoading ? `
-                <div class="posts-loading">
-                  <div class="loading-spinner">Loading posts...</div>
-                </div>
-              ` : userPosts.length === 0 ? `
-                <div class="profile-posts-empty">
-                  <div class="empty-posts-content">
-                    <div class="empty-posts-icon">📝</div>
-                    <h3>${isOwnProfile ? 'No posts yet' : `${profileUser.name} hasn't posted yet`}</h3>
-                    <p>${isOwnProfile ? 'Share your first travel adventure!' : 'Check back later for new posts.'}</p>
-                  </div>
-                </div>
-              ` : `
-                <div class="profile-posts-grid">
-                  ${userPosts.map(post => createPostCardHTML(post)).join('')}
-                </div>
-              `}
-            </div>
             
             <div class="profile-field">
               <label>Member Since</label>
@@ -1339,7 +1307,142 @@ export function createProfilePage(
       }
     }
     
+    // Render initial tab content
+    renderPosts();
+    
     setupEventListeners();
+  }
+  
+  function renderPosts() {
+    const postsContainer = document.getElementById('posts-container');
+    if (!postsContainer) return;
+    
+    // Clear previous content
+    postsContainer.innerHTML = '';
+    
+    if (postsLoading) {
+      postsContainer.innerHTML = `
+        <div class="posts-loading">
+          <div class="loading-spinner">Loading posts...</div>
+        </div>
+      `;
+      return;
+    }
+    
+    if (userPosts.length === 0) {
+      postsContainer.innerHTML = `
+        <div class="profile-posts-empty">
+          <div class="empty-posts-content">
+            <div class="empty-posts-icon">📝</div>
+            <h3>${isOwnProfile ? 'No posts yet' : `${profileUser!.name} hasn't posted yet`}</h3>
+            <p>${isOwnProfile ? 'Share your first travel adventure!' : 'Check back later for new posts.'}</p>
+          </div>
+        </div>
+      `;
+      return;
+    }
+    
+    const postsGrid = document.createElement('div');
+    postsGrid.className = 'profile-posts-grid';
+    
+    userPosts.forEach(post => {
+      const postCard = createPostCard(
+        post,
+        (postId) => handleLike(postId),
+        (postId, comment) => handleComment(postId, comment),
+        (userId) => handleFollow(userId),
+        (userId) => handleUnfollow(userId),
+        false, // Don't show follow button in profile
+        onUserClick,
+        isOwnProfile, // Pass whether this is own profile
+        (postId) => handleDeletePost(postId), // Pass delete handler
+        onAskAI // Pass Ask AI handler
+      );
+      postsGrid.appendChild(postCard);
+    });
+    
+    postsContainer.appendChild(postsGrid);
+  }
+  
+  function renderMiniApps() {
+    const miniAppsContainer = document.getElementById('mini-apps-container');
+    if (!miniAppsContainer) return;
+    
+    // Clear previous content
+    miniAppsContainer.innerHTML = '';
+    
+    if (miniApps.length > 0) {
+      const miniAppsSection = document.createElement('div');
+      miniAppsSection.className = 'mini-apps-section';
+      
+      miniAppsSection.innerHTML = `
+        <div class="mini-apps-header">
+          <h3>${isOwnProfile ? 'Your Services' : `${profileUser!.name}'s Services`}</h3>
+          ${isOwnProfile ? `
+            <button class="manage-apps-btn">
+              <span class="manage-icon">⚙️</span>
+              Manage
+            </button>
+          ` : ''}
+        </div>
+        <div class="mini-apps-grid">
+          ${miniApps.map(app => createMiniAppCard(app)).join('')}
+        </div>
+      `;
+      
+      miniAppsContainer.appendChild(miniAppsSection);
+    } else if (isOwnProfile) {
+      miniAppsContainer.innerHTML = `
+        <div class="mini-apps-empty">
+          <div class="empty-apps-content">
+            <div class="empty-apps-icon">📱</div>
+            <h3>Share Your Services</h3>
+            <p>Add mini apps to showcase your business services like transportation, food delivery, or booking platforms.</p>
+            <button class="add-first-app-btn">
+              <span class="add-icon">➕</span>
+              Add Your First App
+            </button>
+          </div>
+        </div>
+      `;
+    } else {
+      miniAppsContainer.innerHTML = `
+        <div class="mini-apps-empty">
+          <div class="empty-apps-content">
+            <div class="empty-apps-icon">📱</div>
+            <h3>No Services Available</h3>
+            <p>${profileUser!.name} hasn't added any services yet.</p>
+          </div>
+        </div>
+      `;
+    }
+  }
+  
+  function renderItineraries() {
+    const itinerariesContainer = document.getElementById('itineraries-container');
+    if (!itinerariesContainer) return;
+    
+    // Clear previous content
+    itinerariesContainer.innerHTML = '';
+    
+    // Create itinerary list component
+    const itineraryList = createItineraryList(
+      profileUserId, // Pass the profile user ID
+      (itineraryId) => {
+        // Handle itinerary click - for now, just show an alert
+        alert(`Viewing itinerary ${itineraryId} - This feature is coming soon!`);
+      }
+    );
+    
+    itinerariesContainer.appendChild(itineraryList);
+  }
+  
+  function renderMCPServers() {
+    const mcpContainer = document.querySelector('.mcp-servers-container');
+    if (!mcpContainer) return;
+    
+    // MCP servers content is already rendered in the HTML
+    // This function can be used for dynamic updates if needed
   }
   
   function createPostCardHTML(post: Post): string {
@@ -1464,6 +1567,38 @@ export function createProfilePage(
       });
     }
     
+    // Tab switching
+    const tabButtons = container.querySelectorAll('.profile-tab') as NodeListOf<HTMLButtonElement>;
+    const tabContents = container.querySelectorAll('.tab-content') as NodeListOf<HTMLElement>;
+    
+    tabButtons.forEach(button => {
+      button.addEventListener('click', () => {
+        const tabName = button.dataset.tab!;
+        
+        // Update active tab button
+        tabButtons.forEach(btn => btn.classList.remove('active'));
+        button.classList.add('active');
+        
+        // Update active tab content
+        tabContents.forEach(content => content.classList.remove('active'));
+        const targetContent = container.querySelector(`[data-content="${tabName}"]`) as HTMLElement;
+        if (targetContent) {
+          targetContent.classList.add('active');
+        }
+        
+        // Render tab-specific content
+        if (tabName === 'posts') {
+          renderPosts();
+        } else if (tabName === 'mini-apps') {
+          renderMiniApps();
+        } else if (tabName === 'itineraries') {
+          renderItineraries();
+        } else if (tabName === 'mcp-servers' && isOwnProfile) {
+          renderMCPServers();
+        }
+      });
+    });
+    
     // MCP servers navigation (only for own profile)
     if (isOwnProfile) {
       const mcpServersBtn = container.querySelector('.mcp-servers-btn') as HTMLButtonElement;
@@ -1472,7 +1607,14 @@ export function createProfilePage(
       const manageAppsBtn = container.querySelector('.manage-apps-btn') as HTMLButtonElement;
       const addFirstAppBtn = container.querySelector('.add-first-app-btn') as HTMLButtonElement;
       
-      mcpServersBtn?.addEventListener('click', showMCPManager);
+      mcpServersBtn?.addEventListener('click', () => {
+        // Switch to MCP servers tab
+        const mcpTab = container.querySelector('[data-tab="mcp-servers"]') as HTMLButtonElement;
+        if (mcpTab) {
+          mcpTab.click();
+        }
+      });
+      
       manageMcpBtn?.addEventListener('click', showMCPManager);
       manageAppsBtn?.addEventListener('click', showMiniAppManager);
       addFirstAppBtn?.addEventListener('click', showMiniAppManager);
@@ -1502,74 +1644,67 @@ export function createProfilePage(
       });
     });
     
-    // Re-attach post card event listeners
-    setupPostCardListeners();
+    // Add event listener for "Create Mini App" button
+    const createMiniAppBtn = document.querySelector('.create-mini-app-btn');
+    createMiniAppBtn?.addEventListener('click', openMiniAppManager);
+    
+    // Add event listener for "Create Itinerary" button
+    const createItineraryBtn = document.querySelector('.create-itinerary-btn');
+    createItineraryBtn?.addEventListener('click', openCreateItineraryModal);
+    
+    // Add event listener for "Create First Itinerary" button
+    const createFirstItineraryBtn = document.querySelector('.create-first-itinerary-btn');
+    createFirstItineraryBtn?.addEventListener('click', openCreateItineraryModal);
   }
   
-  function setupPostCardListeners() {
-    // Re-attach event listeners for post cards since they're rendered as HTML strings
-    const postCards = container.querySelectorAll('.post-card');
-    postCards.forEach((card, index) => {
-      const post = userPosts[index];
-      if (!post) return;
-      
-      // Like button
-      const likeBtn = card.querySelector('.like-btn') as HTMLButtonElement;
-      if (likeBtn) {
-        likeBtn.addEventListener('click', () => handleLike(post.id));
+  function openMCPManager() {
+    const modal = createMCPManager(() => {
+      // Close callback
+      const existingModal = document.querySelector('.mcp-manager-modal');
+      if (existingModal) {
+        existingModal.remove();
       }
       
-      // Ask AI button
-      const askAIBtn = card.querySelector('.ask-ai-btn') as HTMLButtonElement;
-      if (askAIBtn && onAskAI) {
-        askAIBtn.addEventListener('click', () => onAskAI(post));
-      }
-      
-      // Comment functionality
-      const commentInput = card.querySelector('.comment-input') as HTMLInputElement;
-      const commentSubmitBtn = card.querySelector('.comment-submit-btn') as HTMLButtonElement;
-      
-      if (commentInput && commentSubmitBtn) {
-        commentInput.addEventListener('input', () => {
-          commentSubmitBtn.disabled = commentInput.value.trim().length === 0;
-        });
-        
-        commentInput.addEventListener('keypress', (e) => {
-          if (e.key === 'Enter' && commentInput.value.trim()) {
-            const commentText = commentInput.value.trim();
-            handleComment(post.id, commentText);
-            commentInput.value = '';
-            commentSubmitBtn.disabled = true;
-          }
-        });
-        
-        commentSubmitBtn.addEventListener('click', () => {
-          const commentText = commentInput.value.trim();
-          if (commentText) {
-            handleComment(post.id, commentText);
-            commentInput.value = '';
-            commentSubmitBtn.disabled = true;
-          }
+      // Refresh MCP server count
+      if (profileUser) {
+        loadMCPServerCount(profileUser.id).then(() => {
+          renderProfilePage();
         });
       }
-      
-      // Delete button (only for own posts)
-      const deleteBtn = card.querySelector('.delete-post-btn') as HTMLButtonElement;
-      if (deleteBtn) {
-        deleteBtn.addEventListener('click', () => handleDeletePost(post.id));
-      }
-      
-      // User click handlers for comments
-      const userClickables = card.querySelectorAll('[data-user-id]');
-      userClickables.forEach(element => {
-        element.addEventListener('click', () => {
-          const userId = element.getAttribute('data-user-id');
-          if (userId && onUserClick) {
-            onUserClick(userId);
-          }
-        });
-      });
     });
+    
+    document.body.appendChild(modal);
+  }
+  
+  function openMiniAppManager() {
+    const modal = createMiniAppManager(() => {
+      // Close callback
+      const existingModal = document.querySelector('.mini-app-manager-modal');
+      if (existingModal) {
+        existingModal.remove();
+      }
+      
+      // Refresh mini apps
+      if (profileUser) {
+        loadMiniApps(profileUser.id).then(() => {
+          renderMiniApps();
+        });
+      }
+    });
+    
+    document.body.appendChild(modal);
+  }
+  
+  function openCreateItineraryModal() {
+    const modal = createItineraryModal(
+      () => {}, // onClose - no action needed
+      () => {
+        // Reload itineraries after successful creation
+        renderItineraries();
+      }
+    );
+    
+    document.body.appendChild(modal);
   }
   
   function showMCPManager() {
@@ -1784,6 +1919,72 @@ export function createProfilePage(
     });
   }
   
+  function setupPostCardListeners() {
+    // Re-attach event listeners for post cards since they're rendered as HTML strings
+    const postCards = container.querySelectorAll('.post-card');
+    postCards.forEach((card, index) => {
+      const post = userPosts[index];
+      if (!post) return;
+      
+      // Like button
+      const likeBtn = card.querySelector('.like-btn') as HTMLButtonElement;
+      if (likeBtn) {
+        likeBtn.addEventListener('click', () => handleLike(post.id));
+      }
+      
+      // Ask AI button
+      const askAIBtn = card.querySelector('.ask-ai-btn') as HTMLButtonElement;
+      if (askAIBtn && onAskAI) {
+        askAIBtn.addEventListener('click', () => onAskAI(post));
+      }
+      
+      // Comment functionality
+      const commentInput = card.querySelector('.comment-input') as HTMLInputElement;
+      const commentSubmitBtn = card.querySelector('.comment-submit-btn') as HTMLButtonElement;
+      
+      if (commentInput && commentSubmitBtn) {
+        commentInput.addEventListener('input', () => {
+          commentSubmitBtn.disabled = commentInput.value.trim().length === 0;
+        });
+        
+        commentInput.addEventListener('keypress', (e) => {
+          if (e.key === 'Enter' && commentInput.value.trim()) {
+            const commentText = commentInput.value.trim();
+            handleComment(post.id, commentText);
+            commentInput.value = '';
+            commentSubmitBtn.disabled = true;
+          }
+        });
+        
+        commentSubmitBtn.addEventListener('click', () => {
+          const commentText = commentInput.value.trim();
+          if (commentText) {
+            handleComment(post.id, commentText);
+            commentInput.value = '';
+            commentSubmitBtn.disabled = true;
+          }
+        });
+      }
+      
+      // Delete button (only for own posts)
+      const deleteBtn = card.querySelector('.delete-post-btn') as HTMLButtonElement;
+      if (deleteBtn) {
+        deleteBtn.addEventListener('click', () => handleDeletePost(post.id));
+      }
+      
+      // User click handlers for comments
+      const userClickables = card.querySelectorAll('[data-user-id]');
+      userClickables.forEach(element => {
+        element.addEventListener('click', () => {
+          const userId = element.getAttribute('data-user-id');
+          if (userId && onUserClick) {
+            onUserClick(userId);
+          }
+        });
+      });
+    });
+  }
+  
   function renderLoadingState() {
     container.innerHTML = `
       <div class="profile-loading">
@@ -1821,6 +2022,9 @@ export function createProfilePage(
   authManager.onAuthChange(() => {
     loadProfileData();
   });
+  
+  // Initial render
+  renderProfilePage();
   
   return container;
 }
