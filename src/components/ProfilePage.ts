@@ -1182,10 +1182,6 @@ export function createProfilePage(
         <div class="profile-view-mode">
           <div class="profile-avatar-section">
             <img src="${avatarUrl}" alt="${profileUser.name}" class="profile-avatar-large">
-            <button class="profile-tab ${activeTab === 'itineraries' ? 'active' : ''}" data-tab="itineraries">
-              <span class="tab-icon">🗺️</span>
-              <span class="tab-text">Itineraries</span>
-            </button>
           </div>
           
           <div class="profile-info-section">
