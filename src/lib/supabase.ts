@@ -82,6 +82,78 @@ export type Database = {
           longitude?: number | null
         }
       }
+      communities: {
+        Row: {
+          id: string
+          name: string
+          description: string | null
+          created_by: string
+          is_private: boolean
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          name: string
+          description?: string | null
+          created_by: string
+          is_private?: boolean
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          name?: string
+          description?: string | null
+          created_by?: string
+          is_private?: boolean
+          created_at?: string
+        }
+      }
+      community_members: {
+        Row: {
+          id: string
+          community_id: string
+          user_id: string
+          role: string
+          joined_at: string
+        }
+        Insert: {
+          id?: string
+          community_id: string
+          user_id: string
+          role?: string
+          joined_at?: string
+        }
+        Update: {
+          id?: string
+          community_id?: string
+          user_id?: string
+          role?: string
+          joined_at?: string
+        }
+      }
+      community_shared_posts: {
+        Row: {
+          id: string
+          community_id: string
+          post_id: string
+          shared_by: string
+          shared_at: string
+        }
+        Insert: {
+          id?: string
+          community_id: string
+          post_id: string
+          shared_by: string
+          shared_at?: string
+        }
+        Update: {
+          id?: string
+          community_id?: string
+          post_id?: string
+          shared_by?: string
+          shared_at?: string
+        }
+      }
       post_likes: {
         Row: {
           id: string

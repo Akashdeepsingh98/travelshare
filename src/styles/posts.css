@@ -241,6 +241,14 @@
   background: rgba(102, 126, 234, 0.1);
 }
 
+.action-btn.share-btn {
+  color: #10b981;
+}
+
+.action-btn.share-btn:hover {
+  background: rgba(16, 185, 129, 0.1);
+}
+
 .comments-section {
   border-top: 1px solid #f1f5f9;
   padding: 1rem 1.5rem;
