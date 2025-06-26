@@ -151,3 +151,53 @@ export interface CommunitySharedPost {
   post?: Post;
   shared_by_user?: User;
 }
+
+// Itinerary Types
+export interface Itinerary {
+  id: string;
+  user_id: string;
+  title: string;
+  destination: string;
+  start_date?: string;
+  end_date?: string;
+  budget?: string;
+  preferences?: string[];
+  notes?: string;
+  is_public: boolean;
+  created_at: string;
+  updated_at: string;
+  items?: ItineraryItem[];
+  user?: User;
+}
+
+export interface ItineraryItem {
+  id: string;
+  itinerary_id: string;
+  day: number;
+  time?: string;
+  title: string;
+  description?: string;
+  location?: string;
+  category?: 'accommodation' | 'activity' | 'food' | 'transportation' | 'other';
+  cost?: number;
+  notes?: string;
+  order: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ItineraryPreference {
+  id: string;
+  label: string;
+  icon: string;
+}
+
+export interface ItineraryGenerationRequest {
+  destination: string;
+  startDate?: string;
+  endDate?: string;
+  budget?: string;
+  preferences: string[];
+  notes?: string;
+  userId: string;
+}

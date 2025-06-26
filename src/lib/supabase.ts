@@ -296,6 +296,97 @@ export type Database = {
           updated_at?: string | null
         }
       }
+      itineraries: {
+        Row: {
+          id: string
+          user_id: string
+          title: string
+          destination: string
+          start_date: string | null
+          end_date: string | null
+          budget: string | null
+          preferences: any | null
+          notes: string | null
+          is_public: boolean
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          title: string
+          destination: string
+          start_date?: string | null
+          end_date?: string | null
+          budget?: string | null
+          preferences?: any | null
+          notes?: string | null
+          is_public?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          title?: string
+          destination?: string
+          start_date?: string | null
+          end_date?: string | null
+          budget?: string | null
+          preferences?: any | null
+          notes?: string | null
+          is_public?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      itinerary_items: {
+        Row: {
+          id: string
+          itinerary_id: string
+          day: number
+          time: string | null
+          title: string
+          description: string | null
+          location: string | null
+          category: string | null
+          cost: number | null
+          notes: string | null
+          order: number
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          itinerary_id: string
+          day: number
+          time?: string | null
+          title: string
+          description?: string | null
+          location?: string | null
+          category?: string | null
+          cost?: number | null
+          notes?: string | null
+          order: number
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          itinerary_id?: string
+          day?: number
+          time?: string | null
+          title?: string
+          description?: string | null
+          location?: string | null
+          category?: string | null
+          cost?: number | null
+          notes?: string | null
+          order?: number
+          created_at?: string
+          updated_at?: string
+        }
+      }
     }
   }
 }
