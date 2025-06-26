@@ -119,3 +119,35 @@ export interface AppCategory {
   icon: string;
   description: string;
 }
+
+// Community Types
+export interface Community {
+  id: string;
+  name: string;
+  description: string;
+  created_by: string;
+  is_private: boolean;
+  created_at: string;
+  creator?: User;
+  member_count?: number;
+  user_role?: 'admin' | 'member' | null;
+}
+
+export interface CommunityMember {
+  id: string;
+  community_id: string;
+  user_id: string;
+  role: 'admin' | 'member';
+  joined_at: string;
+  user?: User;
+}
+
+export interface CommunitySharedPost {
+  id: string;
+  community_id: string;
+  post_id: string;
+  shared_by: string;
+  shared_at: string;
+  post?: Post;
+  shared_by_user?: User;
+}
