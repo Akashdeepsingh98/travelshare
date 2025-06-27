@@ -13,6 +13,10 @@ export function createPostHeatmapPage(onNavigateBack: () => void): HTMLElement {
       <div class="heatmap-title-section">
         <h1>🔥 Post Heatmap</h1>
         <div class="heatmap-search-container">
+          <button class="current-location-btn" title="Use my current location">
+            <span class="location-icon">📍</span>
+            <span class="location-text">My Location</span>
+          </button>
           <div class="heatmap-search-wrapper">
             <input type="text" class="heatmap-search-input" placeholder="Search for a location...">
             <button class="heatmap-search-btn">🔍</button>
@@ -125,10 +129,44 @@ export function createPostHeatmapPage(onNavigateBack: () => void): HTMLElement {
       border-radius: 0.25rem;
       cursor: pointer;
       transition: all 0.2s;
+      margin-right: 0.5rem;
     }
 
     .heatmap-search-btn:hover {
       background: rgba(255, 255, 255, 0.4);
+    }
+    
+    .current-location-btn {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: rgba(255, 255, 255, 0.3);
+      color: white;
+      border: none;
+      padding: 0.5rem 1rem;
+      border-radius: 0.5rem;
+      cursor: pointer;
+      font-weight: 500;
+      transition: all 0.2s;
+      margin-right: 0.5rem;
+    }
+    
+    .current-location-btn:hover {
+      background: rgba(255, 255, 255, 0.4);
+      transform: translateY(-1px);
+    }
+    
+    .current-location-btn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+    
+    .location-icon {
+      font-size: 1rem;
+    }
+    
+    .location-text {
+      font-size: 0.875rem;
     }
 
     .location-suggestions {
@@ -269,6 +307,9 @@ export function createPostHeatmapPage(onNavigateBack: () => void): HTMLElement {
   const backBtn = container.querySelector('.back-btn') as HTMLButtonElement;
   backBtn.addEventListener('click', onNavigateBack);
 
+  // Get current location button
+  const currentLocationBtn = container.querySelector('.current-location-btn') as HTMLButtonElement;
+  
   // Get search elements and suggestions container
   const searchInput = container.querySelector('.heatmap-search-input') as HTMLInputElement;
   const searchBtn = container.querySelector('.heatmap-search-btn') as HTMLButtonElement;
@@ -486,6 +527,70 @@ export function createPostHeatmapPage(onNavigateBack: () => void): HTMLElement {
     }
   };
   
+  // Function to get user's current location and center map
+  const getUserLocationAndCenterMap = () => {
+    if (!map || !navigator.geolocation) {
+      showSearchError('Geolocation is not supported by your browser.');
+      return;
+    }
+    
+    // Disable button and show loading state
+    currentLocationBtn.disabled = true;
+    const originalText = currentLocationBtn.innerHTML;
+    currentLocationBtn.innerHTML = `<span class="location-icon">⏳</span><span class="location-text">Loading...</span>`;
+    
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        // Success - center map on user's location
+        const lat = position.coords.latitude;
+        const lng = position.coords.longitude;
+        
+        map.setView([lat, lng], 13);
+        
+        // Add a marker to indicate the user's location
+        const marker = L.marker([lat, lng])
+          .addTo(map)
+          .bindPopup('<b>Your Location</b>')
+          .openPopup();
+        
+        // Remove marker after 5 seconds
+        setTimeout(() => {
+          if (map) map.removeLayer(marker);
+        }, 5000);
+        
+        // Reset button
+        currentLocationBtn.innerHTML = originalText;
+        currentLocationBtn.disabled = false;
+      },
+      (error) => {
+        // Error handling
+        let errorMessage = 'Unable to get your location.';
+        switch (error.code) {
+          case error.PERMISSION_DENIED:
+            errorMessage = 'Location access denied. Please enable location permissions.';
+            break;
+          case error.POSITION_UNAVAILABLE:
+            errorMessage = 'Location information is unavailable.';
+            break;
+          case error.TIMEOUT:
+            errorMessage = 'Location request timed out.';
+            break;
+        }
+        
+        showSearchError(errorMessage);
+        
+        // Reset button
+        currentLocationBtn.innerHTML = originalText;
+        currentLocationBtn.disabled = false;
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 300000 // 5 minutes
+      }
+    );
+  };
+  
   // Add event listeners for search
   searchBtn.addEventListener('click', () => {
     searchLocationAndCenterMap(searchInput.value);
@@ -496,6 +601,9 @@ export function createPostHeatmapPage(onNavigateBack: () => void): HTMLElement {
       searchLocationAndCenterMap(searchInput.value);
     }
   });
+  
+  // Add event listener for current location button
+  currentLocationBtn.addEventListener('click', getUserLocationAndCenterMap);
 
   const initializeMap = async () => {
     const mapElement = container.querySelector('#post-heatmap-map') as HTMLElement;
@@ -512,6 +620,9 @@ export function createPostHeatmapPage(onNavigateBack: () => void): HTMLElement {
       attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
       maxZoom: 19
     }).addTo(map);
+
+    // Set map language to English only
+    map.getContainer().style.setProperty('--map-tiles-filter', 'grayscale(0.1) contrast(1.1)');
 
     await loadHeatmapData(map);
   };
