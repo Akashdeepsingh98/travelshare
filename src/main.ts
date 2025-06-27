@@ -64,19 +64,8 @@ class TravelSocialApp {
   }
 
   private async init() {
-    try {
-      // Test Supabase connection
-      const connectionResult = await testSupabaseConnection();
-      if (!connectionResult.success) {
-        console.error('Supabase connection failed:', connectionResult.error);
-        console.error('Connection details:', connectionResult.details);
-        
-        // Show user-friendly error message
-        this.showConnectionError(connectionResult.error || 'Unknown connection error');
-      }
-    } catch (error) {
-      console.error('Error testing Supabase connection:', error);
-    }
+    // Test Supabase connection
+    await testSupabaseConnection();
     
     // Set up auth state listener
     authManager.onAuthChange(() => {
@@ -84,78 +73,9 @@ class TravelSocialApp {
     });
 
     // Load initial data and render
-    try {
-      await this.loadPosts();
-    } catch (error) {
-      console.error('Error loading initial posts:', error);
-    }
-    
+    await this.loadPosts();
     this.render();
     this.setupEventListeners();
-  }
-
-  private showConnectionError(errorMessage: string) {
-    // Create a simple error display in the app container
-    const errorDiv = document.createElement('div');
-    errorDiv.className = 'connection-error';
-    errorDiv.innerHTML = `
-      <div class="error-content">
-        <h3>🚨 Connection Issue</h3>
-        <p>${errorMessage}</p>
-        <div class="error-details">
-          <p><strong>Most likely cause:</strong> CORS configuration needed</p>
-          <ol>
-            <li>Go to <a href="https://supabase.com/dashboard" target="_blank">Supabase Dashboard</a></li>
-            <li>Select your project → Settings → API</li>
-            <li>Add <code>${window.location.origin}</code> to CORS allowed origins</li>
-            <li>Save and refresh this page</li>
-          </ol>
-        </div>
-        <button onclick="window.location.reload()" class="retry-btn">Retry Connection</button>
-      </div>
-    `;
-    
-    // Add some basic styling
-    errorDiv.style.cssText = `
-      position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background: rgba(0, 0, 0, 0.9);
-      color: white;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      z-index: 10000;
-      font-family: system-ui, -apple-system, sans-serif;
-    `;
-    
-    const errorContent = errorDiv.querySelector('.error-content') as HTMLElement;
-    if (errorContent) {
-      errorContent.style.cssText = `
-        background: #1a1a1a;
-        padding: 2rem;
-        border-radius: 8px;
-        max-width: 500px;
-        text-align: center;
-      `;
-    }
-    
-    const retryBtn = errorDiv.querySelector('.retry-btn') as HTMLElement;
-    if (retryBtn) {
-      retryBtn.style.cssText = `
-        background: #3b82f6;
-        color: white;
-        border: none;
-        padding: 0.5rem 1rem;
-        border-radius: 4px;
-        cursor: pointer;
-        margin-top: 1rem;
-      `;
-    }
-    
-    document.body.appendChild(errorDiv);
   }
 
   private async loadPosts() {

@@ -7,7 +7,7 @@ import { APP_CONFIG } from '../utils/constants';
 
 type PostType = 'media' | 'text';
 
-export function createPostForm(options: { onPostCreated: (postData: any) => void }): HTMLElement {
+export function createPostForm(onPostCreate: (post: Post) => void): HTMLElement {
   const container = document.createElement('div');
   container.className = 'create-post-container';
   
@@ -37,16 +37,7 @@ export function createPostForm(options: { onPostCreated: (postData: any) => void
       `;
       
       const loginPromptBtn = container.querySelector('.login-prompt-btn') as HTMLButtonElement;
-      if (loginPromptBtn) {
-        loginPromptBtn.addEventListener('click', () => {
-          // Import showAuthModal dynamically to avoid circular dependencies
-          import('./AuthModal').then(({ showAuthModal }) => {
-            showAuthModal();
-          }).catch(error => {
-            console.error('Error loading auth modal:', error);
-          });
-        });
-      }
+      loginPromptBtn.addEventListener('click', showAuthModal);
       return;
     }
     
@@ -74,10 +65,6 @@ export function createPostForm(options: { onPostCreated: (postData: any) => void
       }
       
       // User is approved, show normal create post form
-      renderCreatePostForm(authState.currentUser);
-    }).catch(error => {
-      console.error('Error checking user approval status:', error);
-      // Show form anyway if we can't check approval status
       renderCreatePostForm(authState.currentUser);
     });
   }
@@ -581,8 +568,25 @@ export function createPostForm(options: { onPostCreated: (postData: any) => void
           console.log('Post created successfully:', data);
 
           // Create the Post object with proper structure
-          console.log('Calling onPostCreated with:', data);
-          options.onPostCreated(data);
+          const newPost: Post = {
+            id: data.id,
+            user_id: data.user_id,
+            location: data.location,
+            content: data.content,
+            image_url: data.image_url,
+            media_urls: data.media_urls || [],
+            media_types: data.media_types || [],
+            created_at: data.created_at,
+            likes_count: data.likes_count || 0,
+            latitude: data.latitude,
+            longitude: data.longitude,
+            user: data.user,
+            comments: [],
+            user_has_liked: false
+          };
+          
+          console.log('Calling onPostCreate with:', newPost);
+          onPostCreate(newPost);
           closeModal();
         } catch (error: any) {
           console.error('Error creating post:', error);
