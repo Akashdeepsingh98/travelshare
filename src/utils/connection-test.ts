@@ -7,6 +7,19 @@ export async function testSupabaseConnection(): Promise<{
   const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
   const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
+  // Check if environment variables are available
+  if (!supabaseUrl || !anonKey) {
+    console.error('❌ Missing Supabase environment variables');
+    return {
+      success: false,
+      error: 'Missing Supabase configuration. Please check your .env file.',
+      details: {
+        hasUrl: !!supabaseUrl,
+        hasKey: !!anonKey
+      }
+    };
+  }
+
   console.log('🔍 Testing Supabase Connection...');
   console.log('URL:', supabaseUrl);
   console.log('Anon Key (first 20 chars):', anonKey?.substring(0, 20) + '...');
@@ -14,41 +27,56 @@ export async function testSupabaseConnection(): Promise<{
   try {
     // Test 1: Basic URL accessibility
     console.log('Test 1: Testing basic URL accessibility...');
-    const basicResponse = await fetch(supabaseUrl, {
-      method: 'GET',
-      mode: 'cors'
-    });
+    const basicResponse = await Promise.race([
+      fetch(supabaseUrl, {
+        method: 'GET',
+        mode: 'cors'
+      }),
+      new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Request timeout')), 10000)
+      )
+    ]) as Response;
     
     console.log('Basic fetch response status:', basicResponse.status);
     console.log('Basic fetch response headers:', Object.fromEntries(basicResponse.headers.entries()));
 
     // Test 2: Test REST API endpoint
     console.log('Test 2: Testing REST API endpoint...');
-    const restResponse = await fetch(`${supabaseUrl}/rest/v1/`, {
-      method: 'GET',
-      headers: {
-        'apikey': anonKey,
-        'Authorization': `Bearer ${anonKey}`,
-        'Content-Type': 'application/json'
-      },
-      mode: 'cors'
-    });
+    const restResponse = await Promise.race([
+      fetch(`${supabaseUrl}/rest/v1/`, {
+        method: 'GET',
+        headers: {
+          'apikey': anonKey,
+          'Authorization': `Bearer ${anonKey}`,
+          'Content-Type': 'application/json'
+        },
+        mode: 'cors'
+      }),
+      new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Request timeout')), 10000)
+      )
+    ]) as Response;
 
     console.log('REST API response status:', restResponse.status);
     console.log('REST API response headers:', Object.fromEntries(restResponse.headers.entries()));
 
     // Test 3: Test a simple query
     console.log('Test 3: Testing simple query...');
-    const queryResponse = await fetch(`${supabaseUrl}/rest/v1/profiles?select=count`, {
-      method: 'GET',
-      headers: {
-        'apikey': anonKey,
-        'Authorization': `Bearer ${anonKey}`,
-        'Content-Type': 'application/json',
-        'Prefer': 'count=exact'
-      },
-      mode: 'cors'
-    });
+    const queryResponse = await Promise.race([
+      fetch(`${supabaseUrl}/rest/v1/profiles?select=count`, {
+        method: 'GET',
+        headers: {
+          'apikey': anonKey,
+          'Authorization': `Bearer ${anonKey}`,
+          'Content-Type': 'application/json',
+          'Prefer': 'count=exact'
+        },
+        mode: 'cors'
+      }),
+      new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Request timeout')), 10000)
+      )
+    ]) as Response;
 
     console.log('Query response status:', queryResponse.status);
     
@@ -72,10 +100,12 @@ export async function testSupabaseConnection(): Promise<{
     // Analyze the error type
     let errorMessage = 'Unknown connection error';
     
-    if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
+    if (error instanceof TypeError && error.message?.includes('Failed to fetch')) {
       errorMessage = 'Network connectivity issue - cannot reach Supabase servers';
-    } else if (error instanceof TypeError && error.message.includes('CORS')) {
+    } else if (error instanceof TypeError && error.message?.includes('CORS')) {
       errorMessage = 'CORS configuration issue';
+    } else if (error instanceof Error && error.message === 'Request timeout') {
+      errorMessage = 'Connection timeout - Supabase servers may be unreachable';
     } else if (error instanceof Error) {
       errorMessage = error.message;
     }
@@ -84,9 +114,9 @@ export async function testSupabaseConnection(): Promise<{
       success: false,
       error: errorMessage,
       details: {
-        errorType: error?.constructor?.name,
-        errorMessage: error?.message,
-        stack: error?.stack
+        errorType: error instanceof Error ? error.constructor.name : 'Unknown',
+        errorMessage: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined
       }
     };
   }
