@@ -9,7 +9,7 @@ export async function testSupabaseConnection(): Promise<{
 
   // Check if environment variables are available
   if (!supabaseUrl || !anonKey) {
-    console.warn('❌ Missing Supabase environment variables');
+    console.error('❌ Missing Supabase environment variables');
     return {
       success: false,
       error: 'Missing Supabase configuration. Please check your .env file.',
@@ -20,28 +20,28 @@ export async function testSupabaseConnection(): Promise<{
     };
   }
 
-  console.info('🔍 Testing Supabase Connection...');
-  console.info('URL:', supabaseUrl);
-  console.info('Anon Key (first 20 chars):', anonKey?.substring(0, 20) + '...');
+  console.log('🔍 Testing Supabase Connection...');
+  console.log('URL:', supabaseUrl);
+  console.log('Anon Key (first 20 chars):', anonKey?.substring(0, 20) + '...');
 
   try {
     // Test 1: Basic URL accessibility
-    console.info('Test 1: Testing basic URL accessibility...');
+    console.log('Test 1: Testing basic URL accessibility...');
     const basicResponse = await Promise.race([
       fetch(supabaseUrl, {
         method: 'GET',
         mode: 'cors'
       }),
       new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('Request timeout')), 5000)
+        setTimeout(() => reject(new Error('Request timeout')), 10000)
       )
     ]) as Response;
     
-    console.info('Basic fetch response status:', basicResponse.status);
-    console.info('Basic fetch response headers:', Object.fromEntries(basicResponse.headers.entries()));
+    console.log('Basic fetch response status:', basicResponse.status);
+    console.log('Basic fetch response headers:', Object.fromEntries(basicResponse.headers.entries()));
 
     // Test 2: Test REST API endpoint
-    console.info('Test 2: Testing REST API endpoint...');
+    console.log('Test 2: Testing REST API endpoint...');
     const restResponse = await Promise.race([
       fetch(`${supabaseUrl}/rest/v1/`, {
         method: 'GET',
@@ -53,15 +53,15 @@ export async function testSupabaseConnection(): Promise<{
         mode: 'cors'
       }),
       new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('Request timeout')), 5000)
+        setTimeout(() => reject(new Error('Request timeout')), 10000)
       )
     ]) as Response;
 
-    console.info('REST API response status:', restResponse.status);
-    console.info('REST API response headers:', Object.fromEntries(restResponse.headers.entries()));
+    console.log('REST API response status:', restResponse.status);
+    console.log('REST API response headers:', Object.fromEntries(restResponse.headers.entries()));
 
     // Test 3: Test a simple query
-    console.info('Test 3: Testing simple query...');
+    console.log('Test 3: Testing simple query...');
     const queryResponse = await Promise.race([
       fetch(`${supabaseUrl}/rest/v1/profiles?select=count`, {
         method: 'GET',
@@ -74,15 +74,15 @@ export async function testSupabaseConnection(): Promise<{
         mode: 'cors'
       }),
       new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('Request timeout')), 5000)
+        setTimeout(() => reject(new Error('Request timeout')), 10000)
       )
     ]) as Response;
 
-    console.info('Query response status:', queryResponse.status);
+    console.log('Query response status:', queryResponse.status);
     
     if (queryResponse.ok) {
       const data = await queryResponse.text();
-      console.info('Query response data:', data);
+      console.log('Query response data:', data);
     }
 
     return {
@@ -95,7 +95,7 @@ export async function testSupabaseConnection(): Promise<{
     };
 
   } catch (error) {
-    console.warn('❌ Connection test failed:', error);
+    console.error('❌ Connection test failed:', error);
     
     // Analyze the error type
     let errorMessage = 'Unknown connection error';
