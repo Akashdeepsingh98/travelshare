@@ -30,6 +30,7 @@ interface ViewData {
   userName?: string;
   communityId?: string;
   itineraryId?: string;
+  locationQuery?: string;
 }
 
 class TravelSocialApp {
@@ -393,6 +394,7 @@ class TravelSocialApp {
     this.viewData = {};
     this.aiChatContextPost = null;
     this.aiChatUserContext = null;
+    window.location.hash = 'heatmap';
     this.render();
   }
 
@@ -446,9 +448,10 @@ class TravelSocialApp {
     this.openSharePostModal(post);
   }
 
-  private closePostViewer() {
+    this.viewData = { locationQuery };
     this.currentView = 'explore';
     this.postViewerData = null;
+    window.location.hash = 'explore';
     this.render();
   }
 
@@ -532,7 +535,8 @@ class TravelSocialApp {
         
         const heatmapPage = createPostHeatmapPage(
           () => this.navigateToFeed(),
-          (userId) => this.navigateToProfile(userId)
+          (userId) => this.navigateToProfile(userId),
+          (locationName, lat, lng) => this.navigateToExplore(locationName)
         );
         this.appContainer.appendChild(heatmapPage);
       } else if (this.currentView === 'itineraries') {
@@ -647,7 +651,8 @@ class TravelSocialApp {
         const explorePage = createExplorePage(
           (post, allPosts) => this.openPostViewer(post, allPosts),
           () => this.navigateToFeed(),
-          (userId) => this.navigateToProfile(userId) // Navigate to user profile when clicked
+          (userId) => this.navigateToProfile(userId), // Navigate to user profile when clicked
+          this.viewData.locationQuery // Pass the initial location query if available
         );
         this.appContainer.appendChild(explorePage);
       } else {
