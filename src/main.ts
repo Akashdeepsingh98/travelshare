@@ -18,11 +18,12 @@ import { createCommunitiesPage } from './components/CommunitiesPage';
 import { createCommunityDetailPage } from './components/CommunityDetailPage';
 import { createCreateCommunityModal } from './components/CreateCommunityModal';
 import { createSharePostModal } from './components/SharePostModal';
+import { createPostHeatmapPage } from './components/PostHeatmapPage';
 import { formatItineraryAsPlainText } from './utils/formatters';
 import { supabase } from './lib/supabase';
 import { testSupabaseConnection, displayConnectionDiagnostics } from './utils/connection-test';
 
-type AppView = 'feed' | 'profile' | 'explore' | 'post-viewer' | 'following' | 'followers' | 'ai-chat' | 'about' | 'communities' | 'community-detail' | 'itineraries' | 'itinerary-detail';
+type AppView = 'feed' | 'profile' | 'explore' | 'post-viewer' | 'following' | 'followers' | 'ai-chat' | 'about' | 'communities' | 'community-detail' | 'itineraries' | 'itinerary-detail' | 'heatmap';
 
 interface ViewData {
   userId?: string;
@@ -387,6 +388,14 @@ class TravelSocialApp {
     this.navigateToAIChat(undefined, { id: userId, name: userName });
   }
 
+  private navigateToHeatmap() {
+    this.currentView = 'heatmap';
+    this.viewData = {};
+    this.aiChatContextPost = null;
+    this.aiChatUserContext = null;
+    this.render();
+  }
+
   private navigateToAbout() {
     this.currentView = 'about';
     this.viewData = {};
@@ -507,6 +516,25 @@ class TravelSocialApp {
         // About page
         const aboutPage = createAboutPage(() => this.navigateToFeed());
         this.appContainer.appendChild(aboutPage);
+      } else if (this.currentView === 'heatmap') {
+        // Heatmap page
+        const header = createHeader(
+          () => this.navigateToProfile(),
+          () => this.navigateToExplore(),
+          () => this.navigateToFeed(),
+          () => this.navigateToAIChat(),
+          () => this.navigateToCommunities(),
+          () => this.navigateToAbout(),
+          () => this.navigateToItineraries(),
+          this.currentView
+        );
+        this.appContainer.appendChild(header);
+        
+        const heatmapPage = createPostHeatmapPage(
+          () => this.navigateToFeed(),
+          (userId) => this.navigateToProfile(userId)
+        );
+        this.appContainer.appendChild(heatmapPage);
       } else if (this.currentView === 'itineraries') {
         // Itineraries page
         const header = createHeader(
