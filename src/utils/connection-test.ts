@@ -25,16 +25,72 @@ export async function testSupabaseConnection(): Promise<{
   console.info('Anon Key (first 20 chars):', anonKey?.substring(0, 20) + '...');
 
   try {
-    // Skip actual network tests to avoid CORS issues during development
-    // Just validate that the configuration exists
-    console.info('✅ Supabase configuration found');
-    console.info('✅ Skipping network tests to avoid CORS issues');
+    // Test 1: Basic URL accessibility
+    console.info('Test 1: Testing basic URL accessibility...');
+    const basicResponse = await Promise.race([
+      fetch(supabaseUrl, {
+        method: 'GET',
+        mode: 'cors'
+      }),
+      new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Request timeout')), 5000)
+      )
+    ]) as Response;
+    
+    console.info('Basic fetch response status:', basicResponse.status);
+    console.info('Basic fetch response headers:', Object.fromEntries(basicResponse.headers.entries()));
+
+    // Test 2: Test REST API endpoint
+    console.info('Test 2: Testing REST API endpoint...');
+    const restResponse = await Promise.race([
+      fetch(`${supabaseUrl}/rest/v1/`, {
+        method: 'GET',
+        headers: {
+          'apikey': anonKey,
+          'Authorization': `Bearer ${anonKey}`,
+          'Content-Type': 'application/json'
+        },
+        mode: 'cors'
+      }),
+      new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Request timeout')), 5000)
+      )
+    ]) as Response;
+
+    console.info('REST API response status:', restResponse.status);
+    console.info('REST API response headers:', Object.fromEntries(restResponse.headers.entries()));
+
+    // Test 3: Test a simple query
+    console.info('Test 3: Testing simple query...');
+    const queryResponse = await Promise.race([
+      fetch(`${supabaseUrl}/rest/v1/profiles?select=count`, {
+        method: 'GET',
+        headers: {
+          'apikey': anonKey,
+          'Authorization': `Bearer ${anonKey}`,
+          'Content-Type': 'application/json',
+          'Prefer': 'count=exact'
+        },
+        mode: 'cors'
+      }),
+      new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Request timeout')), 5000)
+      )
+    ]) as Response;
+
+    console.info('Query response status:', queryResponse.status);
+    
+    if (queryResponse.ok) {
+      const data = await queryResponse.text();
+      console.info('Query response data:', data);
+    }
 
     return {
       success: true,
       details: {
-        configurationValid: true,
-        message: 'Configuration validated, network tests skipped'
+        basicStatus: basicResponse.status,
+        restStatus: restResponse.status,
+        queryStatus: queryResponse.status
       }
     };
 

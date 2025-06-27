@@ -436,13 +436,13 @@ class TravelSocialApp {
     const user = authManager.getCurrentUser();
     
     if (user) {
-      const postForm = createPostForm({
+      const createPostForm = createPostForm({
         onPostCreated: async (postData) => {
           await this.loadPosts();
           this.render();
         }
       });
-      container.appendChild(postForm);
+      container.appendChild(createPostForm);
     }
 
     const postsContainer = document.createElement('div');
