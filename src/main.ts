@@ -466,9 +466,10 @@ class TravelSocialApp {
           () => this.navigateToProfile(),
           () => this.navigateToExplore(),
           () => this.navigateToFeed(),
-          () => this.navigateToAIChat(), 
+          () => this.navigateToAIChat(),
           () => this.navigateToCommunities(),
           () => this.navigateToAbout(),
+          () => this.navigateToItineraries(),
           this.currentView
         );
         this.appContainer.appendChild(header);
@@ -559,9 +560,10 @@ class TravelSocialApp {
           () => this.navigateToProfile(),
           () => this.navigateToExplore(),
           () => this.navigateToFeed(),
-          () => this.navigateToAIChat(), 
+          () => this.navigateToAIChat(),
           () => this.navigateToCommunities(),
           () => this.navigateToAbout(),
+          () => this.navigateToItineraries(),
           this.currentView
         );
         this.appContainer.appendChild(header);
