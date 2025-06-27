@@ -50,6 +50,7 @@ class TravelSocialApp {
   private init() {
     this.setupAuthModal();
     this.setupBoltBadge();
+    this.setupHashNavigation();
     this.render();
     this.loadPosts();
     
@@ -66,6 +67,52 @@ class TravelSocialApp {
 
   private setupBoltBadge() {
     document.body.appendChild(this.boltBadge);
+  }
+
+  private setupHashNavigation() {
+    // Handle hash changes for navigation
+    window.addEventListener('hashchange', () => {
+      const hash = window.location.hash.substring(1);
+      
+      switch (hash) {
+        case 'heatmap':
+          this.navigateToHeatmap();
+          break;
+        case 'explore':
+          this.navigateToExplore();
+          break;
+        case 'communities':
+          this.navigateToCommunities();
+          break;
+        case 'itineraries':
+          this.navigateToItineraries();
+          break;
+        case 'ai-chat':
+          this.navigateToAIChat();
+          break;
+        case 'about':
+          this.navigateToAbout();
+          break;
+        case 'profile':
+          this.navigateToProfile();
+          break;
+        case 'feed':
+        default:
+          // Default to feed if hash is not recognized
+          if (hash && hash !== 'feed') {
+            window.location.hash = 'feed';
+          } else {
+            this.navigateToFeed();
+          }
+      }
+    });
+    
+    // Initial navigation based on hash
+    if (window.location.hash) {
+      // Trigger the hashchange event to navigate to the correct view
+      const event = new HashChangeEvent('hashchange');
+      window.dispatchEvent(event);
+    }
   }
 
   private async loadPosts() {

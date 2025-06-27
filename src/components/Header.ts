@@ -60,6 +60,10 @@ export function createHeader(
               <span class="nav-icon">🤖</span>
               <span class="nav-text">AI Chat</span>
             </button>
+            <button class="nav-btn ${currentView === 'heatmap' ? 'active' : ''}" data-view="heatmap">
+              <span class="nav-icon">🔥</span>
+              <span class="nav-text">Heatmap</span>
+            </button>
             <button class="nav-btn ${currentView === 'about' ? 'active' : ''}" data-view="about">
               <span class="nav-icon">ℹ️</span>
               <span class="nav-text">About</span>
@@ -106,6 +110,9 @@ export function createHeader(
             onHomeClick();
           } else if (view === 'explore' && onExploreClick) {
             onExploreClick();
+          } else if (view === 'heatmap' && onExploreClick) {
+            // Navigate to heatmap using explore click handler
+            window.location.hash = 'heatmap';
           } else if (view === 'ai-chat' && onAIChatClick) {
             onAIChatClick();
           } else if (view === 'communities' && onCommunitiesClick) {
