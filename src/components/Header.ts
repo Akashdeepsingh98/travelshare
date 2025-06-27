@@ -50,10 +50,6 @@ export function createHeader(
               <span class="nav-icon">🏘️</span>
               <span class="nav-text">Communities</span>
             </button>
-            <button class="nav-btn ${currentView === 'itineraries' ? 'active' : ''}" data-view="itineraries">
-              <span class="nav-icon">🗺️</span>
-              <span class="nav-text">Itineraries</span>
-            </button>
             <button class="nav-btn ${currentView === 'ai-chat' ? 'active' : ''}" data-view="ai-chat">
               <span class="nav-icon">🤖</span>
               <span class="nav-text">AI Chat</span>
@@ -154,10 +150,6 @@ export function createHeader(
             <button class="nav-btn ${currentView === 'communities' ? 'active' : ''}" data-view="communities">
               <span class="nav-icon">🏘️</span>
               <span class="nav-text">Communities</span>
-            </button>
-            <button class="nav-btn ${currentView === 'itineraries' ? 'active' : ''}" data-view="itineraries">
-              <span class="nav-icon">🗺️</span>
-              <span class="nav-text">Itineraries</span>
             </button>
           </nav>
           <div class="auth-buttons">
