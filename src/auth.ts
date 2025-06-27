@@ -162,7 +162,7 @@ class AuthManager {
         .single();
 
       if (error) {
-        console.error('Error fetching user profile:', error);
+        console.error('Error fetching user profile:', error.message || error);
         
         // Handle specific error cases
         if (error.code === 'PGRST116') {
@@ -175,7 +175,14 @@ class AuthManager {
           await this.handleConnectionError(error);
           return;
         } else {
-          throw error;
+          // For other errors, set unauthenticated state instead of throwing
+          this.authState = {
+            isAuthenticated: false,
+            currentUser: null,
+            loading: false
+          };
+          this.notifyListeners();
+          return;
         }
       }
 
@@ -191,7 +198,7 @@ class AuthManager {
       
       this.notifyListeners();
     } catch (error) {
-      console.error('Error fetching user profile:', error);
+      console.error('Error in setCurrentUser:', error instanceof Error ? error.message : error);
       
       // Handle connection errors gracefully
       if (error instanceof TypeError && error.message.includes('Failed to fetch')) {

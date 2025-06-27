@@ -68,30 +68,92 @@ class TravelSocialApp {
       // Test Supabase connection
       const connectionResult = await testSupabaseConnection();
       if (!connectionResult.success) {
-        console.error('Supabase connection failed:', connectionResult.error);
-        console.error('Connection details:', connectionResult.details);
+        console.warn('Supabase connection failed:', connectionResult.error);
+        console.warn('Connection details:', connectionResult.details);
         
         // Show user-friendly error message
         this.showConnectionError(connectionResult.error || 'Unknown connection error');
+        
+        // Continue with app initialization even if connection test fails
+        // The auth manager will handle connection errors gracefully
       }
     } catch (error) {
-      console.error('Error testing Supabase connection:', error);
+      console.warn('Error testing Supabase connection:', error);
+      // Continue with app initialization
     }
     
     // Set up auth state listener
     authManager.onAuthChange(() => {
-      this.render();
+      // Add error boundary around render
+      try {
+        this.render();
+      } catch (renderError) {
+        console.error('Error during render:', renderError);
+        this.showRenderError(renderError);
+      }
     });
 
     // Load initial data and render
     try {
       await this.loadPosts();
     } catch (error) {
-      console.error('Error loading initial posts:', error);
+      console.warn('Error loading initial posts:', error);
+      // Continue with empty posts array
     }
     
-    this.render();
+    // Initial render with error boundary
+    try {
+      this.render();
+    } catch (renderError) {
+      console.error('Error during initial render:', renderError);
+      this.showRenderError(renderError);
+    }
+    
     this.setupEventListeners();
+  }
+
+  private showRenderError(error: any) {
+    const errorDiv = document.createElement('div');
+    errorDiv.className = 'render-error';
+    errorDiv.innerHTML = `
+      <div class="error-content">
+        <h3>⚠️ Rendering Error</h3>
+        <p>There was an error displaying the application.</p>
+        <details>
+          <summary>Error Details</summary>
+          <pre>${error instanceof Error ? error.message : String(error)}</pre>
+        </details>
+        <button onclick="window.location.reload()" class="retry-btn">Reload Application</button>
+      </div>
+    `;
+    
+    errorDiv.style.cssText = `
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.9);
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 10000;
+      font-family: system-ui, -apple-system, sans-serif;
+    `;
+    
+    const errorContent = errorDiv.querySelector('.error-content') as HTMLElement;
+    if (errorContent) {
+      errorContent.style.cssText = `
+        background: #1a1a1a;
+        padding: 2rem;
+        border-radius: 8px;
+        max-width: 500px;
+        text-align: center;
+      `;
+    }
+    
+    document.body.appendChild(errorDiv);
   }
 
   private showConnectionError(errorMessage: string) {
@@ -111,7 +173,10 @@ class TravelSocialApp {
             <li>Save and refresh this page</li>
           </ol>
         </div>
-        <button onclick="window.location.reload()" class="retry-btn">Retry Connection</button>
+        <div class="error-actions">
+          <button onclick="window.location.reload()" class="retry-btn">Retry Connection</button>
+          <button onclick="this.parentElement.parentElement.parentElement.style.display='none'" class="dismiss-btn">Continue Anyway</button>
+        </div>
       </div>
     `;
     
@@ -142,18 +207,18 @@ class TravelSocialApp {
       `;
     }
     
-    const retryBtn = errorDiv.querySelector('.retry-btn') as HTMLElement;
-    if (retryBtn) {
-      retryBtn.style.cssText = `
+    const buttons = errorDiv.querySelectorAll('button');
+    buttons.forEach(btn => {
+      (btn as HTMLElement).style.cssText = `
         background: #3b82f6;
         color: white;
         border: none;
         padding: 0.5rem 1rem;
         border-radius: 4px;
         cursor: pointer;
-        margin-top: 1rem;
+        margin: 0.5rem;
       `;
-    }
+    });
     
     document.body.appendChild(errorDiv);
   }
