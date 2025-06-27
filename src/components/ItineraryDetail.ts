@@ -835,7 +835,7 @@ export function createItineraryDetail(
         if (error) throw error;
         
         // Reload itinerary data
-        await loadItineraryData();
+        await loadItineraryItems();
         
       } catch (error) {
         console.error('Error updating itinerary privacy:', error);
