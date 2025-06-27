@@ -1,14 +1,9 @@
 import * as L from 'leaflet';
 // @ts-ignore - Leaflet.heat doesn't have TypeScript definitions
 import 'leaflet.heat';
-import { reverseGeocode } from '../utils/geocoding';
 import { supabase } from '../lib/supabase';
 
-export function createPostHeatmapPage(
-  onNavigateBack: () => void,
-  onUserClick?: (userId: string) => void,
-  onLocationClick?: (locationName: string, lat: number, lng: number) => void
-): HTMLElement {
+export function createPostHeatmapPage(onNavigateBack: () => void): HTMLElement {
   const container = document.createElement('div');
   container.className = 'heatmap-page';
 
@@ -34,7 +29,7 @@ export function createPostHeatmapPage(
       <div id="post-heatmap-map" class="map-container"></div>
       <div class="heatmap-info">
         <p>This map shows the density of posts around the world. Hotter areas indicate more posts.</p>
-        <p>Data is based on posts with location coordinates from the TravelShare community. Click anywhere on the map to explore posts from that location.</p>
+        <p>Data is based on posts with location coordinates from the TravelShare community.</p>
       </div>
     </div>
   `;
@@ -625,50 +620,6 @@ export function createPostHeatmapPage(
       attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
       maxZoom: 19
     }).addTo(map);
-    
-    // Add click handler to the map for location exploration
-    map.on('click', async (e: L.LeafletMouseEvent) => {
-      const { lat, lng } = e.latlng;
-      
-      // Show a temporary marker at the clicked location
-      const marker = L.marker([lat, lng])
-        .addTo(map)
-        .bindPopup('<b>Loading location...</b>')
-        .openPopup();
-      
-      try {
-        // Get location name using reverse geocoding
-        const locationName = await reverseGeocode(lat, lng);
-        
-        // Update marker popup
-        marker.setPopupContent(`
-          <b>${locationName}</b><br>
-          <a href="#" class="explore-location-link">Explore posts from here</a>
-        `);
-        
-        // Add click handler to the explore link
-        const popup = marker.getPopup();
-        if (popup && popup.getElement()) {
-          const link = popup.getElement()?.querySelector('.explore-location-link');
-          if (link) {
-            link.addEventListener('click', (e) => {
-              e.preventDefault();
-              if (onLocationClick) {
-                onLocationClick(locationName, lat, lng);
-              }
-            });
-          }
-        }
-      } catch (error) {
-        console.error('Error getting location name:', error);
-        marker.setPopupContent('<b>Error getting location name</b>');
-        
-        // Remove marker after 3 seconds
-        setTimeout(() => {
-          if (map) map.removeLayer(marker);
-        }, 3000);
-      }
-    });
 
     // Set map language to English only
     map.getContainer().style.setProperty('--map-tiles-filter', 'grayscale(0.1) contrast(1.1)');
@@ -754,7 +705,7 @@ export function createPostHeatmapPage(
       // Create the heat layer
       if (heatData.length > 0) {
         // @ts-ignore - Leaflet.heat is added via import but TypeScript doesn't recognize it
-        L.heatLayer(heatData, { 
+        const heatLayer = L.heatLayer(heatData, { 
           radius: 25,
           blur: 15,
           maxZoom: 10,
@@ -768,8 +719,8 @@ export function createPostHeatmapPage(
       }
 
       // Add a legend
-      const heatmapLegend = L.control({ position: 'bottomright' });
-      heatmapLegend.onAdd = function() {
+      const legend = L.control({ position: 'bottomright' });
+      legend.onAdd = function() {
         const div = L.DomUtil.create('div', 'heatmap-legend');
         div.innerHTML = `
           <div class="legend-title">Post Density</div>
@@ -841,46 +792,7 @@ export function createPostHeatmapPage(
         
         return div;
       };
-      heatmapLegend.addTo(mapInstance);
-      
-      // Add a click instruction control
-      const clickInstruction = L.control({ position: 'bottomleft' });
-      clickInstruction.onAdd = function() {
-        const div = L.DomUtil.create('div', 'click-instruction');
-        div.innerHTML = `
-          <div class="instruction-content">
-            <span class="instruction-icon">👆</span>
-            <span class="instruction-text">Click anywhere to explore posts from that location</span>
-          </div>
-        `;
-        
-        // Add styles for the instruction
-        const instructionStyle = document.createElement('style');
-        instructionStyle.textContent = `
-          .click-instruction {
-            background: white;
-            padding: 10px;
-            border-radius: 5px;
-            box-shadow: 0 0 15px rgba(0,0,0,0.2);
-          }
-          
-          .instruction-content {
-            display: flex;
-            align-items: center;
-            gap: 5px;
-            font-size: 12px;
-            color: #333;
-          }
-          
-          .instruction-icon {
-            font-size: 14px;
-          }
-        `;
-        document.head.appendChild(instructionStyle);
-        
-        return div;
-      };
-      clickInstruction.addTo(mapInstance);
+      legend.addTo(mapInstance);
 
     } catch (error) {
       console.error('Error loading heatmap data:', error);

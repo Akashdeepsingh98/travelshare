@@ -1,5 +1,4 @@
 import * as L from 'leaflet';
-import { reverseGeocode, searchLocations } from '../utils/geocoding';
 
 export interface LocationData {
   name: string;
@@ -68,6 +67,52 @@ export function createLocationSelector(
   let selectedMapLocation: LocationData | null = null;
   let searchTimeout: NodeJS.Timeout | null = null;
   let userLocation: [number, number] | null = null;
+  
+  // Nominatim geocoding service (OpenStreetMap)
+  async function searchLocations(query: string): Promise<any[]> {
+    if (query.length < 3) return [];
+    
+    try {
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=5&addressdetails=1`,
+        {
+          headers: {
+            'User-Agent': 'TravelShare App'
+          }
+        }
+      );
+      
+      if (!response.ok) throw new Error('Search failed');
+      
+      const results = await response.json();
+      return results;
+    } catch (error) {
+      console.error('Error searching locations:', error);
+      return [];
+    }
+  }
+  
+  // Reverse geocoding
+  async function reverseGeocode(lat: number, lng: number): Promise<string> {
+    try {
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&addressdetails=1`,
+        {
+          headers: {
+            'User-Agent': 'TravelShare App'
+          }
+        }
+      );
+      
+      if (!response.ok) throw new Error('Reverse geocoding failed');
+      
+      const result = await response.json();
+      return result.display_name || `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+    } catch (error) {
+      console.error('Error reverse geocoding:', error);
+      return `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+    }
+  }
   
   // Get user's current location for map centering
   function getUserLocation(): Promise<[number, number]> {

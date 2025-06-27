@@ -2,13 +2,11 @@ import { Post, User } from '../types';
 import { authManager } from '../auth';
 import { supabase } from '../lib/supabase';
 import { getCurrentPosition, calculateDistance, formatDistance, GeolocationPosition } from '../utils/geolocation';
-import { forwardGeocode } from '../utils/geocoding';
 
 export function createExplorePage(
   onPostSelect: (post: Post, allPosts: Post[]) => void,
   onNavigateBack: () => void,
-  onUserClick?: (userId: string) => void,
-  initialLocationQuery?: string
+  onUserClick?: (userId: string) => void
 ): HTMLElement {
   const container = document.createElement('div');
   container.className = 'explore-page';
@@ -792,7 +790,6 @@ export function createExplorePage(
   let userLocation: GeolocationPosition | null = null;
   let selectedDistance = 25; // Default 25km
   let locationStatus: 'idle' | 'loading' | 'success' | 'error' = 'idle';
-  let initialLocationCoordinates: GeolocationPosition | null = null;
   
   async function loadExplorePosts() {
     if (isLoading) return;
@@ -839,38 +836,6 @@ export function createExplorePage(
       filteredPosts = allPosts;
       renderExplorePage();
     } catch (error) {
-    
-    // If there's an initial location query, perform the search after loading posts
-    if (initialLocationQuery) {
-      // Set the search input value
-      const searchInput = container.querySelector('.search-input') as HTMLInputElement;
-      if (searchInput) {
-        searchInput.value = initialLocationQuery;
-      }
-      
-      // Try to get coordinates for the location
-      try {
-        initialLocationCoordinates = await forwardGeocode(initialLocationQuery);
-        
-        if (initialLocationCoordinates) {
-          // Enable nearby search with the coordinates
-          nearbySearchEnabled = true;
-          userLocation = initialLocationCoordinates;
-          locationStatus = 'success';
-          
-          // Update UI to show nearby search is enabled
-          const nearbyToggle = container.querySelector('#nearby-toggle') as HTMLInputElement;
-          if (nearbyToggle) {
-            nearbyToggle.checked = true;
-          }
-        }
-      } catch (error) {
-        console.error('Error geocoding initial location:', error);
-      }
-      
-      // Perform the search
-      performSearch(initialLocationQuery);
-    }
       console.error('Error loading explore posts:', error);
       renderErrorState();
     } finally {
@@ -1007,7 +972,7 @@ export function createExplorePage(
               <div class="search-input-wrapper">
                 <span class="search-icon">🔍</span>
                 <input 
-                  type="text"
+                  type="text" 
                   placeholder="Search posts, users, locations, hashtags..." 
                   class="search-input"
                   value="${currentSearchQuery}"
