@@ -18,6 +18,7 @@ import { createCommunitiesPage } from './components/CommunitiesPage';
 import { createCommunityDetailPage } from './components/CommunityDetailPage';
 import { createCreateCommunityModal } from './components/CreateCommunityModal';
 import { createSharePostModal } from './components/SharePostModal';
+import { formatItineraryAsPlainText } from './utils/formatters';
 import { supabase } from './lib/supabase';
 import { testSupabaseConnection, displayConnectionDiagnostics } from './utils/connection-test';
 
@@ -394,6 +395,38 @@ class TravelSocialApp {
     this.postViewerData = null;
     this.render();
   }
+
+  private async handleShareItinerary(itineraryId: string) {
+    const itinerary = itineraries.find(i => i.id === itineraryId);
+    if (!itinerary) return;
+
+    try {
+      // Get itinerary items
+      const { data: items } = await supabase
+        .from('itinerary_items')
+        .select('*')
+        .eq('itinerary_id', itineraryId)
+        .order('day', { ascending: true })
+        .order('order', { ascending: true });
+      
+      // Create and show the share itinerary modal
+      const { createShareItineraryModal } = require('./components/SharePostModal');
+      const modal = createShareItineraryModal(
+        itinerary,
+        items || [],
+        () => {}, // onClose - no action needed
+        () => this.loadItineraries() // onSuccess - refresh itineraries
+      );
+      document.body.appendChild(modal);
+      
+      return;
+    } catch (error) {
+      console.error('Error preparing to share itinerary:', error);
+      // Fall back to the original behavior below
+    }
+    
+    // For now, just toggle public/private status
+    try {
 
   private render() {
     this.appContainer.innerHTML = '';
