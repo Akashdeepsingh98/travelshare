@@ -4,7 +4,8 @@ export function createHeader(
   onProfileClick?: () => void, 
   onExploreClick?: () => void, 
   onHomeClick?: () => void, 
-  onAIChatClick?: () => void,
+  onAIChatClick?: () => void, 
+  onCommunitiesClick?: () => void,
   onAboutClick?: () => void,
   currentView?: string
 ): HTMLElement {
@@ -102,10 +103,8 @@ export function createHeader(
             onExploreClick();
           } else if (view === 'ai-chat' && onAIChatClick) {
             onAIChatClick();
-          } else if (view === 'itineraries' && onAIChatClick) {
-            // Using onAIChatClick as a proxy for navigation since we don't have a dedicated itineraries handler
-            // This assumes the parent component will handle this correctly
-            onAIChatClick();
+          } else if (view === 'communities' && onCommunitiesClick) {
+            onCommunitiesClick();
           } else if (view === 'about' && onAboutClick) {
             onAboutClick();
           }
