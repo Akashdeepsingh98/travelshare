@@ -4,9 +4,10 @@ export function createHeader(
   onProfileClick?: () => void, 
   onExploreClick?: () => void, 
   onHomeClick?: () => void, 
-  onAIChatClick?: () => void, 
-  onCommunitiesClick?: () => void,
+  onAIChatClick?: () => void,
+  onCommunitiesClick?: () => void, 
   onAboutClick?: () => void,
+  onItinerariesClick?: () => void,
   currentView?: string
 ): HTMLElement {
   const header = document.createElement('header');
@@ -50,6 +51,10 @@ export function createHeader(
             <button class="nav-btn ${currentView === 'communities' ? 'active' : ''}" data-view="communities">
               <span class="nav-icon">🏘️</span>
               <span class="nav-text">Communities</span>
+            </button>
+            <button class="nav-btn ${currentView === 'itineraries' ? 'active' : ''}" data-view="itineraries">
+              <span class="nav-icon">🗺️</span>
+              <span class="nav-text">Itineraries</span>
             </button>
             <button class="nav-btn ${currentView === 'ai-chat' ? 'active' : ''}" data-view="ai-chat">
               <span class="nav-icon">🤖</span>
@@ -104,7 +109,9 @@ export function createHeader(
           } else if (view === 'ai-chat' && onAIChatClick) {
             onAIChatClick();
           } else if (view === 'communities' && onCommunitiesClick) {
-            onCommunitiesClick();
+            onCommunitiesClick(); 
+          } else if (view === 'itineraries' && onItinerariesClick) {
+            onItinerariesClick();
           } else if (view === 'about' && onAboutClick) {
             onAboutClick();
           }
@@ -149,6 +156,10 @@ export function createHeader(
             <button class="nav-btn ${currentView === 'communities' ? 'active' : ''}" data-view="communities">
               <span class="nav-icon">🏘️</span>
               <span class="nav-text">Communities</span>
+            </button>
+            <button class="nav-btn ${currentView === 'itineraries' ? 'active' : ''}" data-view="itineraries">
+              <span class="nav-icon">🗺️</span>
+              <span class="nav-text">Itineraries</span>
             </button>
           </nav>
           <div class="auth-buttons">
