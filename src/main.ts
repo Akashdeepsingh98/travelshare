@@ -64,7 +64,5 @@ class TravelSocialApp {
   }
 
   // Initialize the app
+  new TravelSocialApp();
 }
-
-// Initialize the app
-new TravelSocialApp();
