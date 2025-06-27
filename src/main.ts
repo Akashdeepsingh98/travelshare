@@ -424,9 +424,7 @@ class TravelSocialApp {
       console.error('Error preparing to share itinerary:', error);
       // Fall back to the original behavior below
     }
-    
-    // For now, just toggle public/private status
-    try {
+  }
 
   private render() {
     this.appContainer.innerHTML = '';
