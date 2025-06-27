@@ -11,6 +11,7 @@
 @import './styles/mcp-manager.css';
 @import './styles/profile-page.css';
 @import './styles/responsive.css';
+@import './styles/share-itinerary-modal.css';
 
 /* CORS Error Styling */
 .cors-solution {
