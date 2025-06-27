@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabase';
 import { createItineraryCard } from './ItineraryCard';
 import { createItineraryDetail } from './ItineraryDetail';
 import { createItineraryModal } from './CreateItineraryModal';
+import { formatItineraryAsPlainText } from '../utils/formatters';
 
 export function createItineraryPage(
   itineraryId?: string,
@@ -476,8 +477,43 @@ export function createItineraryPage(
   async function handleShareItinerary(itineraryId: string) {
     const itinerary = itineraries.find(i => i.id === itineraryId);
     if (!itinerary) return;
+
+    // Get itinerary items
+    try {
+      const { data: items } = await supabase
+        .from('itinerary_items')
+        .select('*')
+        .eq('itinerary_id', itineraryId)
+        .order('day', { ascending: true })
+        .order('order', { ascending: true });
+      
+      // Format itinerary as text
+      const text = formatItineraryAsPlainText(itinerary, items || []);
+      
+      // Try to use the Web Share API if available
+      if (navigator.share) {
+        try {
+          await navigator.share({
+            title: itinerary.title,
+            text: text
+          });
+          return;
+        } catch (err) {
+          console.log('Error sharing:', err);
+          // Fall back to clipboard if sharing fails
+        }
+      }
+      
+      // Copy to clipboard as fallback
+      await navigator.clipboard.writeText(text);
+      alert('Itinerary copied to clipboard!');
+      
+    } catch (error) {
+      console.error('Error sharing itinerary:', error);
+      alert('Failed to share itinerary. Please try again.');
+    }
     
-    // For now, just toggle public/private status
+    // Also toggle public/private status
     try {
       const { error } = await supabase
         .from('itineraries')

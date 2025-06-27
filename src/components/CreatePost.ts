@@ -92,6 +92,9 @@ export function createPostForm(onPostCreate: (post: Post) => void): HTMLElement 
   function renderCreatePostForm(currentUser: any) {
     const avatarUrl = currentUser.avatar_url || 'https://images.pexels.com/photos/1040880/pexels-photo-1040880.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&fit=crop';
     
+    // Check if there's itinerary text stored for a post
+    const itineraryText = localStorage.getItem('itinerary-text-for-post') || '';
+    
     // Create post trigger button
     const triggerButton = document.createElement('button');
     triggerButton.className = 'create-post-trigger';
@@ -158,7 +161,7 @@ export function createPostForm(onPostCreate: (post: Post) => void): HTMLElement 
             </div>
             
             <div class="caption-container">
-              <textarea class="post-caption" placeholder="Write a caption..." rows="4"></textarea>
+              <textarea class="post-caption" placeholder="Write a caption..." rows="4">${itineraryText}</textarea>
               <div class="word-count-container">
                 <span class="word-count">0 words</span>
                 <span class="word-limit" style="display: none;">/ ${APP_CONFIG.maxTextPostWords} words</span>
@@ -264,6 +267,14 @@ export function createPostForm(onPostCreate: (post: Post) => void): HTMLElement 
     function openModal() {
       modal.classList.add('active');
       document.body.style.overflow = 'hidden';
+      
+      // Clear the stored itinerary text after using it
+      if (itineraryText) {
+        localStorage.removeItem('itinerary-text-for-post');
+        updateWordCount();
+        updateShareButton();
+      }
+      
       postCaption.focus();
     }
     
@@ -290,6 +301,11 @@ export function createPostForm(onPostCreate: (post: Post) => void): HTMLElement 
       mediaUploadSection.style.display = 'block';
       wordLimitElement.style.display = 'none';
       postCaption.placeholder = 'Write a caption...';
+      
+      // If there was itinerary text, switch to text post type
+      if (itineraryText) {
+        postTypeTabs[1].click();
+      }
       
       updateMediaPreview();
       updateWordCount();

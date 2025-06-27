@@ -1,6 +1,7 @@
 import { Community, Post } from '../types';
 import { authManager } from '../auth';
 import { supabase } from '../lib/supabase';
+import { formatItineraryAsPlainText } from '../utils/formatters';
 
 export function createSharePostModal(post: Post, onClose: () => void, onSuccess?: () => void): HTMLElement {
   const modal = document.createElement('div');
@@ -694,6 +695,260 @@ export function createSharePostModal(post: Post, onClose: () => void, onSuccess?
   
   // Initial load
   loadCommunities();
+  
+  return modal;
+}
+
+export function createShareItineraryModal(
+  itinerary: any,
+  itineraryItems: any[],
+  onClose: () => void,
+  onSuccess?: () => void
+): HTMLElement {
+  const modal = document.createElement('div');
+  modal.className = 'share-post-modal';
+  
+  modal.innerHTML = `
+    <div class="modal-backdrop"></div>
+    <div class="share-post-content">
+      <div class="share-post-header">
+        <h2>Share Itinerary</h2>
+        <button class="modal-close">✕</button>
+      </div>
+      
+      <div class="share-post-body">
+        <div class="post-preview">
+          <div class="preview-header">
+            <h3>Itinerary Preview</h3>
+          </div>
+          <div class="preview-content">
+            <div class="preview-text">${itinerary.title} - ${itinerary.destination}</div>
+            <div class="preview-text-content">${formatItineraryAsPlainText(itinerary, itineraryItems).substring(0, 300)}...</div>
+          </div>
+        </div>
+        
+        <div class="share-options">
+          <h3>Share Options</h3>
+          
+          <div class="share-option-buttons">
+            <button class="copy-text-btn">
+              <span class="btn-icon">📋</span>
+              <span class="btn-text">Copy as Text</span>
+            </button>
+            
+            <button class="create-post-btn">
+              <span class="btn-icon">✏️</span>
+              <span class="btn-text">Create Post</span>
+            </button>
+            
+            ${navigator.share ? `
+              <button class="share-native-btn">
+                <span class="btn-icon">🔄</span>
+                <span class="btn-text">Share...</span>
+              </button>
+            ` : ''}
+          </div>
+        </div>
+        
+        <div class="form-actions">
+          <button type="button" class="cancel-btn">Close</button>
+        </div>
+      </div>
+    </div>
+  `;
+  
+  // Add styles
+  const style = document.createElement('style');
+  style.textContent = `
+    .share-options {
+      margin-bottom: 1.5rem;
+    }
+    
+    .share-options h3 {
+      margin: 0 0 1rem 0;
+      font-size: 1rem;
+      font-weight: 600;
+      color: #334155;
+    }
+    
+    .share-option-buttons {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+    }
+    
+    .copy-text-btn, .create-post-btn, .share-native-btn {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: #f1f5f9;
+      color: #334155;
+      border: none;
+      padding: 0.75rem 1rem;
+      border-radius: 0.5rem;
+      cursor: pointer;
+      font-weight: 500;
+      transition: all 0.2s;
+    }
+    
+    .copy-text-btn:hover, .create-post-btn:hover, .share-native-btn:hover {
+      background: #e2e8f0;
+      transform: translateY(-1px);
+    }
+    
+    .copy-text-btn.copied {
+      background: #10b981;
+      color: white;
+    }
+    
+    .preview-text-content {
+      white-space: pre-line;
+      font-size: 0.875rem;
+      color: #64748b;
+      max-height: 200px;
+      overflow-y: auto;
+      margin-top: 0.75rem;
+      padding: 0.75rem;
+      background: #f8fafc;
+      border-radius: 0.5rem;
+      border: 1px solid #e2e8f0;
+    }
+  `;
+  
+  if (!document.head.querySelector('#share-itinerary-styles')) {
+    style.id = 'share-itinerary-styles';
+    document.head.appendChild(style);
+  }
+  
+  // Get elements
+  const modalBackdrop = modal.querySelector('.modal-backdrop') as HTMLElement;
+  const modalClose = modal.querySelector('.modal-close') as HTMLButtonElement;
+  const cancelBtn = modal.querySelector('.cancel-btn') as HTMLButtonElement;
+  const copyTextBtn = modal.querySelector('.copy-text-btn') as HTMLButtonElement;
+  const createPostBtn = modal.querySelector('.create-post-btn') as HTMLButtonElement;
+  const shareNativeBtn = modal.querySelector('.share-native-btn') as HTMLButtonElement;
+  
+  // Close modal
+  function closeModal() {
+    modal.remove();
+    onClose();
+  }
+  
+  // Event listeners
+  modalBackdrop.addEventListener('click', closeModal);
+  modalClose.addEventListener('click', closeModal);
+  cancelBtn.addEventListener('click', closeModal);
+  
+  // Copy text button
+  copyTextBtn.addEventListener('click', async () => {
+    const text = formatItineraryAsPlainText(itinerary, itineraryItems);
+    
+    try {
+      await navigator.clipboard.writeText(text);
+      
+      // Show success feedback
+      const originalText = copyTextBtn.innerHTML;
+      copyTextBtn.innerHTML = `<span class="btn-icon">✅</span><span class="btn-text">Copied!</span>`;
+      copyTextBtn.classList.add('copied');
+      
+      // Reset after 2 seconds
+      setTimeout(() => {
+        copyTextBtn.innerHTML = originalText;
+        copyTextBtn.classList.remove('copied');
+      }, 2000);
+      
+      if (onSuccess) {
+        onSuccess();
+      }
+    } catch (error) {
+      console.error('Failed to copy text:', error);
+      alert('Failed to copy text to clipboard. Please try again.');
+    }
+  });
+  
+  // Create post button
+  createPostBtn.addEventListener('click', () => {
+    const text = formatItineraryAsPlainText(itinerary, itineraryItems);
+    
+    // Store the text in localStorage to be used by the create post form
+    localStorage.setItem('itinerary-text-for-post', text);
+    
+    // Close the modal
+    closeModal();
+    
+    // Trigger the create post form
+    const createPostTrigger = document.querySelector('.create-post-trigger') as HTMLButtonElement;
+    if (createPostTrigger) {
+      createPostTrigger.click();
+      
+      // Set a small timeout to allow the create post modal to open
+      setTimeout(() => {
+        const postCaption = document.querySelector('.post-caption') as HTMLTextAreaElement;
+        if (postCaption) {
+          postCaption.value = text;
+          
+          // Trigger input event to update character count and enable submit button
+          const inputEvent = new Event('input', { bubbles: true });
+          postCaption.dispatchEvent(inputEvent);
+        }
+      }, 300);
+    }
+    
+    if (onSuccess) {
+      onSuccess();
+    }
+  });
+  
+  // Share native button
+  if (shareNativeBtn) {
+    shareNativeBtn.addEventListener('click', async () => {
+      const text = formatItineraryAsPlainText(itinerary, itineraryItems);
+      
+      try {
+        await navigator.share({
+          title: itinerary.title,
+          text: text
+        });
+        
+        if (onSuccess) {
+          onSuccess();
+        }
+        
+        closeModal();
+      } catch (error) {
+        console.error('Error sharing:', error);
+        
+        // Fallback to clipboard
+        try {
+          await navigator.clipboard.writeText(text);
+          alert('Itinerary copied to clipboard!');
+          
+          if (onSuccess) {
+            onSuccess();
+          }
+          
+          closeModal();
+        } catch (clipboardError) {
+          console.error('Failed to copy text:', clipboardError);
+          alert('Failed to share. Please try the "Copy as Text" option instead.');
+        }
+      }
+    });
+  }
+  
+  // Close on escape key
+  const handleKeyDown = (e: KeyboardEvent) => {
+    if (e.key === 'Escape') {
+      closeModal();
+    }
+  };
+  
+  document.addEventListener('keydown', handleKeyDown);
+  
+  // Cleanup
+  modal.addEventListener('remove', () => {
+    document.removeEventListener('keydown', handleKeyDown);
+  });
   
   return modal;
 }

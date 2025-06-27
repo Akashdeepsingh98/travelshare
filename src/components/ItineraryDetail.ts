@@ -793,7 +793,29 @@ export function createItineraryDetail(
     const shareBtn = container.querySelector('.share-itinerary-btn') as HTMLButtonElement;
     shareBtn?.addEventListener('click', () => {
       if (onShare && itinerary) {
-        onShare(itinerary.id);
+        // Get itinerary items first
+        supabase
+          .from('itinerary_items')
+          .select('*')
+          .eq('itinerary_id', itinerary.id)
+          .order('day', { ascending: true })
+          .order('order', { ascending: true })
+          .then(({ data }) => {
+            // Create and show the share itinerary modal
+            const { createShareItineraryModal } = require('./SharePostModal');
+            const modal = createShareItineraryModal(
+              itinerary,
+              data || [],
+              () => {}, // onClose - no action needed
+              () => {} // onSuccess - no action needed
+            );
+            document.body.appendChild(modal);
+          })
+          .catch(error => {
+            console.error('Error fetching itinerary items:', error);
+            // Fallback to original behavior
+            onShare(itinerary.id);
+          });
       }
     });
     
