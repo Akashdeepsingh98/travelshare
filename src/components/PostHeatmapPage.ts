@@ -93,6 +93,11 @@ export function createPostHeatmapPage(onNavigateBack: () => void): HTMLElement {
       position: relative;
     }
     
+    .heatmap-header {
+      position: relative;
+      z-index: 1001;
+    }
+    
     .heatmap-search-wrapper {
       position: relative;
       flex: 1;
@@ -137,6 +142,7 @@ export function createPostHeatmapPage(onNavigateBack: () => void): HTMLElement {
       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
       z-index: 1000;
       max-height: 200px;
+      overflow-y: auto;
       overflow-y: auto;
       margin-top: 0.25rem;
     }
