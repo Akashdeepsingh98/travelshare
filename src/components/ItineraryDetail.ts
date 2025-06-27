@@ -1,6 +1,7 @@
 import { Itinerary, ItineraryItem } from '../types';
 import { authManager } from '../auth';
 import { supabase } from '../lib/supabase';
+import { createShareItineraryModal } from './SharePostModal';
 
 export function createItineraryDetail(
   itinerary: Itinerary,
@@ -802,7 +803,6 @@ export function createItineraryDetail(
           .order('order', { ascending: true })
           .then(({ data }) => {
             // Create and show the share itinerary modal
-            const { createShareItineraryModal } = require('./SharePostModal');
             const modal = createShareItineraryModal(
               itinerary,
               data || [],
