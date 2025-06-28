@@ -455,3 +455,89 @@
   cursor: pointer;
   margin-top: 1rem;
 }
+
+/* Distance badge for posts in heatmap */
+.distance-badge {
+  background: #10b981;
+  color: white;
+  padding: 0.25rem 0.75rem;
+  border-radius: 1rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  margin-left: 0.5rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.distance-badge::before {
+  content: "📍";
+  font-size: 0.875rem;
+}
+
+/* Posts in area section */
+.posts-in-area-section {
+  padding: 1.5rem;
+  border-top: 1px solid #e5e7eb;
+}
+
+.posts-in-area-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.posts-in-area-title {
+  color: #374151;
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.posts-in-area-title::before {
+  content: "📍";
+  font-size: 1.25rem;
+}
+
+.posts-in-area-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.posts-in-area-empty {
+  text-align: center;
+  padding: 3rem 1rem;
+  background: #f9fafb;
+  border-radius: 0.75rem;
+  border: 2px dashed #d1d5db;
+}
+
+.posts-in-area-empty-icon {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+  color: #9ca3af;
+}
+
+.posts-in-area-empty h3 {
+  color: #374151;
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin: 0 0 0.5rem 0;
+}
+
+.posts-in-area-empty p {
+  color: #6b7280;
+  margin: 0;
+  line-height: 1.5;
+}
+
+.posts-in-area-loading {
+  text-align: center;
+  padding: 3rem 1rem;
+  color: #6b7280;
+}

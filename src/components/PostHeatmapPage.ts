@@ -1,9 +1,17 @@
 import * as L from 'leaflet';
 // @ts-ignore - Leaflet.heat doesn't have TypeScript definitions
 import 'leaflet.heat';
+import { createPostCard } from './PostCard';
+import { showAuthModal } from './AuthModal';
 import { supabase } from '../lib/supabase';
+import { calculateDistance, formatDistance, reverseGeocode } from '../utils/geolocation';
+import { Post } from '../types';
+import { authManager } from '../auth';
 
-export function createPostHeatmapPage(onNavigateBack: () => void): HTMLElement {
+export function createPostHeatmapPage(
+  onNavigateBack: () => void,
+  onUserClick?: (userId: string) => void
+): HTMLElement {
   const container = document.createElement('div');
   container.className = 'heatmap-page';
 
@@ -28,8 +36,14 @@ export function createPostHeatmapPage(onNavigateBack: () => void): HTMLElement {
     <div class="heatmap-content">
       <div id="post-heatmap-map" class="map-container"></div>
       <div class="heatmap-info">
-        <p>This map shows the density of posts around the world. Hotter areas indicate more posts.</p>
-        <p>Data is based on posts with location coordinates from the TravelShare community.</p>
+        <p>This map shows the density of posts around the world. Hotter areas indicate more posts. Click anywhere on the map to see posts from that area.</p>
+        <p>Data is based on posts with location coordinates from the TravelShare community. The posts list will update when you click on different areas.</p>
+      </div>
+      <div class="posts-in-area-section">
+        <div class="posts-in-area-header">
+          <h3 class="posts-in-area-title">Click on the map to see posts from that area</h3>
+        </div>
+        <div class="posts-in-area-list" id="posts-in-area-list"></div>
       </div>
     </div>
   `;
@@ -256,6 +270,64 @@ export function createPostHeatmapPage(onNavigateBack: () => void): HTMLElement {
       background: #f0f0f0;
     }
 
+    .posts-in-area-section {
+      padding: 1.5rem;
+      border-top: 1px solid #e5e7eb;
+    }
+
+    .posts-in-area-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1.5rem;
+    }
+
+    .posts-in-area-title {
+      color: #374151;
+      font-size: 1.25rem;
+      font-weight: 600;
+      margin: 0;
+    }
+
+    .posts-in-area-list {
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+
+    .posts-in-area-empty {
+      text-align: center;
+      padding: 3rem 1rem;
+      background: #f9fafb;
+      border-radius: 0.75rem;
+      border: 2px dashed #d1d5db;
+    }
+
+    .posts-in-area-empty-icon {
+      font-size: 3rem;
+      margin-bottom: 1rem;
+      color: #9ca3af;
+    }
+
+    .posts-in-area-empty h3 {
+      color: #374151;
+      font-size: 1.25rem;
+      font-weight: 600;
+      margin: 0 0 0.5rem 0;
+    }
+
+    .posts-in-area-empty p {
+      color: #6b7280;
+      margin: 0;
+      line-height: 1.5;
+    }
+
+    .posts-in-area-loading {
+      text-align: center;
+      padding: 3rem 1rem;
+      color: #6b7280;
+    }
+
     .heatmap-info {
       padding: 1.5rem;
       border-top: 1px solid #e5e7eb;
@@ -306,6 +378,13 @@ export function createPostHeatmapPage(onNavigateBack: () => void): HTMLElement {
 
   const backBtn = container.querySelector('.back-btn') as HTMLButtonElement;
   backBtn.addEventListener('click', onNavigateBack);
+
+  // State variables
+  let map: L.Map | null = null;
+  let allPostsWithCoords: Post[] = [];
+  let postsInArea: Post[] = [];
+  let isLoadingPosts = false;
+  let selectedArea: { lat: number; lng: number; name: string } | null = null;
 
   // Get current location button
   const currentLocationBtn = container.querySelector('.current-location-btn') as HTMLButtonElement;
@@ -605,6 +684,210 @@ export function createPostHeatmapPage(onNavigateBack: () => void): HTMLElement {
   // Add event listener for current location button
   currentLocationBtn.addEventListener('click', getUserLocationAndCenterMap);
 
+  // Initialize the post list area
+  function initializePostListArea() {
+    const postsListContainer = container.querySelector('#posts-in-area-list') as HTMLElement;
+    if (!postsListContainer) return;
+
+    postsListContainer.innerHTML = `
+      <div class="posts-in-area-empty">
+        <div class="posts-in-area-empty-icon">📍</div>
+        <h3>Click on the map to see posts</h3>
+        <p>Select an area on the map to view posts from that location.</p>
+      </div>
+    `;
+  }
+
+  // Filter and display posts in the clicked area
+  async function filterAndDisplayPostsInArea(lat: number, lng: number) {
+    const postsListContainer = container.querySelector('#posts-in-area-list') as HTMLElement;
+    if (!postsListContainer) return;
+
+    // Set loading state
+    isLoadingPosts = true;
+    postsListContainer.innerHTML = `
+      <div class="posts-in-area-loading">
+        <div class="loading-spinner"></div>
+        <p>Finding posts in this area...</p>
+      </div>
+    `;
+
+    try {
+      // Get location name through reverse geocoding
+      const locationName = await reverseGeocode(lat, lng);
+      selectedArea = { lat, lng, name: locationName };
+
+      // Update the title
+      const titleElement = container.querySelector('.posts-in-area-title') as HTMLElement;
+      if (titleElement) {
+        titleElement.textContent = `Posts near ${locationName}`;
+      }
+
+      // Filter posts within a certain radius (e.g., 10km)
+      const radius = 10; // km
+      postsInArea = allPostsWithCoords.filter(post => {
+        if (!post.latitude || !post.longitude) return false;
+        
+        const distance = calculateDistance(
+          lat,
+          lng,
+          post.latitude,
+          post.longitude
+        );
+        
+        // Add distance to post for display
+        (post as any).distance = distance;
+        
+        return distance <= radius;
+      });
+
+      // Sort by distance
+      postsInArea.sort((a, b) => (a as any).distance - (b as any).distance);
+
+      // Render the posts
+      renderPostsInArea();
+
+    } catch (error) {
+      console.error('Error filtering posts:', error);
+      postsListContainer.innerHTML = `
+        <div class="posts-in-area-empty">
+          <div class="posts-in-area-empty-icon">⚠️</div>
+          <h3>Error finding posts</h3>
+          <p>Something went wrong while trying to find posts in this area. Please try again.</p>
+        </div>
+      `;
+    } finally {
+      isLoadingPosts = false;
+    }
+  }
+
+  // Render posts in the area
+  function renderPostsInArea() {
+    const postsListContainer = container.querySelector('#posts-in-area-list') as HTMLElement;
+    if (!postsListContainer) return;
+
+    if (postsInArea.length === 0) {
+      postsListContainer.innerHTML = `
+        <div class="posts-in-area-empty">
+          <div class="posts-in-area-empty-icon">🔍</div>
+          <h3>No posts found in this area</h3>
+          <p>Try selecting a different area on the map or zooming out to see more posts.</p>
+        </div>
+      `;
+      return;
+    }
+
+    // Clear the container
+    postsListContainer.innerHTML = '';
+
+    // Add posts
+    postsInArea.forEach(post => {
+      const distance = (post as any).distance;
+      const distanceText = formatDistance(distance);
+      
+      // Create post card
+      const postCard = createPostCard(
+        post,
+        (postId) => handleLikeInArea(postId),
+        (postId, comment) => handleCommentInArea(postId, comment),
+        undefined, // No follow handler needed
+        undefined, // No unfollow handler needed
+        false, // Don't show follow button
+        onUserClick, // Navigate to user profile when clicked
+        false, // Not own profile
+        undefined, // No delete handler
+        undefined // No AI handler
+      );
+      
+      // Add distance badge to post card
+      const postHeader = postCard.querySelector('.post-header') as HTMLElement;
+      if (postHeader) {
+        const distanceBadge = document.createElement('div');
+        distanceBadge.className = 'distance-badge';
+        distanceBadge.textContent = distanceText;
+        postHeader.appendChild(distanceBadge);
+      }
+      
+      postsListContainer.appendChild(postCard);
+    });
+  }
+
+  // Handle like action for posts in the area
+  async function handleLikeInArea(postId: string) {
+    const authState = authManager.getAuthState();
+    if (!authState.isAuthenticated || !authState.currentUser) {
+      showAuthModal();
+      return;
+    }
+    
+    try {
+      const post = postsInArea.find(p => p.id === postId);
+      if (!post) return;
+
+      if (post.user_has_liked) {
+        // Unlike the post
+        await supabase
+          .from('post_likes')
+          .delete()
+          .eq('post_id', postId)
+          .eq('user_id', authState.currentUser.id);
+        
+        post.user_has_liked = false;
+        post.likes_count = Math.max(0, post.likes_count - 1);
+      } else {
+        // Like the post
+        await supabase
+          .from('post_likes')
+          .insert({
+            post_id: postId,
+            user_id: authState.currentUser.id
+          });
+        
+        post.user_has_liked = true;
+        post.likes_count = post.likes_count + 1;
+      }
+      
+      renderPostsInArea();
+    } catch (error) {
+      console.error('Error handling like:', error);
+    }
+  }
+
+  // Handle comment action for posts in the area
+  async function handleCommentInArea(postId: string, commentText: string) {
+    const authState = authManager.getAuthState();
+    if (!authState.isAuthenticated || !authState.currentUser) {
+      showAuthModal();
+      return;
+    }
+    
+    try {
+      const { data, error } = await supabase
+        .from('comments')
+        .insert({
+          post_id: postId,
+          user_id: authState.currentUser.id,
+          content: commentText
+        })
+        .select(`
+          *,
+          user:profiles(*)
+        `)
+        .single();
+
+      if (error) throw error;
+
+      const post = postsInArea.find(p => p.id === postId);
+      if (post) {
+        if (!post.comments) post.comments = [];
+        post.comments.push(data);
+        renderPostsInArea();
+      }
+    } catch (error) {
+      console.error('Error adding comment:', error);
+    }
+  }
+
   const initializeMap = async () => {
     const mapElement = container.querySelector('#post-heatmap-map') as HTMLElement;
     if (!mapElement) return;
@@ -624,14 +907,33 @@ export function createPostHeatmapPage(onNavigateBack: () => void): HTMLElement {
     // Set map language to English only
     map.getContainer().style.setProperty('--map-tiles-filter', 'grayscale(0.1) contrast(1.1)');
 
+    // Add click handler to the map
+    map.on('click', async (e: L.LeafletMouseEvent) => {
+      const { lat, lng } = e.latlng;
+      await filterAndDisplayPostsInArea(lat, lng);
+    });
+
     await loadHeatmapData(map);
+    
+    // Initialize the post list area
+    initializePostListArea();
   };
 
-  const loadHeatmapData = async (mapInstance: L.Map) => {
+  const loadHeatmapData = async (mapInstance: L.Map): Promise<void> => {
     try {
+      const authState = authManager.getAuthState();
+      
+      // Get all posts with coordinates and full details
       const { data: posts, error } = await supabase
         .from('posts')
-        .select('latitude, longitude')
+        .select(`
+          *,
+          user:profiles(*),
+          comments(
+            *,
+            user:profiles(*)
+          )
+        `)
         .not('latitude', 'is', null)
         .not('longitude', 'is', null);
 
@@ -697,6 +999,29 @@ export function createPostHeatmapPage(onNavigateBack: () => void): HTMLElement {
         mapElement.style.position = 'relative';
         mapElement.appendChild(noDataOverlay);
         return;
+      }
+      
+      // Store all posts with coordinates for later filtering
+      allPostsWithCoords = posts;
+      
+      // If user is authenticated, check which posts they've liked
+      if (authState.isAuthenticated && authState.currentUser) {
+        const { data: likes } = await supabase
+          .from('post_likes')
+          .select('post_id')
+          .eq('user_id', authState.currentUser.id);
+
+        const likedPostIds = new Set(likes?.map(like => like.post_id) || []);
+
+        allPostsWithCoords = allPostsWithCoords.map(post => ({
+          ...post,
+          user_has_liked: likedPostIds.has(post.id)
+        }));
+      } else {
+        allPostsWithCoords = allPostsWithCoords.map(post => ({
+          ...post,
+          user_has_liked: false
+        }));
       }
 
       // Convert posts to heatmap data format [lat, lng, intensity]
@@ -796,6 +1121,18 @@ export function createPostHeatmapPage(onNavigateBack: () => void): HTMLElement {
 
     } catch (error) {
       console.error('Error loading heatmap data:', error);
+      
+      // Show error in the posts list area
+      const postsListContainer = container.querySelector('#posts-in-area-list') as HTMLElement;
+      if (postsListContainer) {
+        postsListContainer.innerHTML = `
+          <div class="posts-in-area-empty">
+            <div class="posts-in-area-empty-icon">⚠️</div>
+            <h3>Error loading data</h3>
+            <p>Something went wrong while loading the heatmap data. Please try refreshing the page.</p>
+          </div>
+        `;
+      }
     }
   };
 

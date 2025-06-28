@@ -533,6 +533,7 @@ class TravelSocialApp {
         const heatmapPage = createPostHeatmapPage(
           () => this.navigateToFeed(),
           (userId) => this.navigateToProfile(userId)
+          (userId) => this.navigateToProfile(userId)
         );
         this.appContainer.appendChild(heatmapPage);
       } else if (this.currentView === 'itineraries') {

@@ -89,3 +89,49 @@ export function formatDistance(distance: number): string {
     return `${Math.round(distance)}km`;
   }
 }
+
+// Reverse geocoding function to get location name from coordinates
+export async function reverseGeocode(lat: number, lng: number): Promise<string> {
+  try {
+    const response = await fetch(
+      `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&addressdetails=1`,
+      {
+        headers: {
+          'User-Agent': 'TravelShare App'
+        }
+      }
+    );
+    
+    if (!response.ok) throw new Error('Reverse geocoding failed');
+    
+    const result = await response.json();
+    
+    // Extract the most relevant part of the address
+    if (result.address) {
+      const address = result.address;
+      
+      // Try to get the most specific location name
+      const locationParts = [];
+      
+      // City or town
+      if (address.city) locationParts.push(address.city);
+      else if (address.town) locationParts.push(address.town);
+      else if (address.village) locationParts.push(address.village);
+      else if (address.suburb) locationParts.push(address.suburb);
+      
+      // State/province and country
+      if (address.state) locationParts.push(address.state);
+      if (address.country) locationParts.push(address.country);
+      
+      if (locationParts.length > 0) {
+        return locationParts.join(', ');
+      }
+    }
+    
+    // Fallback to display name or coordinates
+    return result.display_name || `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+  } catch (error) {
+    console.error('Error reverse geocoding:', error);
+    return `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+  }
+}
