@@ -1023,8 +1023,16 @@ class TravelSocialApp {
       const post = this.posts.find(p => p.id === postId);
       if (!post) return;
 
-      if (post.user_has_liked) {
-        // Unlike the post
+      // Check if the user has already liked this post in the database
+      const { data: existingLike } = await supabase
+        .from('post_likes')
+        .select('id')
+        .eq('post_id', postId)
+        .eq('user_id', authState.currentUser.id)
+        .single();
+
+      if (existingLike) {
+        // Unlike the post - remove the existing like
         await supabase
           .from('post_likes')
           .delete()
@@ -1034,7 +1042,7 @@ class TravelSocialApp {
         post.user_has_liked = false;
         post.likes_count = Math.max(0, post.likes_count - 1);
       } else {
-        // Like the post
+        // Like the post - insert new like
         await supabase
           .from('post_likes')
           .insert({
