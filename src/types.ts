@@ -220,6 +220,26 @@ export interface GuideContentItem {
   itinerary_data?: Itinerary;
 }
 
+export interface Expense {
+  id: string;
+  itinerary_id: string;
+  user_id: string;
+  amount: number;
+  currency: string;
+  description: string;
+  category: 'accommodation' | 'food' | 'transportation' | 'activity' | 'shopping' | 'other';
+  expense_date: string;
+  created_at: string;
+  updated_at: string;
+  user?: User;
+}
+
+export interface ExpenseSummary {
+  category: string;
+  total_amount: number;
+  currency: string;
+}
+
 export interface ItineraryItem {
   id: string;
   itinerary_id: string;
