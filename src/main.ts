@@ -513,7 +513,7 @@ class TravelSocialApp {
         // Itinerary detail page
         const itineraryPage = createItineraryPage(
           this.viewData.itineraryId!,
-          () => this.navigateToProfile()
+          (userId?: string) => this.navigateToProfile(userId)
         );
         this.appContainer.appendChild(itineraryPage);
       } else {
