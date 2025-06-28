@@ -138,12 +138,6 @@ export function createPostViewer(
                 <span class="icon">💬</span>
                 <span class="count">${currentPost.comments?.length || 0}</span>
               </button>
-              ${authState.isAuthenticated ? `
-                <button class="action-btn share-btn" data-post-id="${currentPost.id}">
-                  <span class="icon">🔄</span>
-                  <span class="text">Share</span>
-                </button>
-              ` : ''}
               ${authState.isAuthenticated && onAskAI ? `
                 <button class="action-btn ask-ai-btn" data-post-id="${currentPost.id}">
                   <span class="icon">🤖</span>
@@ -186,7 +180,6 @@ export function createPostViewer(
     const prevBtn = container.querySelector('.prev-btn') as HTMLButtonElement;
     const nextBtn = container.querySelector('.next-btn') as HTMLButtonElement;
     const likeBtn = container.querySelector('.like-btn') as HTMLButtonElement;
-    const shareBtn = container.querySelector('.share-btn') as HTMLButtonElement;
     const followBtn = container.querySelector('.follow-btn') as HTMLButtonElement;
     const askAIBtn = container.querySelector('.ask-ai-btn') as HTMLButtonElement;
     
@@ -222,16 +215,6 @@ export function createPostViewer(
       currentPost.likes_count += currentPost.user_has_liked ? 1 : -1;
       renderPostViewer();
     });
-    
-    // Share functionality
-    if (shareBtn) {
-      shareBtn.addEventListener('click', () => {
-        // This will be handled by the parent component
-        // which will open the share modal
-        const event = new CustomEvent('share-post', { detail: { postId: currentPost.id } });
-        container.dispatchEvent(event);
-      });
-    }
     
     // Follow functionality
     if (followBtn) {
