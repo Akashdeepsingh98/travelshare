@@ -1,4 +1,4 @@
-import { Community, CommunityMember, CommunitySharedPost, Post } from '../types';
+import { Community, CommunityMember, CommunitySharedPost, Post, User } from '../types';
 import { authManager } from '../auth';
 import { supabase } from '../lib/supabase';
 import { createPostCard } from './PostCard';
@@ -17,6 +17,8 @@ export function createCommunityDetailPage(
   let members: CommunityMember[] = [];
   let sharedPosts: CommunitySharedPost[] = [];
   let isLoading = false;
+  let isSearchingUsers = false;
+  let searchResults: User[] = [];
   let userRole: 'admin' | 'member' | null = null;
   
   async function loadCommunityData() {
@@ -227,6 +229,42 @@ export function createCommunityDetailPage(
                   <span class="btn-icon">👥</span>
                   Manage Members
                 </button>
+                <div class="add-member-section">
+                  <button class="toggle-add-member-btn" data-community-id="${community.id}">
+                    <span class="btn-icon">➕</span>
+                    Add Member
+                  </button>
+                  <div class="user-search-container" style="display: none;">
+                    <div class="user-search-input-container">
+                      <input type="text" class="user-search-input" placeholder="Search for users...">
+                      <button class="close-search-btn">✕</button>
+                    </div>
+                    <div class="user-search-results">
+                      ${isSearchingUsers ? `
+                        <div class="user-search-loading">
+                          <div class="loading-spinner"></div>
+                          <span>Searching...</span>
+                        </div>
+                      ` : searchResults.length > 0 ? `
+                        <div class="user-search-list">
+                          ${searchResults.map(user => `
+                            <div class="user-search-item" data-user-id="${user.id}">
+                              <img src="${user.avatar_url || 'https://images.pexels.com/photos/1040880/pexels-photo-1040880.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&fit=crop'}" alt="${user.name}" class="user-search-avatar">
+                              <div class="user-search-info">
+                                <span class="user-search-name">${user.name}</span>
+                              </div>
+                              <button class="add-user-btn" data-user-id="${user.id}">Add</button>
+                            </div>
+                          `).join('')}
+                        </div>
+                      ` : `
+                        <div class="user-search-empty">
+                          <p>No users found. Try a different search term.</p>
+                        </div>
+                      `}
+                    </div>
+                  </div>
+                </div>
               </div>
             ` : ''}
           </div>
@@ -525,6 +563,145 @@ export function createCommunityDetailPage(
 
       .edit-community-btn:hover, .manage-members-btn:hover {
         background: #e2e8f0;
+      }
+
+      .add-member-section {
+        position: relative;
+        margin-top: 0.75rem;
+      }
+
+      .toggle-add-member-btn {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        background: #10b981;
+        color: white;
+        border: none;
+        padding: 0.5rem 1rem;
+        border-radius: 0.5rem;
+        cursor: pointer;
+        font-weight: 500;
+        transition: all 0.2s;
+        width: 100%;
+      }
+
+      .toggle-add-member-btn:hover {
+        background: #059669;
+      }
+
+      .user-search-container {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        background: white;
+        border: 1px solid #e2e8f0;
+        border-radius: 0.5rem;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        margin-top: 0.5rem;
+        z-index: 10;
+      }
+
+      .user-search-input-container {
+        display: flex;
+        align-items: center;
+        padding: 0.75rem;
+        border-bottom: 1px solid #e2e8f0;
+      }
+
+      .user-search-input {
+        flex: 1;
+        padding: 0.5rem;
+        border: 1px solid #e2e8f0;
+        border-radius: 0.25rem;
+        font-size: 0.875rem;
+      }
+
+      .user-search-input:focus {
+        outline: none;
+        border-color: #667eea;
+        box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.1);
+      }
+
+      .close-search-btn {
+        background: none;
+        border: none;
+        color: #64748b;
+        font-size: 1rem;
+        cursor: pointer;
+        margin-left: 0.5rem;
+      }
+
+      .user-search-results {
+        max-height: 250px;
+        overflow-y: auto;
+      }
+
+      .user-search-loading {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        padding: 1rem;
+        color: #64748b;
+        font-size: 0.875rem;
+      }
+
+      .user-search-list {
+        padding: 0.5rem;
+      }
+
+      .user-search-item {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 0.75rem;
+        border-radius: 0.25rem;
+        transition: all 0.2s;
+      }
+
+      .user-search-item:hover {
+        background: #f8fafc;
+      }
+
+      .user-search-avatar {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        object-fit: cover;
+      }
+
+      .user-search-info {
+        flex: 1;
+      }
+
+      .user-search-name {
+        font-weight: 500;
+        color: #1e293b;
+        font-size: 0.875rem;
+      }
+
+      .add-user-btn {
+        background: #10b981;
+        color: white;
+        border: none;
+        padding: 0.25rem 0.5rem;
+        border-radius: 0.25rem;
+        font-size: 0.75rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s;
+      }
+
+      .add-user-btn:hover {
+        background: #059669;
+      }
+
+      .user-search-empty {
+        padding: 1rem;
+        text-align: center;
+        color: #64748b;
+        font-size: 0.875rem;
       }
 
       .community-content-section {
@@ -991,6 +1168,57 @@ export function createCommunityDetailPage(
       membersTab?.click();
     });
     
+    // Toggle add member section
+    const toggleAddMemberBtn = container.querySelector('.toggle-add-member-btn') as HTMLButtonElement;
+    toggleAddMemberBtn?.addEventListener('click', () => {
+      const searchContainer = container.querySelector('.user-search-container') as HTMLElement;
+      if (searchContainer) {
+        const isVisible = searchContainer.style.display !== 'none';
+        searchContainer.style.display = isVisible ? 'none' : 'block';
+        
+        // Focus search input when showing
+        if (!isVisible) {
+          const searchInput = searchContainer.querySelector('.user-search-input') as HTMLInputElement;
+          searchInput?.focus();
+        }
+      }
+    });
+    
+    // Close search button
+    const closeSearchBtn = container.querySelector('.close-search-btn') as HTMLButtonElement;
+    closeSearchBtn?.addEventListener('click', () => {
+      const searchContainer = container.querySelector('.user-search-container') as HTMLElement;
+      if (searchContainer) {
+        searchContainer.style.display = 'none';
+      }
+    });
+    
+    // User search input
+    const searchInput = container.querySelector('.user-search-input') as HTMLInputElement;
+    let searchTimeout: NodeJS.Timeout;
+    searchInput?.addEventListener('input', () => {
+      clearTimeout(searchTimeout);
+      
+      // Show loading state
+      isSearchingUsers = true;
+      renderCommunityDetailPage();
+      
+      // Debounce search
+      searchTimeout = setTimeout(() => {
+        searchUsers(searchInput.value.trim());
+      }, 500);
+    });
+    
+    // Add user buttons
+    const addUserBtns = container.querySelectorAll('.add-user-btn');
+    addUserBtns.forEach(btn => {
+      btn.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        const userId = (btn as HTMLButtonElement).dataset.userId!;
+        await handleAddMember(userId);
+      });
+    });
+    
     // Share post button
     const shareBtn = container.querySelector('.share-post-btn') as HTMLButtonElement;
     shareBtn?.addEventListener('click', () => handleSharePost());
@@ -1286,6 +1514,95 @@ export function createCommunityDetailPage(
     } catch (error) {
       console.error('Error removing shared post:', error);
       alert('Failed to remove shared post. Please try again.');
+    }
+  }
+  
+  // Search for users to add to the community
+  async function searchUsers(query: string) {
+    if (!query) {
+      isSearchingUsers = false;
+      searchResults = [];
+      renderCommunityDetailPage();
+      return;
+    }
+    
+    const authState = authManager.getAuthState();
+    if (!authState.isAuthenticated || !authState.currentUser) return;
+    
+    try {
+      // Get existing member IDs to exclude them from search
+      const memberIds = members.map(m => m.user_id);
+      
+      // Search for users by name
+      const { data: users, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .ilike('name', `%${query}%`)
+        .not('id', 'in', `(${[...memberIds, authState.currentUser.id].join(',')})`)
+        .limit(10);
+      
+      if (error) throw error;
+      
+      searchResults = users || [];
+      
+    } catch (error) {
+      console.error('Error searching users:', error);
+      searchResults = [];
+    } finally {
+      isSearchingUsers = false;
+      renderCommunityDetailPage();
+    }
+  }
+  
+  // Add a user to the community
+  async function handleAddMember(userId: string) {
+    const authState = authManager.getAuthState();
+    if (!authState.isAuthenticated || !authState.currentUser) return;
+    
+    // Verify admin status
+    if (userRole !== 'admin') {
+      alert('Only community admins can add members');
+      return;
+    }
+    
+    try {
+      // Add the user as a member
+      const { error } = await supabase
+        .from('community_members')
+        .insert({
+          community_id: communityId,
+          user_id: userId,
+          role: 'member'
+        });
+      
+      if (error) {
+        // Handle duplicate member error
+        if (error.code === '23505') {
+          alert('This user is already a member of the community');
+        } else {
+          throw error;
+        }
+      } else {
+        // Success - reload community data
+        await loadCommunityData();
+        
+        // Clear search
+        const searchInput = container.querySelector('.user-search-input') as HTMLInputElement;
+        if (searchInput) {
+          searchInput.value = '';
+        }
+        searchResults = [];
+        
+        // Hide search container
+        const searchContainer = container.querySelector('.user-search-container') as HTMLElement;
+        if (searchContainer) {
+          searchContainer.style.display = 'none';
+        }
+      }
+      
+    } catch (error) {
+      console.error('Error adding member:', error);
+      alert('Failed to add member. Please try again.');
     }
   }
   
