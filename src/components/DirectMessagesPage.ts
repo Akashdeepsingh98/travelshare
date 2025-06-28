@@ -3,6 +3,7 @@ import { authManager } from '../auth';
 import { supabase } from '../lib/supabase';
 import { showAuthModal } from './AuthModal';
 import { createGroupChatsTab } from './GroupChatsTab';
+import { createGroupChatsTab } from './GroupChatsTab';
 import { createGroupChatPage } from './GroupChatPage';
 import { createPostCard } from './PostCard';
 
@@ -10,6 +11,7 @@ export function createDirectMessagesPage(
   onNavigateBack: () => void,
   onUserClick?: (userId: string) => void,
   onSharePost?: (post: Post) => void,
+  onGroupChatClick?: (groupId: string) => void,
   initialConversationId?: string
 ): HTMLElement {
   const container = document.createElement('div');
@@ -776,6 +778,7 @@ export function createDirectMessagesPage(
   let conversations: Conversation[] = [];
   let messages: Message[] = [];
   let selectedConversationId: string | null = initialConversationId || null;
+  let groupChatsTab: HTMLElement | null = null;
   let selectedUser: User | null = null;
   let isLoading = false;
   let isSearching = false;
@@ -1142,12 +1145,16 @@ export function createDirectMessagesPage(
         <div class="new-message-header">
           <h2>New Message</h2>
           <button class="new-message-close">✕</button>
+          <button class="messages-tab ${activeTab === 'groups' ? 'active' : ''}" data-tab="groups">Group Chats</button>
         </div>
         <div class="new-message-body">
           <div class="new-message-search">
             <input type="text" class="new-message-search-input" placeholder="Search for users...">
           </div>
           <div class="new-message-results"></div>
+          <div class="tab-pane ${activeTab === 'groups' ? 'active' : ''}" id="group-chats-tab">
+            <!-- Group chats tab content will be rendered here -->
+          </div>
         </div>
       </div>
     `;
@@ -1423,10 +1430,34 @@ export function createDirectMessagesPage(
     // Add event listeners
     const backBtn = container.querySelector('.back-btn') as HTMLButtonElement;
     backBtn.addEventListener('click', onNavigateBack);
-    
-    // Tab switching
-    const tabs = container.querySelectorAll('.dm-tab');
-    tabs.forEach(tab => {
+      tab.addEventListener('click', (e) => {
+        const tabName = (e.target as HTMLElement).dataset.tab;
+        if (tabName) {
+          // Update active tab
+          tabs.forEach(t => t.classList.remove('active'));
+          tab.classList.add('active');
+          
+          // Update tab panes
+          const tabPanes = container.querySelectorAll('.tab-pane');
+          tabPanes.forEach(pane => {
+            pane.classList.remove('active');
+            if (pane.id === `${tabName}-messages-tab` || pane.id === `${tabName}-chats-tab`) {
+              pane.classList.add('active');
+            }
+          });
+          
+          // Update active tab state
+          activeTab = tabName;
+          
+          // Render group chats tab if needed
+          if (tabName === 'groups' && !groupChatsTab && onGroupChatClick) {
+            const tabContainer = container.querySelector('#group-chats-tab');
+            if (tabContainer) {
+              groupChatsTab = createGroupChatsTab(onGroupChatClick);
+              tabContainer.appendChild(groupChatsTab);
+            }
+          }
+        }
       tab.addEventListener('click', () => {
         const tabName = tab.getAttribute('data-tab');
         if (tabName) {
@@ -1622,6 +1653,17 @@ export function createDirectMessagesPage(
   if (activeTab === 'groups') {
     setTimeout(() => {
       renderGroupChatsTab();
+    }, 0);
+  }
+  
+  // Render group chats tab if it's the active tab
+  if (activeTab === 'groups' && onGroupChatClick) {
+    setTimeout(() => {
+      const tabContainer = container.querySelector('#group-chats-tab');
+      if (tabContainer) {
+        groupChatsTab = createGroupChatsTab(onGroupChatClick);
+        tabContainer.appendChild(groupChatsTab);
+      }
     }, 0);
   }
   

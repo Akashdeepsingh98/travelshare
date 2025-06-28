@@ -14,6 +14,7 @@ export function createPostCard(
   isOwnProfile: boolean = false,
   onDelete?: (postId: string) => void,
   onAskAI?: (post: Post) => void,
+  onShareToGroup?: (post: Post) => void
   onShareToDM?: (post: Post) => void,
   onShareToGroup?: (post: Post) => void
 ): HTMLElement {
@@ -154,6 +155,16 @@ export function createPostCard(
           <button class="action-btn share-btn" data-post-id="${post.id}">
             <span class="icon">🔄</span>
             <span class="text">Share</span>
+            <div class="share-dropdown">
+              <button class="share-option share-to-community">
+                <span class="option-icon">🏘️</span>
+                <span class="option-text">Share to Community</span>
+              </button>
+              <button class="share-option share-to-group">
+                <span class="option-icon">👥</span>
+                <span class="option-text">Share to Group</span>
+              </button>
+            </div>
           </button>
         ` : ''}
         ${authState.isAuthenticated && onAskAI ? `
@@ -256,11 +267,40 @@ export function createPostCard(
     // Share functionality
     const shareBtn = card.querySelector('.share-btn') as HTMLButtonElement;
     if (shareBtn) {
+      // Toggle dropdown on click
       shareBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const dropdown = shareBtn.querySelector('.share-dropdown') as HTMLElement;
+        dropdown.classList.toggle('active');
+        
+        // Close dropdown when clicking outside
+        const closeDropdown = (e: MouseEvent) => {
+          if (!shareBtn.contains(e.target as Node)) {
+            dropdown.classList.remove('active');
+            document.removeEventListener('click', closeDropdown);
+          }
+        };
+        
+        document.addEventListener('click', closeDropdown);
+      });
+      
+      // Share to community option
+      const shareToCommunityBtn = shareBtn.querySelector('.share-to-community') as HTMLButtonElement;
+      shareToCommunityBtn?.addEventListener('click', (e) => {
         e.stopPropagation();
         // This will be handled by the parent component
         // which will open the share modal
-        const event = new CustomEvent('share-post', { 
+        const event = new CustomEvent('share-post', { detail: { postId: post.id } });
+        card.dispatchEvent(event);
+      });
+      
+      // Share to group option
+      const shareToGroupBtn = shareBtn.querySelector('.share-to-group') as HTMLButtonElement;
+      shareToGroupBtn?.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (onShareToGroup) {
+          onShareToGroup(post);
+        }
           detail: { 
             postId: post.id,
             target: 'community'
@@ -526,6 +566,60 @@ function createCommentHTML(comment: Comment, onUserClick?: (userId: string) => v
         <p class="comment-text">${comment.content}</p>
       </div>
     </div>
+    .share-dropdown {
+      position: absolute;
+      top: 100%;
+      right: 0;
+      background: white;
+      border: 1px solid #e2e8f0;
+      border-radius: 0.5rem;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      min-width: 180px;
+      z-index: 100;
+      display: none;
+    }
+    
+    .share-dropdown.active {
+      display: block;
+    }
+    
+    .share-option {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.75rem 1rem;
+      width: 100%;
+      text-align: left;
+      background: none;
+      border: none;
+      cursor: pointer;
+      transition: background 0.2s;
+      color: #334155;
+    }
+    
+    .share-option:hover {
+      background: #f8fafc;
+    }
+    
+    .share-option:first-child {
+      border-radius: 0.5rem 0.5rem 0 0;
+    }
+    
+    .share-option:last-child {
+      border-radius: 0 0 0.5rem 0.5rem;
+    }
+    
+    .option-icon {
+      font-size: 1rem;
+    }
+    
+    .option-text {
+      font-size: 0.875rem;
+    }
+    
+    .action-btn.share-btn {
+      position: relative;
+    }
   `;
 }
 
