@@ -394,7 +394,6 @@ export function createPostHeatmapPage(
   const searchBtn = container.querySelector('.heatmap-search-btn') as HTMLButtonElement;
   const suggestionsContainer = container.querySelector('.location-suggestions') as HTMLElement;
 
-  let map: L.Map | null = null;
   let searchTimeout: NodeJS.Timeout | null = null;
 
   // Interface for location data
