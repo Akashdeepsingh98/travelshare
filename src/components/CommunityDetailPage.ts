@@ -10,7 +10,8 @@ export function createCommunityDetailPage(
   onUserClick?: (userId: string) => void,
   onSharePost?: (post: Post) => void,
   onAskAI?: (post: Post) => void,
-  onConnectionError?: () => void
+  onConnectionError?: () => void,
+  onError?: () => void
 ): HTMLElement {
   const container = document.createElement('div');
   container.className = 'community-detail-page';
@@ -44,6 +45,12 @@ export function createCommunityDetailPage(
         .single();
       
       if (communityError) throw communityError;
+      
+      if (!communityData) {
+        console.error('Community not found');
+        if (onError) onError();
+        return;
+      }
       
       community = communityData;
       
@@ -87,7 +94,12 @@ export function createCommunityDetailPage(
             throw membersError;
           }
         } else {
-          members = membersData || [];
+          if (!membersData) {
+            console.error('Error fetching community members');
+            members = [];
+          } else {
+            members = membersData || [];
+          }
         }
       } catch (memberError) {
         console.error('Error loading community members:', memberError);
@@ -114,7 +126,12 @@ export function createCommunityDetailPage(
       
       if (postsError) throw postsError;
       
-      sharedPosts = sharedPostsData || [];
+      if (!sharedPostsData) {
+        console.error('Error fetching shared posts');
+        sharedPosts = [];
+      } else {
+        sharedPosts = sharedPostsData || [];
+      }
       
       // If user is authenticated, check which posts they've liked
       if (authState.isAuthenticated && authState.currentUser) {
@@ -165,6 +182,8 @@ export function createCommunityDetailPage(
         members = [];
         sharedPosts = [];
       }
+      
+      if (onError) onError();
     } finally {
       isLoading = false;
       renderCommunityDetailPage();
@@ -742,6 +761,32 @@ export function createCommunityDetailPage(
       `}
     `;
     
+    // Initialize community chat if needed
+    if (community && canViewContent) {
+      const chatContainer = container.querySelector('#community-chat-container');
+      if (chatContainer && chatContainer.innerHTML === '') {
+        try {
+          // Dynamically import the CommunityChat component
+          import('./CommunityChat.js').then(module => {
+            const createCommunityChat = module.createCommunityChat;
+            const chatComponent = createCommunityChat(community.id, community.name);
+            chatContainer.appendChild(chatComponent);
+          }).catch(error => {
+            console.error('Error loading CommunityChat component:', error);
+            chatContainer.innerHTML = `
+              <div class="error-message">
+                <div class="error-icon">⚠️</div>
+                <h3>Error Loading Chat</h3>
+                <p>Could not load the community chat. Please try refreshing the page.</p>
+              </div>
+            `;
+          });
+        } catch (error) {
+          console.error('Error initializing community chat:', error);
+        }
+      }
+    }
+    
     // Add styles
     const style = document.createElement('style');
     style.textContent = `
@@ -1088,7 +1133,7 @@ export function createCommunityDetailPage(
 
       .community-tab {
         flex: 1;
-        display: flex;
+        display: inline-flex;
         align-items: center;
         justify-content: center;
         gap: 0.5rem;
@@ -1105,6 +1150,7 @@ export function createCommunityDetailPage(
       .community-tab.active {
         color: #667eea;
         border-bottom-color: #667eea;
+        background: rgba(102, 126, 234, 0.05);
       }
 
       .community-tab:hover:not(.active) {
@@ -1119,6 +1165,20 @@ export function createCommunityDetailPage(
 
       .tab-pane.active {
         display: block;
+      }
+      
+      .chat-pane {
+        padding: 0;
+        display: flex;
+        flex-direction: column;
+        height: 500px;
+      }
+      
+      #community-chat-container {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        height: 100%;
       }
 
       .share-post-prompt {
