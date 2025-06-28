@@ -8,6 +8,7 @@ const corsHeaders = {
 }
 
 interface ItineraryRequest {
+  title?: string;
   destination: string;
   startDate?: string;
   endDate?: string;
@@ -53,7 +54,7 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
 
-    const { destination, startDate, endDate, budget, preferences, notes, userId, existingItinerary, refinementInstructions }: ItineraryRequest = await req.json()
+    const { title, destination, startDate, endDate, budget, preferences, notes, userId, existingItinerary, refinementInstructions }: ItineraryRequest = await req.json()
 
     if (!destination?.trim()) {
       return new Response(
@@ -166,7 +167,7 @@ Deno.serve(async (req) => {
       prompt = `Refine an existing travel itinerary for a trip to ${destination} based on the following instructions: "${refinementInstructions}".
 
 EXISTING ITINERARY:
-Title: ${itinerary.title}
+Title: ${title || 'Untitled Itinerary'}
 Destination: ${destination}
 ${startDate && endDate ? `Dates: ${startDate} to ${endDate} (${numDays} days)` : `Duration: ${numDays} days`}
 ${budget ? `Budget: ${budgetDescription}` : ''}

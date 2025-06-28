@@ -1344,6 +1344,7 @@ export function createItineraryDetail(
           'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
         },
         body: JSON.stringify({
+          title: itinerary.title,
           destination: itinerary.destination,
           startDate: itinerary.start_date || undefined,
           endDate: itinerary.end_date || undefined,
