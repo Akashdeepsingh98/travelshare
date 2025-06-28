@@ -830,7 +830,8 @@ export function createProfilePage(
   let showMCPGuide = false;
   let userPosts: Post[] = [];
   
-  async function loadProfileData() {
+  async function loadProfileData(event?: Event) {
+    // Ignore any event parameter that might be passed
     const authState = authManager.getAuthState();
     
     if (authState.loading) {
