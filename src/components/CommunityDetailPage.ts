@@ -8,7 +8,8 @@ export function createCommunityDetailPage(
   onNavigateBack: () => void,
   onPostSelect: (post: Post, allPosts: Post[]) => void,
   onUserClick?: (userId: string) => void,
-  onSharePost?: (post: Post) => void
+  onSharePost?: (post: Post) => void,
+  onAskAI?: (post: Post) => void
 ): HTMLElement {
   const container = document.createElement('div');
   container.className = 'community-detail-page';
@@ -17,6 +18,7 @@ export function createCommunityDetailPage(
   let members: CommunityMember[] = [];
   let sharedPosts: CommunitySharedPost[] = [];
   let isLoading = false;
+  let activeTab = 'posts'; // Default tab: 'posts', 'members', or 'chat'
   let isSearchingUsers = false;
   let searchResults: User[] = [];
   let userSearchTimeout: NodeJS.Timeout | null = null;
@@ -611,6 +613,10 @@ export function createCommunityDetailPage(
                   <span class="tab-icon">📝</span>
                   <span class="tab-text">Shared Posts</span>
                 </button>
+                <button class="community-tab" data-tab="chat">
+                  <span class="tab-icon">💬</span>
+                  <span class="tab-text">Chat</span>
+                </button>
                 <button class="community-tab" data-tab="members">
                   <span class="tab-icon">👥</span>
                   <span class="tab-text">Members</span>
@@ -618,7 +624,7 @@ export function createCommunityDetailPage(
               </div>
               
               <div class="community-tab-content">
-                <div class="tab-pane posts-pane active">
+                <div class="tab-pane posts-pane ${activeTab === 'posts' ? 'active' : ''}">
                   ${isUserMember ? `
                     <div class="share-post-prompt">
                       <button class="share-post-btn">
@@ -658,8 +664,12 @@ export function createCommunityDetailPage(
                     </div>
                   `}
                 </div>
+
+                <div class="tab-pane chat-pane ${activeTab === 'chat' ? 'active' : ''}">
+                  <div id="community-chat-container"></div>
+                </div>
                 
-                <div class="tab-pane members-pane">
+                <div class="tab-pane members-pane ${activeTab === 'members' ? 'active' : ''}">
                   ${members.length === 0 ? `
                     <div class="members-loading-error">
                       <div class="error-content">
@@ -721,6 +731,20 @@ export function createCommunityDetailPage(
     // Add styles
     const style = document.createElement('style');
     style.textContent = `
+      .tab-pane.chat-pane {
+        padding: 0;
+        display: flex;
+        flex-direction: column;
+        height: 500px;
+      }
+
+      #community-chat-container {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+      }
+
       .community-detail-page {
         min-height: 100vh;
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -1439,6 +1463,12 @@ export function createCommunityDetailPage(
     renderSharedPosts();
   }
   
+  // Set initial active tab
+  function setActiveTab(tabName: string) {
+    activeTab = tabName;
+    renderCommunityDetailPage();
+  }
+  
   function renderSharedPosts() {
     // Render post cards for shared posts
     sharedPosts.forEach((sharedPost, index) => {
@@ -1457,6 +1487,7 @@ export function createCommunityDetailPage(
         onUserClick, // Navigate to user profile when clicked
         false, // Not own profile
         undefined, // No delete handler
+        onAskAI // Ask AI handler
         undefined // No AI handler
       );
       
@@ -1514,8 +1545,9 @@ export function createCommunityDetailPage(
     // Tab switching
     const tabs = container.querySelectorAll('.community-tab');
     tabs.forEach(tab => {
-      tab.addEventListener('click', () => {
+      tab.addEventListener('click', async () => {
         const tabName = (tab as HTMLElement).dataset.tab;
+        activeTab = tabName || 'posts';
         
         // Update active tab
         tabs.forEach(t => t.classList.remove('active'));
@@ -1529,6 +1561,17 @@ export function createCommunityDetailPage(
             pane.classList.add('active');
           }
         });
+        
+        // Initialize community chat if chat tab is selected
+        if (tabName === 'chat') {
+          const chatContainer = document.getElementById('community-chat-container');
+          if (chatContainer && chatContainer.children.length === 0) {
+            // Import and create the chat component
+            const { createCommunityChat } = await import('./CommunityChat');
+            const chatComponent = createCommunityChat(communityId, community?.name || 'Community');
+            chatContainer.appendChild(chatComponent);
+          }
+        }
       });
     });
     
