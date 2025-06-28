@@ -74,6 +74,7 @@ function parseHash() {
     currentGuideId = null;
     currentItineraryId = null;
     currentConversationId = null;
+    renderApp();
     return;
   }
 
@@ -121,6 +122,7 @@ function parseHash() {
       currentView = 'feed';
       break;
   }
+  renderApp();
 }
 
 // Navigate to a specific view
