@@ -14,8 +14,7 @@ export function createPostCard(
   isOwnProfile: boolean = false,
   onDelete?: (postId: string) => void,
   onAskAI?: (post: Post) => void,
-  onShareToDM?: (post: Post) => void,
-  onShareToGroup?: (post: Post) => void
+  onShareToDM?: (post: Post) => void
 ): HTMLElement {
   const card = document.createElement('div');
   card.className = 'post-card';
@@ -132,12 +131,6 @@ export function createPostCard(
         <button class="action-btn share-dm-btn" data-post-id="${post.id}">
           <span class="icon">✉️</span>
           <span class="text">Message</span>
-        </button>
-      ` : ''}
-      ${authState.isAuthenticated && onShareToGroup ? `
-        <button class="action-btn share-group-btn" data-post-id="${post.id}">
-          <span class="icon">👥</span>
-          <span class="text">Group</span>
         </button>
       ` : ''}
       
@@ -281,23 +274,6 @@ export function createPostCard(
           detail: { 
             postId: post.id,
             target: 'dm'
-          } 
-        });
-        card.dispatchEvent(event);
-      });
-    }
-    
-    // Share to Group functionality
-    const shareGroupBtn = card.querySelector('.share-group-btn') as HTMLButtonElement;
-    if (shareGroupBtn && onShareToGroup) {
-      shareGroupBtn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        // This will be handled by the parent component
-        // which will open the share to group modal
-        const event = new CustomEvent('share-post', { 
-          detail: { 
-            postId: post.id,
-            target: 'group'
           } 
         });
         card.dispatchEvent(event);
@@ -490,12 +466,10 @@ export function createPostCard(
   // Initial render
   updatePostCard();
   
-  // Load follow status if needed and component is mounted
-  setTimeout(() => {
-    if (showFollowButton && card.isConnected) {
-      loadFollowStatus();
-    }
-  }, 0);
+  // Load follow status if needed
+  if (showFollowButton) {
+    loadFollowStatus();
+  }
   
   // Listen for auth changes
   authManager.onAuthChange(() => {
@@ -536,6 +510,5 @@ function getTimeAgo(date: Date): string {
   if (diffInSeconds < 60) return 'Just now';
   if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)}m ago`;
   if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)}h ago`;
-  if (diffInSeconds < 604800) return `${Math.floor(diffInSeconds / 86400)}d ago`;
-  return date.toLocaleDateString([], { month: 'short', day: 'numeric' });
+  return `${Math.floor(diffInSeconds / 86400)}d ago`;
 }

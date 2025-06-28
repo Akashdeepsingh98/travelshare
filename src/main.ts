@@ -463,19 +463,6 @@ class TravelSocialApp {
     document.body.appendChild(modal);
   }
 
-  private openShareToGroupModal(post: Post) {
-    const { createShareToGroupModal } = require('./components/ShareToGroupModal');
-    const modal = createShareToGroupModal(
-      post,
-      () => {}, // onClose - no action needed
-      () => {
-        // onSuccess - show success message
-        alert('Post shared successfully!');
-      }
-    );
-    document.body.appendChild(modal);
-  }
-  
   private openShareToDMModal(post: Post) {
     const modal = createShareToDMModal(
       post,
@@ -580,10 +567,6 @@ class TravelSocialApp {
   
   private handleSharePost(post: Post) {
     this.openSharePostModal(post);
-  }
-  
-  private handleSharePostToGroup(post: Post) {
-    this.openShareToGroupModal(post);
   }
   
   private handleSharePostToDM(post: Post) {
@@ -917,8 +900,7 @@ class TravelSocialApp {
         false, // Not own profile
         undefined,
         (post) => this.navigateToAIChat(post),
-        (post) => this.handleSharePostToDM(post), // Add handler for sharing to DM
-        (post) => this.handleSharePostToGroup(post) // Add handler for sharing to group
+        (post) => this.handleSharePostToDM(post) // Add handler for sharing to DM
       );
       
       // Add share post event listener
@@ -929,12 +911,6 @@ class TravelSocialApp {
           const postToShare = this.posts.find(p => p.id === postId);
           if (postToShare) {
             this.openShareToDMModal(postToShare);
-          }
-        } else if (e.detail.target === 'group') {
-          // Share to group
-          const postToShare = this.posts.find(p => p.id === postId);
-          if (postToShare) {
-            this.openShareToGroupModal(postToShare);
           }
         } else {
           // Share to community

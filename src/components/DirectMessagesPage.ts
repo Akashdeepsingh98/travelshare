@@ -2,8 +2,6 @@ import { Conversation, Message, Post, User } from '../types';
 import { authManager } from '../auth';
 import { supabase } from '../lib/supabase';
 import { showAuthModal } from './AuthModal';
-import { createGroupChatsTab } from './GroupChatsTab';
-import { createGroupChatPage } from './GroupChatPage';
 import { createPostCard } from './PostCard';
 
 export function createDirectMessagesPage(
@@ -709,42 +707,6 @@ export function createDirectMessagesPage(
         padding: 0.75rem;
       }
 
-      .dm-tabs {
-        display: flex;
-        border-bottom: 1px solid #e5e7eb;
-      }
-
-      .dm-tab {
-        flex: 1;
-        text-align: center;
-        padding: 0.75rem;
-        cursor: pointer;
-        color: #64748b;
-        font-weight: 500;
-        transition: all 0.2s;
-        border-bottom: 2px solid transparent;
-      }
-
-      .dm-tab.active {
-        color: #667eea;
-        border-bottom-color: #667eea;
-      }
-
-      .dm-tab:hover:not(.active) {
-        color: #334155;
-        background: #f8fafc;
-      }
-
-      .tab-content {
-        display: none;
-        flex-direction: column;
-        flex: 1;
-      }
-
-      .tab-content.active {
-        display: flex;
-      }
-
       .dm-search {
         padding: 0.5rem 0.75rem;
       }
@@ -779,7 +741,6 @@ export function createDirectMessagesPage(
   let selectedUser: User | null = null;
   let isLoading = false;
   let isSearching = false;
-  let activeTab = 'direct'; // 'direct' or 'groups'
   let searchResults: User[] = [];
   let subscription: any = null;
   
@@ -1099,39 +1060,6 @@ export function createDirectMessagesPage(
     }
   }
   
-  // Render group chats tab
-  function renderGroupChatsTab() {
-    const groupChatsTab = container.querySelector('#group-chats-tab');
-    if (!groupChatsTab) return;
-    
-    // Clear existing content
-    groupChatsTab.innerHTML = '';
-    
-    // Create group chats tab component
-    const groupChatsTabComponent = createGroupChatsTab((groupId) => {
-      // Navigate to group chat
-      navigateToGroupChat(groupId);
-    });
-    
-    groupChatsTab.appendChild(groupChatsTabComponent);
-  }
-  
-  // Navigate to group chat
-  function navigateToGroupChat(groupId: string) {
-    // Clear the direct messages page
-    container.innerHTML = '';
-    
-    // Create and render the group chat page
-    const groupChatPage = createGroupChatPage(
-      groupId,
-      onNavigateBack,
-      onUserClick,
-      onSharePost
-    );
-    
-    container.appendChild(groupChatPage);
-  }
-  
   // Show new message modal
   function showNewMessageModal() {
     const modal = document.createElement('div');
@@ -1301,16 +1229,10 @@ export function createDirectMessagesPage(
       <div class="dm-content">
         <div class="dm-sidebar">
           <div class="dm-sidebar-header">
-            <h2 class="dm-sidebar-title">Direct Messages</h2>
+            <h2 class="dm-sidebar-title">Messages</h2>
             <button class="new-message-btn" title="New Message">+</button>
           </div>
           
-          <div class="dm-tabs">
-            <div class="dm-tab ${activeTab === 'direct' ? 'active' : ''}" data-tab="direct">Direct</div>
-            <div class="dm-tab ${activeTab === 'groups' ? 'active' : ''}" data-tab="groups">Groups</div>
-          </div>
-          
-          <div class="tab-content ${activeTab === 'direct' ? 'active' : ''}" data-content="direct">
           <div class="dm-search">
             <input type="text" class="dm-search-input" placeholder="Search conversations...">
           </div>
@@ -1355,11 +1277,6 @@ export function createDirectMessagesPage(
                 </div>
               `;
             }).join('')}
-          </div>
-          </div>
-          
-          <div class="tab-content ${activeTab === 'groups' ? 'active' : ''}" data-content="groups" id="group-chats-tab">
-            <!-- Group chats tab will be rendered here -->
           </div>
         </div>
         
@@ -1423,35 +1340,6 @@ export function createDirectMessagesPage(
     // Add event listeners
     const backBtn = container.querySelector('.back-btn') as HTMLButtonElement;
     backBtn.addEventListener('click', onNavigateBack);
-    
-    // Tab switching
-    const tabs = container.querySelectorAll('.dm-tab');
-    tabs.forEach(tab => {
-      tab.addEventListener('click', () => {
-        const tabName = tab.getAttribute('data-tab');
-        if (tabName) {
-          activeTab = tabName;
-          
-          // Update active tab
-          tabs.forEach(t => t.classList.remove('active'));
-          tab.classList.add('active');
-          
-          // Update active content
-          const tabContents = container.querySelectorAll('.tab-content');
-          tabContents.forEach(content => {
-            content.classList.remove('active');
-            if (content.getAttribute('data-content') === tabName) {
-              content.classList.add('active');
-            }
-          });
-          
-          // Render group chats tab if needed
-          if (tabName === 'groups') {
-            renderGroupChatsTab();
-          }
-        }
-      });
-    });
     
     // New message button
     const newMessageBtn = container.querySelector('.new-message-btn') as HTMLButtonElement;
@@ -1617,13 +1505,6 @@ export function createDirectMessagesPage(
   
   // Initial load
   loadConversations();
-  
-  // Render group chats tab if active
-  if (activeTab === 'groups') {
-    setTimeout(() => {
-      renderGroupChatsTab();
-    }, 0);
-  }
   
   // Listen for auth changes
   authManager.onAuthChange(() => {
