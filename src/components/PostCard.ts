@@ -297,10 +297,12 @@ export function createPostCard(
       const shareToGroupBtn = shareBtn.querySelector('.share-to-group') as HTMLButtonElement;
       shareToGroupBtn?.addEventListener('click', (e) => {
         e.stopPropagation();
-        const event = new CustomEvent('share-post', { 
+        if (onShareToGroup) {
+          onShareToGroup(post);
+        }
           detail: { 
             postId: post.id,
-            target: 'group'
+            target: 'community'
           } 
         });
         card.dispatchEvent(event);
