@@ -513,9 +513,9 @@ class TravelSocialApp {
         // Itinerary detail page
         const itineraryPage = createItineraryPage(
           this.viewData.itineraryId!,
-          (userId?: string) => this.navigateToProfile(userId)
-        );
-        this.appContainer.appendChild(itineraryPage);
+          (userId) => this.navigateToFeed(),
+          (userId) => this.navigateToProfile(userId)
+        )
       } else {
         // Feed page
         // Header

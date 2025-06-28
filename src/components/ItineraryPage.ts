@@ -9,8 +9,7 @@ import { formatItineraryAsPlainText } from '../utils/formatters';
 export function createItineraryPage(
   itineraryId?: string,
   onNavigateBack: (userId?: string) => void,
-  onNavigateToProfile?: (userId: string) => void,
-  onError?: () => void
+  onNavigateToProfile?: (userId: string) => void
 ): HTMLElement {
   const container = document.createElement('div');
   container.className = 'itinerary-page';
@@ -67,15 +66,10 @@ export function createItineraryPage(
       
       // Check if this is a network/connection error
       if (error instanceof TypeError && (error.message.includes('Failed to fetch') || error.message.includes('fetch'))) {
-        if (onError) {
-          onError();
-          return;
+        // For other errors, show a generic error message
+        if (!currentItinerary) {
+          renderErrorState('Failed to load itineraries. Please try again.');
         }
-      }
-      
-      // For other errors, show a generic error message
-      if (!currentItinerary) {
-        renderErrorState('Failed to load itineraries. Please try again.');
       }
     } finally {
       isLoading = false;
@@ -104,7 +98,7 @@ export function createItineraryPage(
     
     // Add event listeners
     const backBtn = container.querySelector('.back-btn') as HTMLButtonElement;
-    backBtn?.addEventListener('click', onNavigateBack);
+    backBtn?.addEventListener('click', () => onNavigateBack());
     
     const retryBtn = container.querySelector('.retry-btn') as HTMLButtonElement;
     retryBtn?.addEventListener('click', () => loadItineraries());
@@ -116,12 +110,10 @@ export function createItineraryPage(
     if (currentItinerary) {
       // Render itinerary detail view
       container.innerHTML = '';
+      // Pass the onNavigateBack directly to the detail view
       const detailView = createItineraryDetail(
         currentItinerary,
-        () => {
-          currentItinerary = null;
-          renderItineraryPage();
-        },
+        () => onNavigateBack(currentItinerary?.user_id),
         (itineraryId) => handleEditItinerary(itineraryId),
         (itineraryId) => handleShareItinerary(itineraryId),
         (itineraryId) => handleDeleteItinerary(itineraryId)
@@ -388,7 +380,7 @@ export function createItineraryPage(
     
     // Add event listeners
     const backBtn = container.querySelector('.back-btn') as HTMLButtonElement;
-    backBtn?.addEventListener('click', onNavigateBack);
+    backBtn?.addEventListener('click', () => onNavigateBack());
     
     const createBtn = container.querySelector('.create-itinerary-btn') as HTMLButtonElement;
     createBtn?.addEventListener('click', openCreateItineraryModal);
