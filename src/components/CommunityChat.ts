@@ -366,8 +366,11 @@ export function createCommunityChat(communityId: string, communityName: string):
             .single();
           
           if (newMessage) {
-            // Add to messages array
-            messages.push(newMessage);
+            console.log('Fetched new message with details:', newMessage);
+            
+            // Create a new array instead of mutating the existing one
+            // This ensures the UI will re-render properly
+            messages = [...messages, newMessage];
             
             // Update UI
             renderCommunityChat();
@@ -386,6 +389,12 @@ export function createCommunityChat(communityId: string, communityName: string):
     if (!authState.isAuthenticated || !authState.currentUser) return;
     
     try {
+      console.log('Sending community message:', {
+        community_id: communityId,
+        sender_id: authState.currentUser.id,
+        content: content.trim()
+      });
+      
       const { error } = await supabase
         .from('community_messages')
         .insert({
@@ -394,7 +403,12 @@ export function createCommunityChat(communityId: string, communityName: string):
           content: content.trim()
         });
       
-      if (error) throw error;
+      if (error) {
+        console.error('Error response from Supabase:', error);
+        throw error;
+      }
+      
+      console.log('Message sent successfully');
       
       // No need to reload messages as the subscription will handle it
       
@@ -406,6 +420,7 @@ export function createCommunityChat(communityId: string, communityName: string):
   
   // Render the community chat
   function renderCommunityChat() {
+    console.log('Rendering community chat with', messages.length, 'messages');
     const authState = authManager.getAuthState();
     
     container.innerHTML = `
