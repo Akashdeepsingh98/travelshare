@@ -497,8 +497,8 @@ class TravelSocialApp {
       } else if (this.currentView === 'itinerary-detail') {
         // Itinerary detail page
         const itineraryPage = createItineraryPage(
-          () => this.navigateToProfile(),
-          this.viewData.itineraryId!
+          this.viewData.itineraryId!,
+          () => this.navigateToProfile()
         );
         this.appContainer.appendChild(itineraryPage);
       } else {
