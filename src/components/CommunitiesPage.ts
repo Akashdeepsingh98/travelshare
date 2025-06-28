@@ -28,27 +28,24 @@ export function createCommunitiesPage(
     try {
       // Load user's communities
       const { data: userCommunitiesData, error: userError } = await supabase
-        .from('community_members')
-        .select(`
-          community_id,
-          role,
-          communities!inner(
-            id,
-            name,
-            description,
-            created_by,
-            is_private,
-            created_at,
-            creator:profiles!communities_created_by_fkey(*)
-          )
-        `)
-        .eq('user_id', authState.currentUser.id);
+        .rpc('get_user_communities', { user_uuid: authState.currentUser.id });
       
       if (userError) throw userError;
       
       userCommunities = userCommunitiesData?.map(item => ({
-        ...item.communities,
-        user_role: item.role
+        id: item.id,
+        name: item.name,
+        description: item.description,
+        created_by: item.created_by,
+        is_private: item.is_private,
+        created_at: item.created_at,
+        member_count: item.member_count,
+        user_role: item.user_role,
+        creator: {
+          id: item.creator_id,
+          name: item.creator_name,
+          avatar_url: item.creator_avatar_url
+        }
       })) || [];
       
       // Load public communities (excluding ones user is already in)
