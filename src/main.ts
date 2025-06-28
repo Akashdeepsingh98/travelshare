@@ -658,7 +658,9 @@ class TravelSocialApp {
           () => this.navigateToCommunities(),
           (post, allPosts) => this.openPostViewer(post, allPosts),
           (userId) => this.navigateToProfile(userId),
-          (post) => this.openSharePostModal(post)
+          (post) => this.openSharePostModal(post),
+          undefined,
+          () => this.showConnectionError()
         );
         this.appContainer.appendChild(communityDetailPage);
       } else if (this.currentView === 'ai-chat') {

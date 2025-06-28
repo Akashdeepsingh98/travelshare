@@ -9,7 +9,8 @@ export function createCommunityDetailPage(
   onPostSelect: (post: Post, allPosts: Post[]) => void,
   onUserClick?: (userId: string) => void,
   onSharePost?: (post: Post) => void,
-  onAskAI?: (post: Post) => void
+  onAskAI?: (post: Post) => void,
+  onConnectionError?: () => void
 ): HTMLElement {
   const container = document.createElement('div');
   container.className = 'community-detail-page';
@@ -140,6 +141,19 @@ export function createCommunityDetailPage(
       
     } catch (error) {
       console.error('Error loading community data:', error);
+      
+      // Handle network connection errors
+      if (error instanceof TypeError && (
+        error.message.includes('Failed to fetch') || 
+        error.message.includes('fetch') ||
+        error.message.includes('NetworkError') ||
+        error.message.includes('CORS')
+      )) {
+        if (onConnectionError) {
+          onConnectionError();
+          return;
+        }
+      }
       
       // Handle specific error types
       if (error.message?.includes('infinite recursion')) {
