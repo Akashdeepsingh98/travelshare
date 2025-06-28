@@ -19,11 +19,12 @@ import { formatItineraryAsPlainText } from './utils/formatters';
 import { supabase } from './lib/supabase';
 import { testSupabaseConnection, displayConnectionDiagnostics } from './utils/connection-test';
 
-type AppView = 'feed' | 'profile' | 'explore' | 'post-viewer' | 'following' | 'followers' | 'ai-chat' | 'about' | 'heatmap';
+type AppView = 'feed' | 'profile' | 'explore' | 'post-viewer' | 'following' | 'followers' | 'ai-chat' | 'about' | 'heatmap' | 'itinerary-detail';
 
 interface ViewData {
   userId?: string;
   userName?: string;
+  itineraryId?: string;
 }
 
 class TravelSocialApp {
@@ -372,6 +373,14 @@ class TravelSocialApp {
     this.render();
   }
 
+  private navigateToItineraryDetail(itineraryId: string) {
+    this.currentView = 'itinerary-detail';
+    this.viewData = { itineraryId };
+    this.aiChatContextPost = null;
+    this.aiChatUserContext = null;
+    this.render();
+  }
+
   private openPostViewer(post: Post, allPosts: Post[]) {
     this.currentView = 'post-viewer';
     this.postViewerData = { post, allPosts };
@@ -485,6 +494,13 @@ class TravelSocialApp {
           (userId) => this.navigateToProfile(userId) // Navigate to user profile when clicked
         );
         this.appContainer.appendChild(explorePage);
+      } else if (this.currentView === 'itinerary-detail') {
+        // Itinerary detail page
+        const itineraryPage = createItineraryPage(
+          () => this.navigateToProfile(),
+          this.viewData.itineraryId!
+        );
+        this.appContainer.appendChild(itineraryPage);
       } else {
         // Feed page
         // Header
