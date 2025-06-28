@@ -1484,11 +1484,11 @@ export function createCommunityDetailPage(
         (userId) => handleFollow(userId),
         (userId) => handleUnfollow(userId),
         true, // Show follow button
-        onUserClick, // Navigate to user profile when clicked
+        onUserClick,
         false, // Not own profile
-        undefined, // No delete handler
-        onAskAI, // Ask AI handler
-        undefined // No AI handler
+        undefined,
+        undefined,
+        undefined
       );
       
       postContainer.innerHTML = '';
