@@ -834,28 +834,40 @@ export function createProfilePage(
   let activeTab: 'posts' | 'mini-apps' | 'mcp-servers' | 'itineraries' = 'posts';
   let isFollowing = false;
   let isOwnProfile = false;
+  let isLoading = false;
   let postsLoading = false;
   let showMCPGuide = false;
   let userPosts: Post[] = [];
   
   async function loadProfileData() {
+    isLoading = true;
     const authState = authManager.getAuthState();
     
     const targetUserId = viewUserId || authState.currentUser?.id;
     
+    // Check if targetUserId exists and is valid before UUID validation
+    if (!targetUserId) {
+      console.error('No target user ID provided');
+      isLoading = false;
+      renderErrorState('No user specified. Please check the URL and try again.');
+      return;
+    }
+    
     // Validate targetUserId is a proper UUID before querying
-    if (targetUserId && !isValidUUID(targetUserId)) {
+    if (!isValidUUID(targetUserId)) {
       console.error('Invalid UUID format:', targetUserId);
       isLoading = false;
       renderErrorState('Invalid user ID format. Please check the URL and try again.');
       return;
     }
+    
     if (authState.loading) {
       renderLoadingState();
       return;
     }
     
     if (!authState.isAuthenticated || !authState.currentUser) {
+      isLoading = false;
       renderErrorState('Please log in to view profiles.');
       return;
     }
@@ -896,6 +908,7 @@ export function createProfilePage(
       renderProfilePage();
     } catch (error) {
       console.error('Error loading profile:', error);
+      isLoading = false;
       renderErrorState('Unable to load profile. Please try again.');
     }
   }
