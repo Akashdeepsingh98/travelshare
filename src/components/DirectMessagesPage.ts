@@ -1378,45 +1378,45 @@ export function createDirectMessagesPage(
     });
     
     // Message input and send button
-    const messageInput = container.querySelector('.dm-input') as HTMLTextAreaElement;
+    const newMessageInput = container.querySelector('.dm-input') as HTMLTextAreaElement;
     const sendBtn = container.querySelector('.dm-send-btn') as HTMLButtonElement;
 
     // Restore focus if it was focused before
-    if (currentInputFocused && messageInput) {
-      messageInput.focus();
+    if (currentInputFocused && newMessageInput) {
+      newMessageInput.focus();
       
       // Place cursor at the end
-      const length = messageInput.value.length;
-      messageInput.setSelectionRange(length, length);
+      const length = newMessageInput.value.length;
+      newMessageInput.setSelectionRange(length, length);
     }
     
-    if (messageInput && sendBtn) {
+    if (newMessageInput && sendBtn) {
       // Auto-resize textarea
-      messageInput.addEventListener('input', () => {
+      newMessageInput.addEventListener('input', () => {
         // Reset height to auto to get the correct scrollHeight
-        messageInput.style.height = 'auto';
+        newMessageInput.style.height = 'auto';
         
         // Set the height to the scrollHeight
-        messageInput.style.height = `${Math.min(messageInput.scrollHeight, 120)}px`;
+        newMessageInput.style.height = `${Math.min(newMessageInput.scrollHeight, 120)}px`;
         
         // Enable/disable send button
-        const hasContent = messageInput.value.trim().length > 0;
+        const hasContent = newMessageInput.value.trim().length > 0;
         sendBtn.disabled = !hasContent;
       });
       
       // Send message on button click
       sendBtn.addEventListener('click', () => {
-        const content = messageInput.value.trim();
+        const content = newMessageInput.value.trim();
         if (content) {
           sendMessage(content);
-          messageInput.value = '';
-          messageInput.style.height = 'auto';
+          newMessageInput.value = '';
+          newMessageInput.style.height = 'auto';
           sendBtn.disabled = true;
         }
       });
       
       // Send message on Enter (without Shift)
-      messageInput.addEventListener('keydown', (e) => {
+      newMessageInput.addEventListener('keydown', (e) => {
         if (e.key === 'Enter' && !e.shiftKey && !sendBtn.disabled) {
           e.preventDefault();
           sendBtn.click();
