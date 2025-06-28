@@ -151,29 +151,10 @@ export function displayConnectionDiagnostics() {
             <li>Select your project</li>
             <li>Go to <strong>Settings → API</strong></li>
             <li>Find the <strong>CORS</strong> section</li>
-            <li>Add these URLs to allowed origins:
-              <ul>
-                <li><code>${window.location.origin}</code></li>
-                <li><code>http://localhost:5173</code></li>
-                <li><code>https://localhost:5173</code></li>
-                <li><code>http://127.0.0.1:5173</code></li>
-                <li><code>https://127.0.0.1:5173</code></li>
-              </ul>
-            </li>
+            <li>Add <code>${window.location.origin}</code> to allowed origins</li>
             <li>Save changes and refresh this page</li>
           </ol>
         </div>
-      </div>
-      
-      <div class="environment-check">
-        <h4>🔍 Environment Check:</h4>
-        <ul>
-          <li><strong>Current URL:</strong> <code>${window.location.href}</code></li>
-          <li><strong>Protocol:</strong> <code>${window.location.protocol}</code></li>
-          <li><strong>Secure Context:</strong> ${window.isSecureContext ? '✅ Yes' : '❌ No'}</li>
-          <li><strong>Supabase URL:</strong> <code>${import.meta.env.VITE_SUPABASE_URL || 'Not configured'}</code></li>
-          <li><strong>Has API Key:</strong> ${import.meta.env.VITE_SUPABASE_ANON_KEY ? '✅ Yes' : '❌ No'}</li>
-        </ul>
       </div>
       
       <div class="diagnostic-steps">
@@ -213,21 +194,27 @@ export function displayConnectionDiagnostics() {
         </ol>
       </div>
       
+      <div class="current-config">
+        <h4>Current Configuration:</h4>
+        <p><strong>Supabase URL:</strong> <code>${import.meta.env.VITE_SUPABASE_URL}</code></p>
+        <p><strong>Environment:</strong> <code>${import.meta.env.MODE}</code></p>
+        <p><strong>Local URL:</strong> <code>${window.location.origin}</code></p>
+        <p><strong>Current Protocol:</strong> <code>${window.location.protocol}</code></p>
+      </div>
+      
       <div class="troubleshooting-tips">
         <h4>Common Issues:</h4>
         <ul>
-          <li><strong>HTTPS/HTTP Mismatch:</strong> Ensure your Supabase project allows both HTTP and HTTPS connections for local development</li>
-          <li><strong>CORS Issues:</strong> Add all local development URLs to your Supabase project's allowed origins</li>
+          <li><strong>HTTPS/HTTP Mismatch:</strong> If you're using HTTPS locally, ensure your Supabase project allows HTTPS connections</li>
+          <li><strong>CORS Issues:</strong> Add <code>${window.location.origin}</code> to your Supabase project's allowed origins</li>
           <li><strong>Network Blocking:</strong> Check if your firewall or antivirus is blocking the connection</li>
           <li><strong>Project Status:</strong> Verify your Supabase project is active and not paused</li>
-          <li><strong>Environment Variables:</strong> Ensure your .env file contains valid VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY</li>
         </ul>
       </div>
       
       <div class="test-actions">
         <button id="run-connection-test" class="test-btn">Run Connection Test</button>
         <button id="retry-connection" class="retry-btn">Retry Connection</button>
-        <button id="open-supabase-dashboard" class="dashboard-btn">Open Supabase Dashboard</button>
       </div>
       
       <div id="test-results" class="test-results" style="display: none;"></div>
