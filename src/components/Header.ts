@@ -48,6 +48,14 @@ export function createHeader(
               <span class="nav-icon">🔍</span>
               <span class="nav-text">Explore</span>
             </button>
+            <button class="nav-btn ${currentView === 'communities' ? 'active' : ''}" data-view="communities">
+              <span class="nav-icon">🏘️</span>
+              <span class="nav-text">Communities</span>
+            </button>
+            <button class="nav-btn ${currentView === 'itineraries' ? 'active' : ''}" data-view="itineraries">
+              <span class="nav-icon">🗺️</span>
+              <span class="nav-text">Itineraries</span>
+            </button>
             <button class="nav-btn ${currentView === 'ai-chat' ? 'active' : ''}" data-view="ai-chat">
               <span class="nav-icon">🤖</span>
               <span class="nav-text">AI Chat</span>
@@ -107,6 +115,10 @@ export function createHeader(
             window.location.hash = 'heatmap';
           } else if (view === 'ai-chat' && onAIChatClick) {
             onAIChatClick();
+          } else if (view === 'communities' && onCommunitiesClick) {
+            onCommunitiesClick(); 
+          } else if (view === 'itineraries' && onItinerariesClick) {
+            onItinerariesClick();
           } else if (view === 'about' && onAboutClick) {
             onAboutClick();
           }
@@ -148,6 +160,14 @@ export function createHeader(
               <span class="nav-icon">ℹ️</span>
               <span class="nav-text">About</span>
             </button>
+            <button class="nav-btn ${currentView === 'communities' ? 'active' : ''}" data-view="communities">
+              <span class="nav-icon">🏘️</span>
+              <span class="nav-text">Communities</span>
+            </button>
+            <button class="nav-btn ${currentView === 'itineraries' ? 'active' : ''}" data-view="itineraries">
+              <span class="nav-icon">🗺️</span>
+              <span class="nav-text">Itineraries</span>
+            </button>
           </nav>
           <div class="auth-buttons">
             <button class="login-btn">Log In</button>
@@ -164,6 +184,14 @@ export function createHeader(
           document.body.style.overflow = 'hidden';
         }
       });
+      
+      // About navigation for non-authenticated users
+      const aboutBtn = header.querySelector('[data-view="about"]') as HTMLButtonElement;
+      if (aboutBtn && onAboutClick) {
+        aboutBtn.addEventListener('click', () => {
+          onAboutClick();
+        });
+      }
     }
   }
   

@@ -136,6 +136,12 @@ export function createPostCard(
           <span class="icon">💬</span>
           <span class="count">${post.comments?.length || 0}</span>
         </button>
+        ${authState.isAuthenticated ? `
+          <button class="action-btn share-btn" data-post-id="${post.id}">
+            <span class="icon">🔄</span>
+            <span class="text">Share</span>
+          </button>
+        ` : ''}
         ${authState.isAuthenticated && onAskAI ? `
           <button class="action-btn ask-ai-btn" data-post-id="${post.id}">
             <span class="icon">🤖</span>
@@ -230,6 +236,17 @@ export function createPostCard(
         }
         
         updatePostCard();
+      });
+    }
+    
+    // Share functionality
+    const shareBtn = card.querySelector('.share-btn') as HTMLButtonElement;
+    if (shareBtn) {
+      shareBtn.addEventListener('click', () => {
+        // This will be handled by the parent component
+        // which will open the share modal
+        const event = new CustomEvent('share-post', { detail: { postId: post.id } });
+        card.dispatchEvent(event);
       });
     }
     
