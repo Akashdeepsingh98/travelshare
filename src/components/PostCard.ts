@@ -289,12 +289,7 @@ export function createPostCard(
         e.stopPropagation();
         // This will be handled by the parent component
         // which will open the share modal
-        const event = new CustomEvent('share-post', { 
-          detail: { 
-            postId: post.id,
-            target: 'community'
-          } 
-        });
+        const event = new CustomEvent('share-post', { detail: { postId: post.id } });
         card.dispatchEvent(event);
       });
       
@@ -305,6 +300,12 @@ export function createPostCard(
         if (onShareToGroup) {
           onShareToGroup(post);
         }
+          detail: { 
+            postId: post.id,
+            target: 'community'
+          } 
+        });
+        card.dispatchEvent(event);
       });
     }
     
@@ -564,6 +565,60 @@ function createCommentHTML(comment: Comment, onUserClick?: (userId: string) => v
         <p class="comment-text">${comment.content}</p>
       </div>
     </div>
+    .share-dropdown {
+      position: absolute;
+      top: 100%;
+      right: 0;
+      background: white;
+      border: 1px solid #e2e8f0;
+      border-radius: 0.5rem;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      min-width: 180px;
+      z-index: 100;
+      display: none;
+    }
+    
+    .share-dropdown.active {
+      display: block;
+    }
+    
+    .share-option {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.75rem 1rem;
+      width: 100%;
+      text-align: left;
+      background: none;
+      border: none;
+      cursor: pointer;
+      transition: background 0.2s;
+      color: #334155;
+    }
+    
+    .share-option:hover {
+      background: #f8fafc;
+    }
+    
+    .share-option:first-child {
+      border-radius: 0.5rem 0.5rem 0 0;
+    }
+    
+    .share-option:last-child {
+      border-radius: 0 0 0.5rem 0.5rem;
+    }
+    
+    .option-icon {
+      font-size: 1rem;
+    }
+    
+    .option-text {
+      font-size: 0.875rem;
+    }
+    
+    .action-btn.share-btn {
+      position: relative;
+    }
   `;
 }
 
