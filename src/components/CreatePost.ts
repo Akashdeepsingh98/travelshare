@@ -79,12 +79,48 @@ export function createPostForm(onPostCreate: (post: Post) => void): HTMLElement 
       
       if (error) {
         console.error('Error checking approval status:', error);
+        
+        // Handle CORS/connection errors gracefully
+        if (error.message && error.message.includes('Failed to fetch')) {
+          console.error('🚨 CORS Configuration Required:');
+          console.error('This error indicates your Supabase project needs CORS configuration.');
+          console.error('Please follow the setup guide in CORS_SETUP_GUIDE.md');
+          console.error(`Add ${window.location.origin} to your Supabase CORS settings.`);
+          console.error('Visit: https://supabase.com/dashboard → Your Project → Settings → API → CORS');
+          
+          // Return false to show approval pending state instead of crashing
+          return false;
+        }
+        
         return false;
       }
       
       return data?.is_approved || false;
     } catch (error) {
       console.error('Error checking approval status:', error);
+      
+      // Handle network/CORS errors
+      if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
+        console.error('🚨 Network/CORS Error in CreatePost:');
+        console.error('Unable to connect to Supabase. Please check:');
+        console.error('1. Your internet connection');
+        console.error('2. Supabase CORS configuration');
+        console.error('3. Supabase project status');
+        console.error('');
+        console.error('📋 CORS Setup Instructions:');
+        console.error('1. Go to https://supabase.com/dashboard');
+        console.error('2. Select your project');
+        console.error('3. Go to Settings → API');
+        console.error('4. Under CORS, add these URLs:');
+        console.error(`   - ${window.location.origin}`);
+        console.error('   - http://localhost:5173');
+        console.error('   - https://localhost:5173');
+        console.error('5. Save changes and refresh this page');
+        
+        // Return false to show approval pending state instead of crashing
+        return false;
+      }
+      
       return false;
     }
   }
