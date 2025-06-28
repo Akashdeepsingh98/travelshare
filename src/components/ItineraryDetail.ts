@@ -2,6 +2,8 @@ import { Itinerary, ItineraryItem } from '../types';
 import { authManager } from '../auth';
 import { supabase } from '../lib/supabase';
 import { createShareItineraryModal } from './SharePostModal';
+import { createExpenseFormModal } from './ExpenseFormModal';
+import { createExpensesList } from './ExpensesList';
 
 export function createItineraryDetail(
   itinerary: Itinerary,
@@ -16,6 +18,7 @@ export function createItineraryDetail(
   let itineraryItems: ItineraryItem[] = [];
   let isLoading = false;
   let isOwner = false;
+  let expensesListComponent: HTMLElement & { refreshExpenses?: () => void } | null = null;
   let isRefining = false;
 
   async function loadItineraryItems() {
@@ -168,6 +171,10 @@ export function createItineraryDetail(
           
           <div class="itinerary-days">
             ${renderItineraryDays(itineraryItems)}
+          </div>
+          
+          <div class="expenses-section" id="expenses-section">
+            <!-- Expenses list will be rendered here -->
           </div>
           
           <div class="itinerary-footer">
@@ -570,6 +577,47 @@ export function createItineraryDetail(
         font-style: italic;
       }
 
+      .expenses-section {
+        margin-bottom: 2rem;
+        border-top: 1px solid #f1f5f9;
+        padding-top: 2rem;
+      }
+
+      .expenses-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 1.5rem;
+        padding: 0 2rem;
+      }
+
+      .expenses-header h2 {
+        color: #1e293b;
+        font-size: 1.5rem;
+        font-weight: 600;
+        margin: 0;
+      }
+
+      .add-expense-btn {
+        background: #10b981;
+        color: white;
+        border: none;
+        padding: 0.5rem 1rem;
+        border-radius: 0.5rem;
+        cursor: pointer;
+        font-size: 0.875rem;
+        font-weight: 500;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        transition: all 0.2s;
+      }
+
+      .add-expense-btn:hover {
+        background: #059669;
+        transform: translateY(-1px);
+      }
+
       .itinerary-footer {
         padding: 1.5rem 2rem;
         border-top: 1px solid #f1f5f9;
@@ -970,6 +1018,7 @@ export function createItineraryDetail(
     }
     
     setupEventListeners();
+    renderExpensesSection();
   }
   
   function renderItineraryDays(items: ItineraryItem[]): string {
@@ -1038,6 +1087,78 @@ export function createItineraryDetail(
         </div>
       `;
     }).join('');
+  }
+  
+  // Render expenses section
+  function renderExpensesSection() {
+    const expensesSection = container.querySelector('#expenses-section');
+    if (!expensesSection) return;
+    
+    // Create expenses list component
+    expensesListComponent = createExpensesList(
+      itinerary!.id,
+      isOwner,
+      () => handleAddExpense(),
+      (expense) => handleEditExpense(expense),
+      (expenseId) => handleDeleteExpense(expenseId)
+    );
+    
+    expensesSection.innerHTML = '';
+    expensesSection.appendChild(expensesListComponent);
+  }
+  
+  // Handle add expense
+  function handleAddExpense() {
+    const modal = createExpenseFormModal(
+      itinerary!.id,
+      () => {}, // onClose - no action needed
+      () => {
+        // Refresh expenses list
+        if (expensesListComponent && expensesListComponent.refreshExpenses) {
+          expensesListComponent.refreshExpenses();
+        }
+      }
+    );
+    
+    document.body.appendChild(modal);
+  }
+  
+  // Handle edit expense
+  function handleEditExpense(expense: any) {
+    const modal = createExpenseFormModal(
+      itinerary!.id,
+      () => {}, // onClose - no action needed
+      () => {
+        // Refresh expenses list
+        if (expensesListComponent && expensesListComponent.refreshExpenses) {
+          expensesListComponent.refreshExpenses();
+        }
+      },
+      expense
+    );
+    
+    document.body.appendChild(modal);
+  }
+  
+  // Handle delete expense
+  async function handleDeleteExpense(expenseId: string) {
+    try {
+      const { error } = await supabase
+        .from('expenses')
+        .delete()
+        .eq('id', expenseId);
+      
+      if (error) throw error;
+      
+      // Refresh expenses list
+      if (expensesListComponent && expensesListComponent.refreshExpenses) {
+        expensesListComponent.refreshExpenses();
+      }
+      
+    } catch (error) {
+      console.error('Error deleting expense:', error);
+      alert('Failed to delete expense. Please try again.');
+    }
   }
   
   function setupEventListeners() {
