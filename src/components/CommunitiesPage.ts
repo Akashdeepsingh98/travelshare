@@ -11,6 +11,360 @@ export function createCommunitiesPage(
   const container = document.createElement('div');
   container.className = 'communities-page';
   
+  // Add component styles directly to the component
+  const style = document.createElement('style');
+  style.textContent = `
+    .communities-page {
+      min-height: 100vh;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      padding: 2rem 1rem;
+    }
+
+    .communities-page-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 2rem;
+      background: rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(10px);
+      padding: 1rem 1.5rem;
+      border-radius: 1rem;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .communities-page-header h1 {
+      color: white;
+      font-size: 1.5rem;
+      font-weight: 600;
+      margin: 0;
+    }
+
+    .communities-page-header .back-btn {
+      background: rgba(255, 255, 255, 0.2);
+      color: white;
+      border: none;
+      padding: 0.5rem 1rem;
+      border-radius: 0.5rem;
+      cursor: pointer;
+      font-weight: 500;
+      transition: all 0.2s;
+    }
+
+    .communities-page-header .back-btn:hover {
+      background: rgba(255, 255, 255, 0.3);
+      transform: translateY(-1px);
+    }
+
+    .create-community-btn {
+      background: rgba(255, 255, 255, 0.2);
+      color: white;
+      border: none;
+      padding: 0.5rem 1rem;
+      border-radius: 0.5rem;
+      cursor: pointer;
+      font-weight: 500;
+      transition: all 0.2s;
+    }
+
+    .create-community-btn:hover {
+      background: rgba(255, 255, 255, 0.3);
+      transform: translateY(-1px);
+    }
+
+    .communities-page-content {
+      background: white;
+      border-radius: 1rem;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+      padding: 2rem;
+    }
+
+    .communities-login-prompt {
+      text-align: center;
+      padding: 3rem 1rem;
+    }
+
+    .login-prompt-content {
+      max-width: 400px;
+      margin: 0 auto;
+    }
+
+    .login-prompt-icon {
+      font-size: 3rem;
+      margin-bottom: 1rem;
+      color: #667eea;
+    }
+
+    .login-prompt-content h3 {
+      color: #1e293b;
+      font-size: 1.5rem;
+      font-weight: 600;
+      margin: 0 0 0.5rem 0;
+    }
+
+    .login-prompt-content p {
+      color: #64748b;
+      margin: 0 0 1.5rem 0;
+      line-height: 1.6;
+    }
+
+    .communities-login-btn {
+      background: #667eea;
+      color: white;
+      border: none;
+      padding: 0.75rem 1.5rem;
+      border-radius: 0.5rem;
+      cursor: pointer;
+      font-weight: 600;
+      transition: all 0.2s;
+    }
+
+    .communities-login-btn:hover {
+      background: #5a67d8;
+      transform: translateY(-1px);
+    }
+
+    .communities-loading {
+      text-align: center;
+      padding: 2rem;
+      color: #64748b;
+    }
+
+    .communities-section {
+      margin-bottom: 2rem;
+    }
+
+    .communities-section h2 {
+      color: #1e293b;
+      font-size: 1.25rem;
+      font-weight: 600;
+      margin: 0 0 1.5rem 0;
+    }
+
+    .communities-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 1.5rem;
+    }
+
+    .community-card {
+      background: white;
+      border-radius: 1rem;
+      border: 1px solid #e2e8f0;
+      overflow: hidden;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+      cursor: pointer;
+    }
+
+    .community-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+      border-color: #cbd5e1;
+    }
+
+    .community-card.user-member {
+      border-color: #667eea;
+      background: linear-gradient(to bottom, #f5f7ff, white);
+    }
+
+    .community-card-header {
+      padding: 1.5rem;
+      border-bottom: 1px solid #f1f5f9;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+    }
+
+    .community-info {
+      flex: 1;
+    }
+
+    .community-name {
+      color: #1e293b;
+      font-size: 1.125rem;
+      font-weight: 600;
+      margin: 0 0 0.5rem 0;
+    }
+
+    .community-description {
+      color: #64748b;
+      font-size: 0.875rem;
+      margin: 0;
+      line-height: 1.5;
+    }
+
+    .community-privacy {
+      flex-shrink: 0;
+      margin-left: 1rem;
+    }
+
+    .privacy-badge {
+      display: inline-block;
+      padding: 0.25rem 0.75rem;
+      border-radius: 1rem;
+      font-size: 0.75rem;
+      font-weight: 500;
+    }
+
+    .privacy-badge.public {
+      background: #dcfce7;
+      color: #166534;
+    }
+
+    .privacy-badge.private {
+      background: #fee2e2;
+      color: #991b1b;
+    }
+
+    .community-card-body {
+      padding: 1.5rem;
+    }
+
+    .community-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .meta-item {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      color: #64748b;
+      font-size: 0.875rem;
+    }
+
+    .meta-icon {
+      font-size: 1rem;
+      color: #667eea;
+    }
+
+    .user-role-badge {
+      margin-top: 0.5rem;
+    }
+
+    .role-badge {
+      display: inline-block;
+      padding: 0.25rem 0.75rem;
+      border-radius: 1rem;
+      font-size: 0.75rem;
+      font-weight: 500;
+    }
+
+    .role-badge.admin {
+      background: #fef3c7;
+      color: #92400e;
+    }
+
+    .role-badge.member {
+      background: #e0f2fe;
+      color: #0369a1;
+    }
+
+    .community-card-actions {
+      padding: 1rem 1.5rem;
+      border-top: 1px solid #f1f5f9;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .view-community-btn, .join-community-btn {
+      background: #667eea;
+      color: white;
+      border: none;
+      padding: 0.5rem 1rem;
+      border-radius: 0.5rem;
+      cursor: pointer;
+      font-weight: 500;
+      transition: all 0.2s;
+    }
+
+    .view-community-btn:hover, .join-community-btn:hover {
+      background: #5a67d8;
+      transform: translateY(-1px);
+    }
+
+    .empty-communities {
+      text-align: center;
+      padding: 3rem 1rem;
+      background: #f8fafc;
+      border-radius: 0.75rem;
+      border: 2px dashed #e2e8f0;
+    }
+
+    .empty-communities-content {
+      max-width: 400px;
+      margin: 0 auto;
+    }
+
+    .empty-communities-icon {
+      font-size: 3rem;
+      margin-bottom: 1rem;
+      color: #94a3b8;
+    }
+
+    .empty-communities-content h3 {
+      color: #1e293b;
+      font-size: 1.25rem;
+      font-weight: 600;
+      margin: 0 0 0.5rem 0;
+    }
+
+    .empty-communities-content p {
+      color: #64748b;
+      margin: 0 0 1.5rem 0;
+      line-height: 1.5;
+    }
+
+    /* Responsive design */
+    @media (max-width: 768px) {
+      .communities-page {
+        padding: 1rem;
+      }
+
+      .communities-page-header {
+        padding: 1rem;
+        flex-direction: column;
+        gap: 1rem;
+        text-align: center;
+      }
+
+      .communities-page-content {
+        padding: 1.5rem;
+      }
+
+      .communities-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .community-card-header {
+        flex-direction: column;
+      }
+
+      .community-privacy {
+        margin-left: 0;
+        margin-top: 0.5rem;
+      }
+
+      .community-card-actions {
+        flex-direction: column;
+        gap: 0.5rem;
+      }
+
+      .view-community-btn, .join-community-btn {
+        width: 100%;
+      }
+    }
+  `;
+  
+  // Append styles to document head if not already present
+  if (!document.head.querySelector('#communities-page-styles')) {
+    style.id = 'communities-page-styles';
+    document.head.appendChild(style);
+  }
+  
   let userCommunities: Community[] = [];
   let publicCommunities: Community[] = [];
   let isLoading = false;
@@ -119,7 +473,8 @@ export function createCommunitiesPage(
           </div>
         ` : isLoading ? `
           <div class="communities-loading">
-            <div class="loading-spinner">Loading communities...</div>
+            <div class="loading-spinner"></div>
+            <p>Loading communities...</p>
           </div>
         ` : `
           ${userCommunities.length > 0 ? `
@@ -158,7 +513,7 @@ export function createCommunitiesPage(
     const timeAgo = getTimeAgo(new Date(community.created_at));
     const creatorName = community.creator?.name || 'Unknown';
     const memberText = community.member_count === 1 ? 'member' : 'members';
-    
+
     return `
       <div class="community-card ${isUserMember ? 'user-member' : ''}" data-community-id="${community.id}">
         <div class="community-card-header">
