@@ -13,7 +13,8 @@ export function createPostCard(
   onUserClick?: (userId: string) => void,
   isOwnProfile: boolean = false,
   onDelete?: (postId: string) => void,
-  onAskAI?: (post: Post) => void
+  onAskAI?: (post: Post) => void,
+  onShareToDM?: (post: Post) => void
 ): HTMLElement {
   const card = document.createElement('div');
   card.className = 'post-card';
@@ -125,6 +126,12 @@ export function createPostCard(
         <div class="post-media">
           ${createMediaCarousel(mediaItems)}
         </div>
+      ` : ''}
+      ${authState.isAuthenticated && onShareToDM ? `
+        <button class="action-btn share-dm-btn" data-post-id="${post.id}">
+          <span class="icon">✉️</span>
+          <span class="text">Message</span>
+        </button>
       ` : ''}
       
       <div class="post-actions">
@@ -242,10 +249,33 @@ export function createPostCard(
     // Share functionality
     const shareBtn = card.querySelector('.share-btn') as HTMLButtonElement;
     if (shareBtn) {
-      shareBtn.addEventListener('click', () => {
+      shareBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
         // This will be handled by the parent component
         // which will open the share modal
-        const event = new CustomEvent('share-post', { detail: { postId: post.id } });
+        const event = new CustomEvent('share-post', { 
+          detail: { 
+            postId: post.id,
+            target: 'community'
+          } 
+        });
+        card.dispatchEvent(event);
+      });
+    }
+    
+    // Share to DM functionality
+    const shareDMBtn = card.querySelector('.share-dm-btn') as HTMLButtonElement;
+    if (shareDMBtn && onShareToDM) {
+      shareDMBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        // This will be handled by the parent component
+        // which will open the share to DM modal
+        const event = new CustomEvent('share-post', { 
+          detail: { 
+            postId: post.id,
+            target: 'dm'
+          } 
+        });
         card.dispatchEvent(event);
       });
     }

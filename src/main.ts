@@ -22,14 +22,17 @@ import { createSharePostModal } from './components/SharePostModal';
 import { formatItineraryAsPlainText } from './utils/formatters';
 import { supabase } from './lib/supabase';
 import { testSupabaseConnection, displayConnectionDiagnostics } from './utils/connection-test';
+import { createDirectMessagesPage } from './components/DirectMessagesPage';
+import { createShareToDMModal } from './components/ShareToDMModal';
 
-type AppView = 'feed' | 'profile' | 'explore' | 'post-viewer' | 'following' | 'followers' | 'ai-chat' | 'about' | 'heatmap' | 'itinerary-detail' | 'itineraries' | 'communities' | 'community-detail';
+type AppView = 'feed' | 'profile' | 'explore' | 'post-viewer' | 'following' | 'followers' | 'ai-chat' | 'about' | 'heatmap' | 'itinerary-detail' | 'itineraries' | 'communities' | 'community-detail' | 'direct-messages';
 
 interface ViewData {
   userId?: string;
   userName?: string;
   communityId?: string;
   itineraryId?: string;
+  conversationId?: string;
 }
 
 class TravelSocialApp {
@@ -90,6 +93,9 @@ class TravelSocialApp {
           break;
         case 'itineraries':
           this.navigateToItineraries();
+          break;
+        case 'direct-messages':
+          this.navigateToDirectMessages();
           break;
         case 'about':
           this.navigateToAbout();
@@ -383,6 +389,14 @@ class TravelSocialApp {
     this.render();
   }
 
+  private navigateToDirectMessages(conversationId?: string) {
+    this.currentView = 'direct-messages';
+    this.viewData = { conversationId };
+    this.aiChatContextPost = null;
+    this.aiChatUserContext = null;
+    this.render();
+  }
+
   private navigateToItineraries() {
     this.currentView = 'itineraries';
     this.viewData = {};
@@ -417,6 +431,18 @@ class TravelSocialApp {
 
   private openSharePostModal(post: Post) {
     const modal = createSharePostModal(
+      post,
+      () => {}, // onClose - no action needed
+      () => {
+        // onSuccess - show success message
+        alert('Post shared successfully!');
+      }
+    );
+    document.body.appendChild(modal);
+  }
+
+  private openShareToDMModal(post: Post) {
+    const modal = createShareToDMModal(
       post,
       () => {}, // onClose - no action needed
       () => {
@@ -487,6 +513,10 @@ class TravelSocialApp {
   private handleSharePost(post: Post) {
     this.openSharePostModal(post);
   }
+  
+  private handleSharePostToDM(post: Post) {
+    this.openShareToDMModal(post);
+  }
 
   private closePostViewer() {
     this.currentView = 'explore';
@@ -535,6 +565,7 @@ class TravelSocialApp {
           () => this.navigateToExplore(),
           () => this.navigateToFeed(),
           () => this.navigateToAIChat(),
+          () => this.navigateToDirectMessages(),
           () => this.navigateToCommunities(),
           () => this.navigateToItineraries(),
           () => this.navigateToAbout(),
@@ -548,6 +579,28 @@ class TravelSocialApp {
           (userId) => this.navigateToProfile(userId)
         );
         this.appContainer.appendChild(heatmapPage);
+      } else if (this.currentView === 'direct-messages') {
+        // Direct Messages page
+        const header = createHeader(
+          () => this.navigateToProfile(),
+          () => this.navigateToExplore(),
+          () => this.navigateToFeed(),
+          () => this.navigateToAIChat(),
+          () => this.navigateToDirectMessages(),
+          () => this.navigateToCommunities(),
+          () => this.navigateToItineraries(),
+          () => this.navigateToAbout(),
+          this.currentView
+        );
+        this.appContainer.appendChild(header);
+        
+        const directMessagesPage = createDirectMessagesPage(
+          () => this.navigateToFeed(),
+          (userId) => this.navigateToProfile(userId),
+          (post) => this.handleSharePost(post),
+          this.viewData.conversationId
+        );
+        this.appContainer.appendChild(directMessagesPage);
       } else if (this.currentView === 'itinerary-detail') {
         // Itinerary detail page
         const itineraryPage = createItineraryPage(
@@ -563,9 +616,10 @@ class TravelSocialApp {
           () => this.navigateToExplore(),
           () => this.navigateToFeed(),
           () => this.navigateToAIChat(),
+          () => this.navigateToDirectMessages(),
           () => this.navigateToCommunities(),
-          () => this.navigateToAbout(),
           () => this.navigateToItineraries(),
+          () => this.navigateToAbout(),
           this.currentView
         );
         this.appContainer.appendChild(header);
@@ -583,9 +637,10 @@ class TravelSocialApp {
           () => this.navigateToExplore(),
           () => this.navigateToFeed(),
           () => this.navigateToAIChat(),
+          () => this.navigateToDirectMessages(),
           () => this.navigateToCommunities(),
-          () => this.navigateToAbout(),
           () => this.navigateToItineraries(),
+          () => this.navigateToAbout(),
           this.currentView
         );
         this.appContainer.appendChild(header);
@@ -648,6 +703,7 @@ class TravelSocialApp {
           () => this.navigateToExplore(),
           () => this.navigateToFeed(),
           () => this.navigateToAIChat(),
+          () => this.navigateToDirectMessages(),
           () => this.navigateToCommunities(),
           () => this.navigateToItineraries(),
           () => this.navigateToAbout(),
@@ -670,6 +726,7 @@ class TravelSocialApp {
           () => this.navigateToExplore(),
           () => this.navigateToFeed(),
           () => this.navigateToAIChat(),
+          () => this.navigateToDirectMessages(),
           () => this.navigateToCommunities(),
           () => this.navigateToItineraries(),
           () => this.navigateToAbout(),
@@ -735,18 +792,28 @@ class TravelSocialApp {
         (userId) => this.handleFollow(userId),
         (userId) => this.handleUnfollow(userId),
         true, // Show follow button in feed
-        (userId) => this.navigateToProfile(userId), // Navigate to user profile when clicked
+        (userId) => this.navigateToProfile(userId),
         false, // Not own profile
-        undefined, // No delete handler in feed
-        (post) => this.navigateToAIChat(post)  // Navigate to AI chat with post context
+        undefined,
+        (post) => this.navigateToAIChat(post),
+        (post) => this.handleSharePostToDM(post) // Add handler for sharing to DM
       );
       
       // Add share post event listener
       postCard.addEventListener('share-post', (e: any) => {
         const postId = e.detail.postId;
-        const postToShare = this.posts.find(p => p.id === postId);
-        if (postToShare) {
-          this.openSharePostModal(postToShare);
+        if (e.detail.target === 'dm') {
+          // Share to DM
+          const postToShare = this.posts.find(p => p.id === postId);
+          if (postToShare) {
+            this.openShareToDMModal(postToShare);
+          }
+        } else {
+          // Share to community
+          const postToShare = this.posts.find(p => p.id === postId);
+          if (postToShare) {
+            this.openSharePostModal(postToShare);
+          }
         }
       });
       

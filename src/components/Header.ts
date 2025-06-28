@@ -5,6 +5,7 @@ export function createHeader(
   onExploreClick?: () => void, 
   onHomeClick?: () => void, 
   onAIChatClick?: () => void,
+  onDirectMessagesClick?: () => void,
   onCommunitiesClick?: () => void, 
   onAboutClick?: () => void,
   onItinerariesClick?: () => void,
@@ -59,6 +60,10 @@ export function createHeader(
             <button class="nav-btn ${currentView === 'ai-chat' ? 'active' : ''}" data-view="ai-chat">
               <span class="nav-icon">🤖</span>
               <span class="nav-text">AI Chat</span>
+            </button>
+            <button class="nav-btn ${currentView === 'direct-messages' ? 'active' : ''}" data-view="direct-messages">
+              <span class="nav-icon">💬</span>
+              <span class="nav-text">Messages</span>
             </button>
             <button class="nav-btn ${currentView === 'heatmap' ? 'active' : ''}" data-view="heatmap">
               <span class="nav-icon">🔥</span>
@@ -115,6 +120,8 @@ export function createHeader(
             window.location.hash = 'heatmap';
           } else if (view === 'ai-chat' && onAIChatClick) {
             onAIChatClick();
+          } else if (view === 'direct-messages' && onDirectMessagesClick) {
+            onDirectMessagesClick();
           } else if (view === 'communities' && onCommunitiesClick) {
             onCommunitiesClick(); 
           } else if (view === 'itineraries' && onItinerariesClick) {
