@@ -831,7 +831,7 @@ export function createProfilePage(
   let userPosts: Post[] = [];
   
   async function loadProfileData(event?: Event) {
-    // Ignore any event parameter that might be passed
+    // This function should not receive event parameters
     const authState = authManager.getAuthState();
     
     if (authState.loading) {
@@ -1465,13 +1465,15 @@ export function createProfilePage(
     const followingBtn = container.querySelector('.following-btn') as HTMLButtonElement;
     
     if (followersBtn && onNavigateToFollowers) {
-      followersBtn.addEventListener('click', () => {
+      followersBtn.addEventListener('click', (e) => {
+        e.preventDefault();
         onNavigateToFollowers(profileUser!.id, profileUser!.name);
       });
     }
     
     if (followingBtn && onNavigateToFollowing) {
-      followingBtn.addEventListener('click', () => {
+      followingBtn.addEventListener('click', (e) => {
+        e.preventDefault();
         onNavigateToFollowing(profileUser!.id, profileUser!.name);
       });
     }
