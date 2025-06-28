@@ -14,21 +14,16 @@ import { createAIPage } from './components/AIPage';
 import { createItineraryPage } from './components/ItineraryPage';
 import { createAboutPage } from './components/AboutPage';
 import { createBoltBadge } from './components/BoltBadge';
-import { createCommunitiesPage } from './components/CommunitiesPage';
-import { createCommunityDetailPage } from './components/CommunityDetailPage';
-import { createCreateCommunityModal } from './components/CreateCommunityModal';
-import { createSharePostModal } from './components/SharePostModal';
 import { createPostHeatmapPage } from './components/PostHeatmapPage';
 import { formatItineraryAsPlainText } from './utils/formatters';
 import { supabase } from './lib/supabase';
 import { testSupabaseConnection, displayConnectionDiagnostics } from './utils/connection-test';
 
-type AppView = 'feed' | 'profile' | 'explore' | 'post-viewer' | 'following' | 'followers' | 'ai-chat' | 'about' | 'communities' | 'community-detail' | 'itineraries' | 'itinerary-detail' | 'heatmap';
+type AppView = 'feed' | 'profile' | 'explore' | 'post-viewer' | 'following' | 'followers' | 'ai-chat' | 'about' | 'itineraries' | 'itinerary-detail' | 'heatmap';
 
 interface ViewData {
   userId?: string;
   userName?: string;
-  communityId?: string;
   itineraryId?: string;
 }
 
@@ -81,9 +76,6 @@ class TravelSocialApp {
           break;
         case 'explore':
           this.navigateToExplore();
-          break;
-        case 'communities':
-          this.navigateToCommunities();
           break;
         case 'itineraries':
           this.navigateToItineraries();
@@ -323,42 +315,6 @@ class TravelSocialApp {
     this.render();
   }
 
-  private navigateToCommunities() {
-    this.currentView = 'communities';
-    this.viewData = {};
-    this.aiChatContextPost = null;
-    this.aiChatUserContext = null;
-    this.render();
-  }
-
-  private navigateToCommunityDetail(communityId: string) {
-    this.currentView = 'community-detail';
-    this.viewData = { communityId };
-    this.aiChatContextPost = null;
-    this.aiChatUserContext = null;
-    this.render();
-  }
-
-  private openCreateCommunityModal() {
-    const modal = createCreateCommunityModal(
-      () => {}, // onClose - no action needed
-      () => this.navigateToCommunities() // onSuccess - refresh communities page
-    );
-    document.body.appendChild(modal);
-  }
-
-  private openSharePostModal(post: Post) {
-    const modal = createSharePostModal(
-      post,
-      () => {}, // onClose - no action needed
-      () => {
-        // onSuccess - show success message
-        alert('Post shared successfully!');
-      }
-    );
-    document.body.appendChild(modal);
-  }
-
   private navigateToFeed() {
     this.currentView = 'feed';
     this.viewData = {};
@@ -498,15 +454,6 @@ class TravelSocialApp {
         (post) => this.navigateToAIChat(post)
       );
       
-      // Add share post event listener
-      postViewer.addEventListener('share-post', (e: any) => {
-        const postId = e.detail.postId;
-        const postToShare = this.postViewerData?.allPosts.find(p => p.id === postId);
-        if (postToShare) {
-          this.openSharePostModal(postToShare);
-        }
-      });
-      
       this.appContainer.appendChild(postViewer);
       document.body.style.overflow = 'hidden';
     } else {
@@ -523,7 +470,6 @@ class TravelSocialApp {
           () => this.navigateToExplore(),
           () => this.navigateToFeed(),
           () => this.navigateToAIChat(),
-          () => this.navigateToCommunities(),
           () => this.navigateToAbout(),
           () => this.navigateToItineraries(),
           this.currentView
@@ -543,7 +489,6 @@ class TravelSocialApp {
           () => this.navigateToExplore(),
           () => this.navigateToFeed(),
           () => this.navigateToAIChat(),
-          () => this.navigateToCommunities(),
           () => this.navigateToAbout(),
           () => this.navigateToItineraries(),
           this.currentView
@@ -566,35 +511,6 @@ class TravelSocialApp {
           () => this.showConnectionError()
         );
         this.appContainer.appendChild(itineraryPage);
-      } else if (this.currentView === 'communities') {
-        // Communities page
-        const header = createHeader(
-          () => this.navigateToProfile(),
-          () => this.navigateToExplore(),
-          () => this.navigateToFeed(),
-          () => this.navigateToCommunities(),
-          () => this.navigateToAIChat(),
-          () => this.navigateToAbout(),
-          this.currentView
-        );
-        this.appContainer.appendChild(header);
-        
-        const communitiesPage = createCommunitiesPage(
-          () => this.navigateToFeed(),
-          (communityId) => this.navigateToCommunityDetail(communityId),
-          () => this.openCreateCommunityModal()
-        );
-        this.appContainer.appendChild(communitiesPage);
-      } else if (this.currentView === 'community-detail') {
-        // Community detail page
-        const communityDetailPage = createCommunityDetailPage(
-          this.viewData.communityId!,
-          () => this.navigateToCommunities(),
-          (post, allPosts) => this.openPostViewer(post, allPosts),
-          (userId) => this.navigateToProfile(userId),
-          (post) => this.openSharePostModal(post)
-        );
-        this.appContainer.appendChild(communityDetailPage);
       } else if (this.currentView === 'ai-chat') {
         // AI Chat page
         const aiPage = createAIPage(() => this.navigateToFeed(), this.aiChatContextPost, this.aiChatUserContext);
@@ -637,7 +553,6 @@ class TravelSocialApp {
           () => this.navigateToExplore(),
           () => this.navigateToFeed(),
           () => this.navigateToAIChat(),
-          () => this.navigateToCommunities(),
           () => this.navigateToAbout(),
           () => this.navigateToItineraries(),
           this.currentView
@@ -725,17 +640,8 @@ class TravelSocialApp {
         (userId) => this.navigateToProfile(userId), // Navigate to user profile when clicked
         false, // Not own profile
         undefined, // No delete handler in feed
-        (post) => this.navigateToAIChat(post) // Navigate to AI chat with post context
+        (post) => this.navigateToAIChat(post)  // Navigate to AI chat with post context
       );
-      
-      // Add share post event listener
-      postCard.addEventListener('share-post', (e: any) => {
-        const postId = e.detail.postId;
-        const postToShare = this.posts.find(p => p.id === postId);
-        if (postToShare) {
-          this.openSharePostModal(postToShare);
-        }
-      });
       
       feedSection.appendChild(postCard);
     });
