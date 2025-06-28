@@ -310,10 +310,22 @@ The response should ONLY contain the JSON object, nothing else.`;
       let itineraryData: GeneratedItinerary;
       try {
         // Clean up the response to ensure it's valid JSON
-        const cleanedResponse = aiResponse
-          .replace(/```json/g, '')
-          .replace(/```/g, '')
+        let cleanedResponse = aiResponse.trim();
+        
+        // Remove markdown code block fences more thoroughly
+        cleanedResponse = cleanedResponse
+          .replace(/^```json\s*/i, '')  // Remove opening ```json (case insensitive)
+          .replace(/^```\s*/i, '')      // Remove opening ``` 
+          .replace(/\s*```$/i, '')      // Remove closing ```
+          .replace(/```json/gi, '')     // Remove any remaining ```json
+          .replace(/```/g, '')          // Remove any remaining ```
           .trim();
+        
+        // If the response starts with any other markdown or text, try to extract JSON
+        const jsonMatch = cleanedResponse.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+          cleanedResponse = jsonMatch[0];
+        }
         
         itineraryData = JSON.parse(cleanedResponse);
         
@@ -324,6 +336,7 @@ The response should ONLY contain the JSON object, nothing else.`;
       } catch (parseError) {
         console.error('Error parsing AI response:', parseError);
         console.error('Raw AI response:', aiResponse);
+        console.error('Cleaned response:', cleanedResponse);
         return new Response(
           JSON.stringify({ 
             error: 'Failed to parse AI-generated itinerary',
