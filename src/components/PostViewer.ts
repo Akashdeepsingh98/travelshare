@@ -11,7 +11,8 @@ export function createPostViewer(
   onComment: (postId: string, comment: string) => void,
   onFollow: (userId: string) => void,
   onUnfollow: (userId: string) => void,
-  onAskAI?: (post: Post) => void
+  onAskAI?: (post: Post) => void,
+  onShareToDM?: (post: Post) => void
 ): HTMLElement {
   const container = document.createElement('div');
   container.className = 'post-viewer-modal';
@@ -144,6 +145,12 @@ export function createPostViewer(
                   <span class="text">Share</span>
                 </button>
               ` : ''}
+              ${authState.isAuthenticated && onShareToDM ? `
+                <button class="action-btn share-dm-btn" data-post-id="${currentPost.id}">
+                  <span class="icon">✉️</span>
+                  <span class="text">Message</span>
+                </button>
+              ` : ''}
               ${authState.isAuthenticated && onAskAI ? `
                 <button class="action-btn ask-ai-btn" data-post-id="${currentPost.id}">
                   <span class="icon">🤖</span>
@@ -225,10 +232,33 @@ export function createPostViewer(
     
     // Share functionality
     if (shareBtn) {
-      shareBtn.addEventListener('click', () => {
+      shareBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
         // This will be handled by the parent component
         // which will open the share modal
-        const event = new CustomEvent('share-post', { detail: { postId: currentPost.id } });
+        const event = new CustomEvent('share-post', { 
+          detail: { 
+            postId: currentPost.id,
+            target: 'community'
+          } 
+        });
+        container.dispatchEvent(event);
+      });
+    }
+    
+    // Share to DM functionality
+    const shareDMBtn = container.querySelector('.share-dm-btn') as HTMLButtonElement;
+    if (shareDMBtn && onShareToDM) {
+      shareDMBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        // This will be handled by the parent component
+        // which will open the share to DM modal
+        const event = new CustomEvent('share-post', { 
+          detail: { 
+            postId: currentPost.id,
+            target: 'dm'
+          } 
+        });
         container.dispatchEvent(event);
       });
     }
