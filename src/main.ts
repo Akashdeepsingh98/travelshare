@@ -19,8 +19,6 @@ import { createCommunitiesPage } from './components/CommunitiesPage';
 import { createCommunityDetailPage } from './components/CommunityDetailPage';
 import { createCreateCommunityModal } from './components/CreateCommunityModal';
 import { createSharePostModal } from './components/SharePostModal';
-import { createGroupChatPage } from './components/GroupChatPage';
-import { createShareToGroupModal } from './components/ShareToGroupModal';
 import { createTravelGuidesPage } from './components/TravelGuidesPage';
 import { createTravelGuideDetail } from './components/TravelGuideDetail';
 import { formatItineraryAsPlainText } from './utils/formatters';
@@ -29,7 +27,7 @@ import { testSupabaseConnection, displayConnectionDiagnostics } from './utils/co
 import { createDirectMessagesPage } from './components/DirectMessagesPage';
 import { createShareToDMModal } from './components/ShareToDMModal';
 
-type AppView = 'feed' | 'profile' | 'explore' | 'post-viewer' | 'following' | 'followers' | 'ai-chat' | 'about' | 'heatmap' | 'itinerary-detail' | 'itineraries' | 'communities' | 'community-detail' | 'direct-messages' | 'travel-guides' | 'travel-guide-detail' | 'messages' | 'group-chat';
+type AppView = 'feed' | 'profile' | 'explore' | 'post-viewer' | 'following' | 'followers' | 'ai-chat' | 'about' | 'heatmap' | 'itinerary-detail' | 'itineraries' | 'communities' | 'community-detail' | 'direct-messages' | 'travel-guides' | 'travel-guide-detail';
 
 interface ViewData {
   userId?: string;
@@ -38,7 +36,6 @@ interface ViewData {
   itineraryId?: string;
   conversationId?: string;
   guideId?: string;
-  groupChatId?: string;
 }
 
 class TravelSocialApp {
@@ -353,22 +350,6 @@ class TravelSocialApp {
     this.render();
   }
 
-  private navigateToMessages(conversationId?: string) {
-    this.currentView = 'messages';
-    this.viewData = { conversationId };
-    this.aiChatContextPost = null;
-    this.aiChatUserContext = null;
-    this.render();
-  }
-
-  private navigateToGroupChat(groupId: string) {
-    this.currentView = 'group-chat';
-    this.viewData = { groupChatId: groupId };
-    this.aiChatContextPost = null;
-    this.aiChatUserContext = null;
-    this.render();
-  }
-
   private navigateToFeed() {
     this.currentView = 'feed';
     this.viewData = {};
@@ -483,12 +464,13 @@ class TravelSocialApp {
   }
 
   private openShareToGroupModal(post: Post) {
+    const { createShareToGroupModal } = require('./components/ShareToGroupModal');
     const modal = createShareToGroupModal(
       post,
       () => {}, // onClose - no action needed
       () => {
         // onSuccess - show success message
-        alert('Post shared to group successfully!');
+        alert('Post shared successfully!');
       }
     );
     document.body.appendChild(modal);
@@ -764,36 +746,6 @@ class TravelSocialApp {
           () => this.showConnectionError()
         );
         this.appContainer.appendChild(communityDetailPage);
-      } else if (this.currentView === 'messages') {
-        // Direct messages page
-        const header = createHeader(
-          () => this.navigateToProfile(),
-          () => this.navigateToExplore(),
-          () => this.navigateToFeed(),
-          () => this.navigateToAIChat(),
-          () => this.navigateToCommunities(),
-          () => this.navigateToAbout(),
-          () => this.navigateToItineraries(),
-          this.currentView
-        );
-        this.appContainer.appendChild(header);
-        
-        const messagesPage = createDirectMessagesPage(
-          () => this.navigateToFeed(),
-          (userId) => this.navigateToProfile(userId),
-          (conversationId) => this.navigateToMessages(conversationId),
-          (groupId) => this.navigateToGroupChat(groupId)
-        );
-        this.appContainer.appendChild(messagesPage);
-      } else if (this.currentView === 'group-chat') {
-        // Group chat page
-        const groupChatPage = createGroupChatPage(
-          this.viewData.groupChatId!,
-          () => this.navigateToMessages(),
-          (userId) => this.navigateToProfile(userId),
-          (groupId) => this.openShareToGroupModal(null as any) // This will be handled properly when a post is selected
-        );
-        this.appContainer.appendChild(groupChatPage);
       } else if (this.currentView === 'travel-guides') {
         // Travel Guides page
         const header = createHeader(
