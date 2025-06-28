@@ -48,10 +48,6 @@ export function createHeader(
               <span class="nav-icon">🔍</span>
               <span class="nav-text">Explore</span>
             </button>
-            <button class="nav-btn ${currentView === 'itineraries' ? 'active' : ''}" data-view="itineraries">
-              <span class="nav-icon">🗺️</span>
-              <span class="nav-text">Itineraries</span>
-            </button>
             <button class="nav-btn ${currentView === 'ai-chat' ? 'active' : ''}" data-view="ai-chat">
               <span class="nav-icon">🤖</span>
               <span class="nav-text">AI Chat</span>
@@ -111,8 +107,6 @@ export function createHeader(
             window.location.hash = 'heatmap';
           } else if (view === 'ai-chat' && onAIChatClick) {
             onAIChatClick();
-          } else if (view === 'itineraries' && onItinerariesClick) {
-            onItinerariesClick();
           } else if (view === 'about' && onAboutClick) {
             onAboutClick();
           }
@@ -153,10 +147,6 @@ export function createHeader(
             <button class="nav-btn ${currentView === 'about' ? 'active' : ''}" data-view="about">
               <span class="nav-icon">ℹ️</span>
               <span class="nav-text">About</span>
-            </button>
-            <button class="nav-btn ${currentView === 'itineraries' ? 'active' : ''}" data-view="itineraries">
-              <span class="nav-icon">🗺️</span>
-              <span class="nav-text">Itineraries</span>
             </button>
           </nav>
           <div class="auth-buttons">
