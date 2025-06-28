@@ -14,8 +14,9 @@ export function createPostCard(
   isOwnProfile: boolean = false,
   onDelete?: (postId: string) => void,
   onAskAI?: (post: Post) => void,
-  onShareToGroup?: (post: Post) => void,
+  onShareToGroup?: (post: Post) => void
   onShareToDM?: (post: Post) => void,
+  onShareToGroup?: (post: Post) => void
 ): HTMLElement {
   const card = document.createElement('div');
   card.className = 'post-card';
