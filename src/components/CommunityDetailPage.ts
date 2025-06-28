@@ -54,20 +54,38 @@ export function createCommunityDetailPage(
         userRole = null;
       }
       
-      // Load community members
-      const { data: membersData, error: membersError } = await supabase
-        .from('community_members')
-        .select(`
-          *,
-          user:profiles(*)
-        `)
-        .eq('community_id', communityId)
-        .order('role', { ascending: false }) // Admins first
-        .order('joined_at', { ascending: false });
-      
-      if (membersError) throw membersError;
-      
-      members = membersData || [];
+      // Load community members - simplified query to avoid recursion
+      try {
+        const { data: membersData, error: membersError } = await supabase
+          .from('community_members')
+          .select(`
+            id,
+            community_id,
+            user_id,
+            role,
+            joined_at,
+            user:profiles(id, name, avatar_url)
+          `)
+          .eq('community_id', communityId)
+          .order('role', { ascending: false }) // Admins first
+          .order('joined_at', { ascending: false });
+        
+        if (membersError) {
+          console.error('Error loading members:', membersError);
+          // If there's a policy recursion error, set empty members array
+          if (membersError.message?.includes('infinite recursion')) {
+            members = [];
+            console.warn('Community members could not be loaded due to database policy configuration. Please check your Supabase RLS policies for the community_members table.');
+          } else {
+            throw membersError;
+          }
+        } else {
+          members = membersData || [];
+        }
+      } catch (memberError) {
+        console.error('Error loading community members:', memberError);
+        members = [];
+      }
       
       // Load shared posts
       const { data: sharedPostsData, error: postsError } = await supabase
@@ -116,6 +134,17 @@ export function createCommunityDetailPage(
       
     } catch (error) {
       console.error('Error loading community data:', error);
+      
+      // Handle specific error types
+      if (error.message?.includes('infinite recursion')) {
+        console.error('Database policy configuration error detected. Please check your Supabase RLS policies for the community_members table.');
+        // Set minimal data to allow page to render
+        if (!community) {
+          community = null;
+        }
+        members = [];
+        sharedPosts = [];
+      }
     } finally {
       isLoading = false;
       renderCommunityDetailPage();
@@ -258,6 +287,15 @@ export function createCommunityDetailPage(
                 </div>
                 
                 <div class="tab-pane members-pane">
+                  ${members.length === 0 ? `
+                    <div class="members-loading-error">
+                      <div class="error-content">
+                        <div class="error-icon">⚠️</div>
+                        <h4>Unable to Load Members</h4>
+                        <p>There may be a configuration issue with the community settings. Please contact an administrator.</p>
+                      </div>
+                    </div>
+                  ` : `
                   <div class="members-list">
                     ${members.map(member => `
                       <div class="member-item" data-user-id="${member.user_id}">
@@ -285,6 +323,7 @@ export function createCommunityDetailPage(
                       </div>
                     `).join('')}
                   </div>
+                  `}
                 </div>
               </div>
             </div>
@@ -816,6 +855,35 @@ export function createCommunityDetailPage(
         transform: translateY(-1px);
       }
 
+      .members-loading-error {
+        text-align: center;
+        padding: 3rem 1rem;
+      }
+
+      .members-loading-error .error-content {
+        max-width: 400px;
+        margin: 0 auto;
+      }
+
+      .members-loading-error .error-icon {
+        font-size: 2rem;
+        margin-bottom: 1rem;
+        color: #f59e0b;
+      }
+
+      .members-loading-error h4 {
+        color: #334155;
+        font-size: 1.125rem;
+        font-weight: 600;
+        margin: 0 0 0.5rem 0;
+      }
+
+      .members-loading-error p {
+        color: #64748b;
+        margin: 0;
+        font-size: 0.875rem;
+      }
+
       /* Responsive design */
       @media (max-width: 768px) {
         .community-detail-page {
@@ -1014,7 +1082,27 @@ export function createCommunityDetailPage(
       return;
     }
     
+    // Check if user is already a member
+    if (userRole !== null) {
+      alert('You are already a member of this community.');
+      return;
+    }
+    
     try {
+      // Double-check membership status before inserting
+      const { data: existingMembership } = await supabase
+        .from('community_members')
+        .select('id')
+        .eq('community_id', communityId)
+        .eq('user_id', authState.currentUser.id)
+        .single();
+      
+      if (existingMembership) {
+        alert('You are already a member of this community.');
+        await loadCommunityData(); // Refresh to show correct state
+        return;
+      }
+      
       const { error } = await supabase
         .from('community_members')
         .insert({
@@ -1030,7 +1118,14 @@ export function createCommunityDetailPage(
       
     } catch (error) {
       console.error('Error joining community:', error);
-      alert('Failed to join community. Please try again.');
+      
+      // Handle specific error types
+      if (error.code === '23505') {
+        alert('You are already a member of this community.');
+        await loadCommunityData(); // Refresh to show correct state
+      } else {
+        alert('Failed to join community. Please try again.');
+      }
     }
   }
   
