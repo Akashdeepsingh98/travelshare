@@ -154,6 +154,70 @@ export type Database = {
           shared_at?: string
         }
       }
+      travel_guides: {
+        Row: {
+          id: string;
+          user_id: string;
+          title: string;
+          description: string | null;
+          destination: string;
+          cover_image_url: string | null;
+          is_public: boolean;
+          created_at: string;
+          updated_at: string;
+        }
+        Insert: {
+          id?: string;
+          user_id: string;
+          title: string;
+          description?: string | null;
+          destination: string;
+          cover_image_url?: string | null;
+          is_public?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        }
+        Update: {
+          id?: string;
+          user_id?: string;
+          title?: string;
+          description?: string | null;
+          destination?: string;
+          cover_image_url?: string | null;
+          is_public?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        }
+      }
+      guide_content_items: {
+        Row: {
+          id: string;
+          guide_id: string;
+          content_type: string;
+          item_id: string;
+          order_position: number;
+          notes: string | null;
+          created_at: string;
+        }
+        Insert: {
+          id?: string;
+          guide_id: string;
+          content_type: string;
+          item_id: string;
+          order_position: number;
+          notes?: string | null;
+          created_at?: string;
+        }
+        Update: {
+          id?: string;
+          guide_id?: string;
+          content_type?: string;
+          item_id?: string;
+          order_position?: number;
+          notes?: string | null;
+          created_at?: string;
+        }
+      }
       post_likes: {
         Row: {
           id: string

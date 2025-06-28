@@ -194,6 +194,32 @@ export interface Message {
   shared_post?: Post;
 }
 
+// Travel Guide Types
+export interface TravelGuide {
+  id: string;
+  user_id: string;
+  title: string;
+  description?: string;
+  destination: string;
+  cover_image_url?: string;
+  is_public: boolean;
+  created_at: string;
+  updated_at: string;
+  user?: User;
+}
+
+export interface GuideContentItem {
+  id: string;
+  guide_id: string;
+  content_type: 'post' | 'itinerary';
+  item_id: string;
+  order_position: number;
+  notes?: string;
+  created_at: string;
+  post_data?: Post;
+  itinerary_data?: Itinerary;
+}
+
 export interface ItineraryItem {
   id: string;
   itinerary_id: string;
