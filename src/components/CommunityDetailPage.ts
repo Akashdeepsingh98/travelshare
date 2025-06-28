@@ -1487,7 +1487,7 @@ export function createCommunityDetailPage(
         onUserClick, // Navigate to user profile when clicked
         false, // Not own profile
         undefined, // No delete handler
-        onAskAI // Ask AI handler
+        onAskAI, // Ask AI handler
         undefined // No AI handler
       );
       
