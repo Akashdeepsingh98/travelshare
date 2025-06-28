@@ -784,11 +784,11 @@ export function createItineraryDetail(
   function setupEventListeners() {
     // Back button
     const backBtn = container.querySelector('.back-btn') as HTMLButtonElement;
-    backBtn?.addEventListener('click', onNavigateBack);
+    backBtn?.addEventListener('click', () => onNavigateBack());
     
     // Back to profile button
     const backToProfileBtn = container.querySelector('.back-to-profile-btn') as HTMLButtonElement;
-    backToProfileBtn?.addEventListener('click', onNavigateBack);
+    backToProfileBtn?.addEventListener('click', () => onNavigateBack());
     
     // Share button
     const shareBtn = container.querySelector('.share-itinerary-btn') as HTMLButtonElement;
