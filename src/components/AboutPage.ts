@@ -60,9 +60,39 @@ export function createAboutPage(onNavigateBack: () => void): HTMLElement {
           </div>
           
           <div class="feature-card">
+            <div class="feature-icon">🗺️</div>
+            <h4>Itinerary Planning & Expense Tracking</h4>
+            <p>Create AI-powered travel itineraries with day-by-day schedules, track expenses, and share your plans with others.</p>
+          </div>
+          
+          <div class="feature-card">
+            <div class="feature-icon">🏘️</div>
+            <h4>Travel Communities & Group Chat</h4>
+            <p>Join or create travel communities, share posts with like-minded travelers, and engage in real-time group conversations.</p>
+          </div>
+          
+          <div class="feature-card">
+            <div class="feature-icon">💬</div>
+            <h4>Direct Messaging</h4>
+            <p>Connect privately with other travelers, share posts directly, and build meaningful connections through one-on-one conversations.</p>
+          </div>
+          
+          <div class="feature-card">
+            <div class="feature-icon">🧭</div>
+            <h4>Curated Travel Guides</h4>
+            <p>Create and explore comprehensive travel guides by compiling posts and itineraries for specific destinations.</p>
+          </div>
+          
+          <div class="feature-card">
+            <div class="feature-icon">🔥</div>
+            <h4>Global Post Heatmap</h4>
+            <p>Visualize post density around the world, discover travel hotspots, and find posts from specific locations on an interactive map.</p>
+          </div>
+          
+          <div class="feature-card">
             <div class="feature-icon">🤖</div>
             <h4>AI Travel Assistant</h4>
-            <p>Get personalized travel recommendations powered by Google Gemini AI, based on real community experiences.</p>
+            <p>Get personalized travel recommendations powered by Google Gemini AI, based on real community experiences and photo analysis.</p>
           </div>
           
           <div class="feature-card">
@@ -94,7 +124,7 @@ export function createAboutPage(onNavigateBack: () => void): HTMLElement {
             <div class="step-number">2</div>
             <div class="step-content">
               <h4>Share Your Adventures</h4>
-              <p>Post photos and stories from your travels. Add locations and describe your experiences.</p>
+              <p>Post photos and stories from your travels. Create itineraries, track expenses, and build comprehensive travel guides.</p>
             </div>
           </div>
           
@@ -102,12 +132,20 @@ export function createAboutPage(onNavigateBack: () => void): HTMLElement {
             <div class="step-number">3</div>
             <div class="step-content">
               <h4>Discover & Connect</h4>
-              <p>Explore posts from other travelers, follow interesting accounts, and engage with the community.</p>
+              <p>Explore posts from other travelers, follow interesting accounts, and engage with content through likes and comments.</p>
             </div>
           </div>
           
           <div class="step">
             <div class="step-number">4</div>
+            <div class="step-content">
+              <h4>Join Communities & Connect</h4>
+              <p>Join travel communities, participate in group chats, and connect directly with other travelers through private messages.</p>
+            </div>
+          </div>
+          
+          <div class="step">
+            <div class="step-number">5</div>
             <div class="step-content">
               <h4>Get AI Recommendations</h4>
               <p>Chat with our AI assistant for personalized travel advice based on community experiences.</p>
@@ -160,7 +198,7 @@ export function createAboutPage(onNavigateBack: () => void): HTMLElement {
             <div class="tech-icon">🔒</div>
             <div class="tech-content">
               <h4>Secure & Reliable</h4>
-              <p>Powered by Supabase with row-level security, authentication, and real-time updates.</p>
+              <p>Powered by Supabase with row-level security, authentication, real-time updates, and edge functions.</p>
             </div>
           </div>
           
@@ -176,7 +214,7 @@ export function createAboutPage(onNavigateBack: () => void): HTMLElement {
             <div class="tech-icon">🚀</div>
             <div class="tech-content">
               <h4>AI-Powered</h4>
-              <p>Google Gemini AI integration for intelligent travel recommendations and assistance.</p>
+              <p>Google Gemini AI integration with vision capabilities for intelligent travel recommendations and photo analysis.</p>
             </div>
           </div>
         </div>
@@ -185,7 +223,7 @@ export function createAboutPage(onNavigateBack: () => void): HTMLElement {
       <div class="community-section">
         <h3>Join Our Community</h3>
         <div class="community-content">
-          <p>TravelShare is more than just a social platform – it's a community of passionate travelers sharing authentic experiences and helping each other discover the world.</p>
+          <p>TravelShare is more than just a social platform – it's a community of passionate travelers sharing authentic experiences, planning trips together, and helping each other discover the world.</p>
           
           <div class="community-stats">
             <div class="stat-card">
