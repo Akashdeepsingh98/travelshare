@@ -337,7 +337,11 @@ export function createCommunityChat(communityId: string, communityName: string):
   function setupMessageSubscription() {
     // Clean up existing subscription if any
     if (subscription) {
-      supabase.removeChannel(subscription);
+      try {
+        supabase.removeChannel(subscription);
+      } catch (error) {
+        console.error('Error removing existing subscription:', error);
+      }
       subscription = null;
     }
     
@@ -367,14 +371,19 @@ export function createCommunityChat(communityId: string, communityName: string):
           
           if (newMessage) {
             console.log('Fetched new message with details:', newMessage);
-            
+
             // Create a new array instead of mutating the existing one
             // This ensures the UI will re-render properly
+            messages = [...messages, newMessage];
             messages = [...messages, newMessage];
             
             // Update UI
             renderCommunityChat();
-            scrollToBottom();
+            
+            // Use setTimeout to ensure DOM is updated before scrolling
+            setTimeout(() => {
+              scrollToBottom();
+            }, 100);
           }
         }
       )
@@ -421,6 +430,18 @@ export function createCommunityChat(communityId: string, communityName: string):
   // Render the community chat
   function renderCommunityChat() {
     console.log('Rendering community chat with', messages.length, 'messages');
+    
+    // Save the current scroll position and input value before re-rendering
+    const messagesContainer = container.querySelector('.messages-container');
+    const scrollPosition = messagesContainer ? messagesContainer.scrollTop : 0;
+    const scrolledToBottom = messagesContainer ? 
+      (messagesContainer.scrollHeight - messagesContainer.scrollTop <= messagesContainer.clientHeight + 50) : 
+      true;
+    
+    const messageInput = container.querySelector('.message-input') as HTMLTextAreaElement;
+    const currentInputValue = messageInput ? messageInput.value : '';
+    const currentInputFocused = document.activeElement === messageInput;
+    
     const authState = authManager.getAuthState();
     
     container.innerHTML = `
@@ -465,7 +486,7 @@ export function createCommunityChat(communityId: string, communityName: string):
         
         <div class="input-container">
           <div class="input-wrapper">
-            <textarea class="message-input" placeholder="Type a message..." rows="1"></textarea>
+            <textarea class="message-input" placeholder="Type a message..." rows="1">${currentInputValue}</textarea>
           </div>
           <button class="send-btn" disabled>
             <span class="send-icon">📤</span>
@@ -476,6 +497,16 @@ export function createCommunityChat(communityId: string, communityName: string):
     
     // Add event listeners
     const messageInput = container.querySelector('.message-input') as HTMLTextAreaElement;
+    
+    // Restore focus if it was focused before
+    if (currentInputFocused && messageInput) {
+      messageInput.focus();
+      
+      // Place cursor at the end
+      const length = messageInput.value.length;
+      messageInput.setSelectionRange(length, length);
+    }
+    
     const sendBtn = container.querySelector('.send-btn') as HTMLButtonElement;
     
     if (messageInput && sendBtn) {
@@ -488,7 +519,8 @@ export function createCommunityChat(communityId: string, communityName: string):
         messageInput.style.height = `${Math.min(messageInput.scrollHeight, 120)}px`;
         
         // Enable/disable send button
-        sendBtn.disabled = messageInput.value.trim().length === 0;
+        const hasContent = messageInput.value.trim().length > 0;
+        sendBtn.disabled = !hasContent;
       });
       
       // Send message on button click
@@ -504,11 +536,21 @@ export function createCommunityChat(communityId: string, communityName: string):
       
       // Send message on Enter (without Shift)
       messageInput.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter' && !e.shiftKey) {
+        if (e.key === 'Enter' && !e.shiftKey && !sendBtn.disabled) {
           e.preventDefault();
           sendBtn.click();
         }
       });
+    }
+    
+    // Restore scroll position or scroll to bottom if we were at the bottom
+    const newMessagesContainer = container.querySelector('.messages-container');
+    if (newMessagesContainer) {
+      if (scrolledToBottom) {
+        newMessagesContainer.scrollTop = newMessagesContainer.scrollHeight;
+      } else {
+        newMessagesContainer.scrollTop = scrollPosition;
+      }
     }
   }
   
@@ -516,7 +558,11 @@ export function createCommunityChat(communityId: string, communityName: string):
   function scrollToBottom() {
     const messagesContainer = container.querySelector('.messages-container');
     if (messagesContainer) {
-      messagesContainer.scrollTop = messagesContainer.scrollHeight;
+      // Use smooth scrolling for better UX
+      messagesContainer.scrollTo({
+        top: messagesContainer.scrollHeight,
+        behavior: 'smooth'
+      });
     }
   }
   

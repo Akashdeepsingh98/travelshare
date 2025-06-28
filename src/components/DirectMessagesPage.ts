@@ -924,7 +924,8 @@ export function createDirectMessagesPage(
           
           if (newMessage) {
             // Add to messages array
-            messages.push(newMessage);
+            // Create a new array instead of mutating the existing one
+            messages = [...messages, newMessage];
             
             // Mark as read if from other user
             const authState = authManager.getAuthState();
@@ -937,7 +938,11 @@ export function createDirectMessagesPage(
             
             // Update UI
             renderDirectMessagesPage();
-            scrollToBottom();
+            
+            // Use setTimeout to ensure DOM is updated before scrolling
+            setTimeout(() => {
+              scrollToBottom();
+            }, 100);
           }
         }
       )
@@ -1172,6 +1177,17 @@ export function createDirectMessagesPage(
   // Render the direct messages page
   function renderDirectMessagesPage() {
     const authState = authManager.getAuthState();
+
+    // Save the current scroll position and input value before re-rendering
+    const messagesContainer = container.querySelector('.dm-messages-container');
+    const scrollPosition = messagesContainer ? messagesContainer.scrollTop : 0;
+    const scrolledToBottom = messagesContainer ? 
+      (messagesContainer.scrollHeight - messagesContainer.scrollTop <= messagesContainer.clientHeight + 50) : 
+      true;
+    
+    const messageInput = container.querySelector('.dm-input') as HTMLTextAreaElement;
+    const currentInputValue = messageInput ? messageInput.value : '';
+    const currentInputFocused = document.activeElement === messageInput;
     
     if (!authState.isAuthenticated) {
       // Not authenticated view
@@ -1303,7 +1319,7 @@ export function createDirectMessagesPage(
             
             <div class="dm-input-container">
               <div class="dm-input-wrapper">
-                <textarea class="dm-input" placeholder="Type a message..." rows="1"></textarea>
+                <textarea class="dm-input" placeholder="Type a message..." rows="1">${currentInputValue}</textarea>
               </div>
               <button class="dm-send-btn" disabled>
                 <span class="dm-send-icon">📤</span>
@@ -1364,6 +1380,15 @@ export function createDirectMessagesPage(
     // Message input and send button
     const messageInput = container.querySelector('.dm-input') as HTMLTextAreaElement;
     const sendBtn = container.querySelector('.dm-send-btn') as HTMLButtonElement;
+
+    // Restore focus if it was focused before
+    if (currentInputFocused && messageInput) {
+      messageInput.focus();
+      
+      // Place cursor at the end
+      const length = messageInput.value.length;
+      messageInput.setSelectionRange(length, length);
+    }
     
     if (messageInput && sendBtn) {
       // Auto-resize textarea
@@ -1375,7 +1400,8 @@ export function createDirectMessagesPage(
         messageInput.style.height = `${Math.min(messageInput.scrollHeight, 120)}px`;
         
         // Enable/disable send button
-        sendBtn.disabled = messageInput.value.trim().length === 0;
+        const hasContent = messageInput.value.trim().length > 0;
+        sendBtn.disabled = !hasContent;
       });
       
       // Send message on button click
@@ -1391,7 +1417,7 @@ export function createDirectMessagesPage(
       
       // Send message on Enter (without Shift)
       messageInput.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter' && !e.shiftKey) {
+        if (e.key === 'Enter' && !e.shiftKey && !sendBtn.disabled) {
           e.preventDefault();
           sendBtn.click();
         }
@@ -1422,15 +1448,26 @@ export function createDirectMessagesPage(
       }
     });
     
-    // Scroll to bottom of messages
-    scrollToBottom();
+    // Restore scroll position or scroll to bottom if we were at the bottom
+    const newMessagesContainer = container.querySelector('.dm-messages-container');
+    if (newMessagesContainer) {
+      if (scrolledToBottom) {
+        newMessagesContainer.scrollTop = newMessagesContainer.scrollHeight;
+      } else {
+        newMessagesContainer.scrollTop = scrollPosition;
+      }
+    }
   }
   
   // Scroll to bottom of messages container
   function scrollToBottom() {
     const messagesContainer = container.querySelector('.dm-messages-container');
     if (messagesContainer) {
-      messagesContainer.scrollTop = messagesContainer.scrollHeight;
+      // Use smooth scrolling for better UX
+      messagesContainer.scrollTo({
+        top: messagesContainer.scrollHeight,
+        behavior: 'smooth'
+      });
     }
   }
   
