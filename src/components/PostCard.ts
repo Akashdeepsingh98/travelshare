@@ -122,16 +122,11 @@ export function createPostCard(
         <p>${post.content}</p>
       </div>
       
+      
       ${mediaItems.length > 0 ? `
         <div class="post-media">
           ${createMediaCarousel(mediaItems)}
         </div>
-      ` : ''}
-      ${authState.isAuthenticated && onShareToDM ? `
-        <button class="action-btn share-dm-btn" data-post-id="${post.id}">
-          <span class="icon">✉️</span>
-          <span class="text">Message</span>
-        </button>
       ` : ''}
       
       <div class="post-actions">
@@ -143,6 +138,12 @@ export function createPostCard(
           <span class="icon">💬</span>
           <span class="count">${post.comments?.length || 0}</span>
         </button>
+        ${authState.isAuthenticated && onShareToDM ? `
+          <button class="action-btn share-dm-btn" data-post-id="${post.id}">
+            <span class="icon">✉️</span>
+            <span class="text">Message</span>
+          </button>
+        ` : ''}
         ${authState.isAuthenticated && onAskAI ? `
           <button class="action-btn ask-ai-btn" data-post-id="${post.id}">
             <span class="icon">🤖</span>
