@@ -890,7 +890,8 @@ export function createDirectMessagesPage(
   function setupMessageSubscription(conversationId: string) {
     // Clean up existing subscription if any
     if (subscription) {
-      subscription.unsubscribe();
+      supabase.removeChannel(subscription);
+      subscription = null;
     }
     
     // Subscribe to new messages
@@ -1476,7 +1477,8 @@ export function createDirectMessagesPage(
   // Clean up subscription when component is removed
   container.addEventListener('remove', () => {
     if (subscription) {
-      subscription.unsubscribe();
+      supabase.removeChannel(subscription);
+      subscription = null;
     }
   });
   
