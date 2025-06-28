@@ -20,6 +20,30 @@ export function createDirectMessagesPage(
   // Add styles
   const style = document.createElement('style');
   style.textContent = `
+    .dm-header-actions {
+      display: flex;
+      gap: 0.5rem;
+    }
+
+    .new-group-btn {
+      background: rgba(255, 255, 255, 0.2);
+      color: white;
+      border: none;
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .new-group-btn:hover {
+      background: rgba(255, 255, 255, 0.3);
+      transform: translateY(-1px);
+    }
+
     .direct-messages-page {
       min-height: 100vh;
       background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -1309,7 +1333,10 @@ export function createDirectMessagesPage(
         <div class="dm-sidebar">
           <div class="dm-sidebar-header">
             <h2 class="dm-sidebar-title">Direct Messages</h2>
-            <button class="new-message-btn" title="New Message">+</button>
+            <div class="dm-header-actions">
+              <button class="new-group-btn" title="New Group Chat">👥</button>
+              <button class="new-message-btn" title="New Message">+</button>
+            </div>
           </div>
           
           <div class="dm-tabs">
@@ -1463,6 +1490,22 @@ export function createDirectMessagesPage(
     // New message button
     const newMessageBtn = container.querySelector('.new-message-btn') as HTMLButtonElement;
     newMessageBtn?.addEventListener('click', showNewMessageModal);
+
+    // New group button
+    const newGroupBtn = container.querySelector('.new-group-btn') as HTMLButtonElement;
+    newGroupBtn?.addEventListener('click', () => {
+      const { createGroupChatModal } = require('./GroupChatModal');
+      const modal = createGroupChatModal(
+        () => {}, // onClose - no action needed
+        (groupId) => {
+          // Navigate to the new group chat
+          if (onGroupChatClick) {
+            onGroupChatClick(groupId);
+          }
+        }
+      );
+      document.body.appendChild(modal);
+    });
     
     // Start conversation button
     const startBtn = container.querySelector('.dm-start-btn') as HTMLButtonElement;
