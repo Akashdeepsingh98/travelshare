@@ -1282,7 +1282,32 @@ export function createItineraryDetail(
         closeModal();
       } catch (error) {
         console.error('Error refining itinerary:', error);
-        showError(`Failed to refine itinerary: ${error.message || 'Unknown error'}`);
+        // Provide more specific error messages based on the error type
+        let errorMessage = 'Failed to refine itinerary. ';
+        
+        if (error.message) {
+          const message = error.message.toLowerCase();
+          
+          if (message.includes('api key') || message.includes('unauthorized')) {
+            errorMessage += 'AI service is not properly configured. Please contact support.';
+          } else if (message.includes('quota') || message.includes('limit')) {
+            errorMessage += 'AI service quota exceeded. Please try again later.';
+          } else if (message.includes('network') || message.includes('fetch')) {
+            errorMessage += 'Network connection issue. Please check your internet connection and try again.';
+          } else if (message.includes('timeout')) {
+            errorMessage += 'Request timed out. Please try again with simpler instructions.';
+          } else if (message.includes('internal server error')) {
+            errorMessage += 'Server is temporarily unavailable. Please try again in a few minutes.';
+          } else if (message.includes('invalid') || message.includes('bad request')) {
+            errorMessage += 'Invalid request. Please check your refinement instructions and try again.';
+          } else {
+            errorMessage += error.message;
+          }
+        } else {
+          errorMessage += 'An unexpected error occurred. Please try again.';
+        }
+        
+        showError(errorMessage);
         setLoading(false);
       }
     });
