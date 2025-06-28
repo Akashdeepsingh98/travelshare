@@ -968,17 +968,33 @@ class TravelSocialApp {
         (userId) => this.navigateToProfile(userId),
         false, // Not own profile
         undefined,
-        (post) => this.navigateToAIChat(post),
-        (post) => this.handleSharePostToDM(post)
+        (post) => this.navigateToAIChat(post), 
+        (post) => this.handleSharePostToDM(post) // Add handler for sharing to DM
       );
       
       // Add share post event listener
       postCard.addEventListener('share-post', (e: any) => {
         const postId = e.detail.postId;
-        // Share to DM
-        const postToShare = this.posts.find(p => p.id === postId);
-        if (postToShare) {
-          this.openShareToDMModal(postToShare);
+        if (e.detail.target === 'dm') {
+          // Share to DM
+          const postToShare = this.posts.find(p => p.id === postId);
+          if (postToShare) {
+            this.openShareToDMModal(postToShare);
+          }
+        } else {
+          // Share to community
+          const postToShare = this.posts.find(p => p.id === postId);
+          if (this.currentView === 'feed') {            
+            // Find the post card and update just the comments section
+            const postCard = document.querySelector(`[data-post-id="${post.id}"]`);
+            if (postCard) {
+              const commentsSection = postCard.querySelector('.comments-list');
+              if (commentsSection) {
+                const commentHTML = createCommentHTML(data, (userId) => this.navigateToProfile(userId));
+                commentsSection.innerHTML += commentHTML;
+              }
+            }
+          }
         }
       });
       

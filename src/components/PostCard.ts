@@ -129,8 +129,8 @@ export function createPostCard(
       ` : ''}
       ${authState.isAuthenticated && onShareToDM ? `
         <button class="action-btn share-dm-btn" data-post-id="${post.id}">
-          <span class="icon">🔄</span>
-          <span class="text">Share</span>
+          <span class="icon">✉️</span>
+          <span class="text">Message</span>
         </button>
       ` : ''}
       
@@ -142,7 +142,13 @@ export function createPostCard(
         <button class="action-btn comment-btn">
           <span class="icon">💬</span>
           <span class="count">${post.comments?.length || 0}</span>
-        </button>          
+        </button>
+        ${authState.isAuthenticated ? `
+          <button class="action-btn share-btn" data-post-id="${post.id}">
+            <span class="icon">🔄</span>
+            <span class="text">Share</span>
+          </button>
+        ` : ''}
         ${authState.isAuthenticated && onAskAI ? `
           <button class="action-btn ask-ai-btn" data-post-id="${post.id}">
             <span class="icon">🤖</span>
@@ -240,6 +246,23 @@ export function createPostCard(
       });
     }
     
+    // Share functionality
+    const shareBtn = card.querySelector('.share-btn') as HTMLButtonElement;
+    if (shareBtn) {
+      shareBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        // This will be handled by the parent component
+        // which will open the share modal
+        const event = new CustomEvent('share-post', { 
+          detail: { 
+            postId: post.id,
+            target: 'community'
+          } 
+        });
+        card.dispatchEvent(event);
+      });
+    }
+    
     // Share to DM functionality
     const shareDMBtn = card.querySelector('.share-dm-btn') as HTMLButtonElement;
     if (shareDMBtn && onShareToDM) {
@@ -249,7 +272,8 @@ export function createPostCard(
         // which will open the share to DM modal
         const event = new CustomEvent('share-post', { 
           detail: { 
-            postId: post.id
+            postId: post.id,
+            target: 'dm'
           } 
         });
         card.dispatchEvent(event);
@@ -443,7 +467,7 @@ export function createPostCard(
   updatePostCard();
   
   // Load follow status if needed
-  if (showFollowButton && card.isConnected) {
+  if (showFollowButton) {
     loadFollowStatus();
   }
   
