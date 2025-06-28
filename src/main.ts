@@ -146,10 +146,18 @@ class TravelSocialApp {
 
       if (error) {
         console.error('Error fetching posts:', error);
-        if (error.message && (error.message.includes('Failed to fetch') || error.message.includes('fetch'))) {
+        // Handle different types of Supabase errors
+        if (error.message && (
+          error.message.includes('Failed to fetch') || 
+          error.message.includes('fetch') ||
+          error.message.includes('NetworkError') ||
+          error.message.includes('CORS') ||
+          error.code === 'PGRST301' ||
+          error.code === 'PGRST116'
+        )) {
           this.showConnectionError();
         } else {
-          this.showGenericError('Failed to load posts. Please try refreshing the page.');
+          this.showGenericError(`Failed to load posts: ${error.message || 'Unknown error'}. Please try refreshing the page.`);
         }
         return;
       }
@@ -179,15 +187,22 @@ class TravelSocialApp {
       }
     } catch (error) {
       console.error('Error loading posts:', error);
-      console.error('Error type:', typeof error);
-      console.error('Error message:', error?.message);
-      console.error('Error stack:', error?.stack);
       
-      // Provide more specific error messages based on error type
-      if (error instanceof TypeError && (error.message.includes('Failed to fetch') || error.message.includes('fetch') || error.name === 'TypeError')) {
+      // Handle network and connection errors
+      if (error instanceof TypeError && (
+        error.message.includes('Failed to fetch') || 
+        error.message.includes('fetch') || 
+        error.message.includes('NetworkError') ||
+        error.message.includes('CORS') ||
+        error.name === 'TypeError'
+      )) {
         await this.showConnectionError();
+      } else if (error instanceof Error && error.message.includes('AbortError')) {
+        // Request was aborted (e.g., user navigated away)
+        console.log('Request aborted by user');
+        return;
       } else {
-        this.showGenericError('An unexpected error occurred while loading posts. Please try again.');
+        this.showGenericError(`An unexpected error occurred: ${error?.message || 'Unknown error'}. Please try again.`);
       }
     }
   }

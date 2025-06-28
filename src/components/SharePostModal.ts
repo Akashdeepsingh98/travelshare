@@ -908,6 +908,16 @@ export function createShareItineraryModal(
       const text = formatItineraryAsPlainText(itinerary, itineraryItems);
       
       try {
+        // Check if Web Share API is available and supported
+        if (!navigator.share) {
+          throw new Error('Web Share API not supported');
+        }
+        
+        // Ensure we're in a secure context (HTTPS or localhost)
+        if (!window.isSecureContext && window.location.protocol !== 'http:') {
+          throw new Error('Web Share API requires secure context (HTTPS)');
+        }
+        
         await navigator.share({
           title: itinerary.title,
           text: text
@@ -919,21 +929,128 @@ export function createShareItineraryModal(
         
         closeModal();
       } catch (error) {
-        console.error('Error sharing:', error);
+        console.warn('Web Share API failed, falling back to clipboard:', error);
         
         // Fallback to clipboard
         try {
           await navigator.clipboard.writeText(text);
-          alert('Itinerary copied to clipboard!');
+          
+          // Show success feedback
+          const originalText = shareNativeBtn.innerHTML;
+          shareNativeBtn.innerHTML = `<span class="btn-icon">✅</span><span class="btn-text">Copied to Clipboard!</span>`;
+          shareNativeBtn.disabled = true;
+          
+          // Reset after 2 seconds
+          setTimeout(() => {
+            shareNativeBtn.innerHTML = originalText;
+            shareNativeBtn.disabled = false;
+          }, 2000);
           
           if (onSuccess) {
             onSuccess();
           }
-          
-          closeModal();
         } catch (clipboardError) {
           console.error('Failed to copy text:', clipboardError);
-          alert('Failed to share. Please try the "Copy as Text" option instead.');
+          
+          // Final fallback - show the text in a modal for manual copying
+          const fallbackModal = document.createElement('div');
+          fallbackModal.className = 'fallback-share-modal';
+          fallbackModal.innerHTML = `
+            <div class="modal-backdrop"></div>
+            <div class="fallback-content">
+              <h3>Share Itinerary</h3>
+              <p>Please copy the text below manually:</p>
+              <textarea readonly class="fallback-text">${text}</textarea>
+              <div class="fallback-actions">
+                <button class="select-all-btn">Select All</button>
+                <button class="close-fallback-btn">Close</button>
+              </div>
+            </div>
+          `;
+          
+          // Add styles for fallback modal
+          const fallbackStyle = document.createElement('style');
+          fallbackStyle.textContent = `
+            .fallback-share-modal {
+              position: fixed;
+              top: 0;
+              left: 0;
+              width: 100%;
+              height: 100%;
+              background: rgba(0, 0, 0, 0.7);
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              z-index: 1001;
+              padding: 1rem;
+            }
+            
+            .fallback-content {
+              background: white;
+              border-radius: 1rem;
+              padding: 1.5rem;
+              width: 100%;
+              max-width: 500px;
+              max-height: 80vh;
+              overflow-y: auto;
+            }
+            
+            .fallback-text {
+              width: 100%;
+              height: 200px;
+              margin: 1rem 0;
+              padding: 0.75rem;
+              border: 1px solid #e2e8f0;
+              border-radius: 0.5rem;
+              font-family: monospace;
+              font-size: 0.875rem;
+              resize: vertical;
+            }
+            
+            .fallback-actions {
+              display: flex;
+              gap: 1rem;
+              justify-content: flex-end;
+            }
+            
+            .select-all-btn, .close-fallback-btn {
+              padding: 0.75rem 1.5rem;
+              border: none;
+              border-radius: 0.5rem;
+              cursor: pointer;
+              font-weight: 500;
+            }
+            
+            .select-all-btn {
+              background: #667eea;
+              color: white;
+            }
+            
+            .close-fallback-btn {
+              background: #f1f5f9;
+              color: #334155;
+            }
+          `;
+          
+          document.head.appendChild(fallbackStyle);
+          document.body.appendChild(fallbackModal);
+          
+          const textarea = fallbackModal.querySelector('.fallback-text') as HTMLTextAreaElement;
+          const selectAllBtn = fallbackModal.querySelector('.select-all-btn') as HTMLButtonElement;
+          const closeFallbackBtn = fallbackModal.querySelector('.close-fallback-btn') as HTMLButtonElement;
+          
+          selectAllBtn.addEventListener('click', () => {
+            textarea.select();
+            textarea.setSelectionRange(0, 99999); // For mobile devices
+          });
+          
+          const closeFallback = () => {
+            fallbackModal.remove();
+            fallbackStyle.remove();
+          };
+          
+          closeFallbackBtn.addEventListener('click', closeFallback);
+          fallbackModal.querySelector('.modal-backdrop')?.addEventListener('click', closeFallback);
         }
       }
     });
