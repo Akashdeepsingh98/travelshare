@@ -3,6 +3,14 @@ import { authManager } from '../auth';
 import { supabase } from '../lib/supabase';
 import { createMCPManager } from './MCPManager';
 import { createMiniAppManager } from './MiniAppManager';
+
+// Helper function to validate UUID format
+function isValidUUID(str: any): boolean {
+  if (typeof str !== 'string') return false;
+  // UUID v4 regex pattern
+  const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[4][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+  return uuidPattern.test(str);
+}
 import { createItineraryList } from './ItineraryList';
 import { createMiniAppViewer } from './MiniAppViewer';
 import { createPostCard } from './PostCard';
@@ -833,6 +841,14 @@ export function createProfilePage(
   async function loadProfileData() {
     const authState = authManager.getAuthState();
     
+    
+    // Validate userId is a proper UUID before querying
+    if (!isValidUUID(userId)) {
+      console.error('Invalid UUID format:', userId);
+      isLoading = false;
+      renderErrorState('Invalid user ID format. Please check the URL and try again.');
+      return;
+    }
     if (authState.loading) {
       renderLoadingState();
       return;
@@ -1842,6 +1858,7 @@ export function createProfilePage(
   }
   
   function renderErrorState(message: string) {
+    console.error('Profile page error:', message);
     container.innerHTML = `
       <div class="profile-error">
         <div class="error-icon">⚠️</div>
