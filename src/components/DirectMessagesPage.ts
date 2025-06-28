@@ -788,11 +788,10 @@ export function createDirectMessagesPage(
           `)
           .eq('conversation_id', conversation.id)
           .order('created_at', { ascending: false })
-          .limit(1)
-          .single();
+          .limit(1);
         
-        if (lastMessageData) {
-          conversation.last_message = lastMessageData;
+        if (lastMessageData && lastMessageData.length > 0) {
+          conversation.last_message = lastMessageData[0];
         }
         
         // Get unread count
@@ -896,7 +895,7 @@ export function createDirectMessagesPage(
     
     // Subscribe to new messages
     subscription = supabase
-      .channel('messages-channel')
+      .channel(`messages-channel-${conversationId}`)
       .on(
         'postgres_changes',
         {
