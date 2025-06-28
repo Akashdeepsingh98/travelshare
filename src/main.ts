@@ -366,7 +366,12 @@ async function loadPosts(container: HTMLElement, userId?: string) {
 // Render the profile page
 function renderProfilePage(container: HTMLElement) {
   const authState = authManager.getAuthState();
-  const userId = currentUserId || (authState.isAuthenticated ? authState.currentUser?.id : null);
+  
+  // If no specific user ID is provided, use the current authenticated user's ID
+  let userId = currentUserId;
+  if (!userId && authState.isAuthenticated && authState.currentUser) {
+    userId = authState.currentUser.id;
+  }
 
   if (!userId) {
     // If no userId and not authenticated, redirect to feed
@@ -375,15 +380,23 @@ function renderProfilePage(container: HTMLElement) {
   }
 
   const profilePage = createProfilePage(
-    userId,
     () => navigateTo('feed'),
+    (userId: string, userName: string) => {
+      // Navigate to following page - implement if needed
+      console.log('Navigate to following:', userId, userName);
+    },
+    (userId: string, userName: string) => {
+      // Navigate to followers page - implement if needed
+      console.log('Navigate to followers:', userId, userName);
+    },
+    userId, // viewUserId parameter
     (userId: string) => navigateTo('profile', userId),
-    (postId: string) => handleViewPost(postId),
-    handleFollowUser,
-    handleUnfollowUser,
     (post: Post) => navigateTo('ai-chat'),
+    (userId: string, userName: string) => {
+      // Ask AI about user - implement if needed
+      console.log('Ask AI about user:', userId, userName);
+    },
     (itineraryId: string) => navigateTo('itineraries', itineraryId),
-    (guideId: string) => navigateTo('travel-guides', guideId)
   );
 
   container.appendChild(profilePage);

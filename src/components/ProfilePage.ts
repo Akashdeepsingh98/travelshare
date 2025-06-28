@@ -843,7 +843,13 @@ export function createProfilePage(
     isLoading = true;
     const authState = authManager.getAuthState();
     
-    const targetUserId = viewUserId || authState.currentUser?.id;
+    // Determine the target user ID
+    let targetUserId = viewUserId;
+    
+    // If no viewUserId is provided, use the current authenticated user's ID
+    if (!targetUserId && authState.isAuthenticated && authState.currentUser) {
+      targetUserId = authState.currentUser.id;
+    }
     
     // Check if targetUserId exists and is valid before UUID validation
     if (!targetUserId) {
@@ -1881,7 +1887,9 @@ export function createProfilePage(
     `;
     
     const backBtn = container.querySelector('.back-btn') as HTMLButtonElement;
-    backBtn.addEventListener('click', onNavigateBack);
+    if (backBtn && typeof onNavigateBack === 'function') {
+      backBtn.addEventListener('click', onNavigateBack);
+    }
   }
   
   function formatDate(dateString: string): string {
