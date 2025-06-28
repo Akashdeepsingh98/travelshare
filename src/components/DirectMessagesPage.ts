@@ -1430,34 +1430,10 @@ export function createDirectMessagesPage(
     // Add event listeners
     const backBtn = container.querySelector('.back-btn') as HTMLButtonElement;
     backBtn.addEventListener('click', onNavigateBack);
-      tab.addEventListener('click', (e) => {
-        const tabName = (e.target as HTMLElement).dataset.tab;
-        if (tabName) {
-          // Update active tab
-          tabs.forEach(t => t.classList.remove('active'));
-          tab.classList.add('active');
-          
-          // Update tab panes
-          const tabPanes = container.querySelectorAll('.tab-pane');
-          tabPanes.forEach(pane => {
-            pane.classList.remove('active');
-            if (pane.id === `${tabName}-messages-tab` || pane.id === `${tabName}-chats-tab`) {
-              pane.classList.add('active');
-            }
-          });
-          
-          // Update active tab state
-          activeTab = tabName;
-          
-          // Render group chats tab if needed
-          if (tabName === 'groups' && !groupChatsTab && onGroupChatClick) {
-            const tabContainer = container.querySelector('#group-chats-tab');
-            if (tabContainer) {
-              groupChatsTab = createGroupChatsTab(onGroupChatClick);
-              tabContainer.appendChild(groupChatsTab);
-            }
-          }
-        }
+    
+    // Tab switching
+    const tabs = container.querySelectorAll('.dm-tab') as NodeListOf<HTMLElement>;
+    tabs.forEach(tab => {
       tab.addEventListener('click', () => {
         const tabName = tab.getAttribute('data-tab');
         if (tabName) {
