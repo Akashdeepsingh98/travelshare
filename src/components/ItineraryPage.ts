@@ -402,12 +402,14 @@ export function createItineraryPage(
       if (authModal) {
         authModal.classList.add('active');
         document.body.style.overflow = 'hidden';
+      }
       if (currentItinerary) {
         // If we're viewing a specific itinerary, pass the user_id back
         onNavigateBack(currentItinerary.user_id);
       } else {
         // Otherwise just navigate back without parameters
         onNavigateBack();
+      }
       if (currentItinerary) {
         onNavigateBack(currentItinerary.user_id);
       } else {
