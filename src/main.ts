@@ -377,13 +377,13 @@ function renderProfilePage(container: HTMLElement) {
   const profilePage = createProfilePage(
     userId,
     () => navigateTo('feed'),
-    (userId) => navigateTo('profile', userId),
-    (postId) => handleViewPost(postId),
+    (userId: string) => navigateTo('profile', userId),
+    (postId: string) => handleViewPost(postId),
     handleFollowUser,
     handleUnfollowUser,
-    (post) => navigateTo('ai-chat'),
-    (itineraryId) => navigateTo('itineraries', itineraryId),
-    (guideId) => navigateTo('travel-guides', guideId)
+    (post: Post) => navigateTo('ai-chat'),
+    (itineraryId: string) => navigateTo('itineraries', itineraryId),
+    (guideId: string) => navigateTo('travel-guides', guideId)
   );
 
   container.appendChild(profilePage);
