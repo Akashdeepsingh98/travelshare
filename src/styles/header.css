@@ -38,6 +38,14 @@
   align-items: center;
   flex: 1;
   justify-content: center;
+  overflow-x: auto;
+  white-space: nowrap;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.main-nav::-webkit-scrollbar {
+  display: none;
 }
 
 .nav-btn {

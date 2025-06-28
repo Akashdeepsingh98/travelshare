@@ -50,17 +50,9 @@ export function createHeader(
               <span class="nav-icon">🔍</span>
               <span class="nav-text">Explore</span>
             </button>
-            <button class="nav-btn ${currentView === 'communities' ? 'active' : ''}" data-view="communities">
-              <span class="nav-icon">🏘️</span>
-              <span class="nav-text">Communities</span>
-            </button>
             <button class="nav-btn ${currentView === 'travel-guides' ? 'active' : ''}" data-view="travel-guides">
               <span class="nav-icon">🧭</span>
               <span class="nav-text">Guides</span>
-            </button>
-            <button class="nav-btn ${currentView === 'itineraries' ? 'active' : ''}" data-view="itineraries">
-              <span class="nav-icon">🗺️</span>
-              <span class="nav-text">Itineraries</span>
             </button>
             <button class="nav-btn ${currentView === 'ai-chat' ? 'active' : ''}" data-view="ai-chat">
               <span class="nav-icon">🤖</span>
@@ -174,17 +166,9 @@ export function createHeader(
               <span class="nav-icon">ℹ️</span>
               <span class="nav-text">About</span>
             </button>
-            <button class="nav-btn ${currentView === 'communities' ? 'active' : ''}" data-view="communities">
-              <span class="nav-icon">🏘️</span>
-              <span class="nav-text">Communities</span>
-            </button>
             <button class="nav-btn ${currentView === 'travel-guides' ? 'active' : ''}" data-view="travel-guides">
               <span class="nav-icon">🧭</span>
               <span class="nav-text">Guides</span>
-            </button>
-            <button class="nav-btn ${currentView === 'itineraries' ? 'active' : ''}" data-view="itineraries">
-              <span class="nav-icon">🗺️</span>
-              <span class="nav-text">Itineraries</span>
             </button>
           </nav>
           <div class="auth-buttons">
