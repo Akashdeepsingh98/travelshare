@@ -372,9 +372,7 @@ export function createCommunityChat(communityId: string, communityName: string):
           if (newMessage) {
             console.log('Fetched new message with details:', newMessage);
 
-            // Create a new array instead of mutating the existing one
-            // This ensures the UI will re-render properly
-            messages = [...messages, newMessage];
+            // Add the new message to the array (only once)
             messages = [...messages, newMessage];
             
             // Update UI
@@ -435,7 +433,7 @@ export function createCommunityChat(communityId: string, communityName: string):
     const messagesContainer = container.querySelector('.messages-container');
     const scrollPosition = messagesContainer ? messagesContainer.scrollTop : 0;
     const scrolledToBottom = messagesContainer ? 
-      (messagesContainer.scrollHeight - messagesContainer.scrollTop <= messagesContainer.clientHeight + 50) : 
+      (messagesContainer.scrollHeight - messagesContainer.scrollTop - messagesContainer.clientHeight <= 50) : 
       true;
     
     const messageInput = container.querySelector('.message-input') as HTMLTextAreaElement;
@@ -546,9 +544,18 @@ export function createCommunityChat(communityId: string, communityName: string):
     // Restore scroll position or scroll to bottom if we were at the bottom
     const newMessagesContainer = container.querySelector('.messages-container');
     if (newMessagesContainer) {
+      console.log('Scroll state:', {
+        scrolledToBottom,
+        scrollPosition,
+        scrollHeight: newMessagesContainer.scrollHeight,
+        clientHeight: newMessagesContainer.clientHeight
+      });
+      
       if (scrolledToBottom) {
+        console.log('Scrolling to bottom because we were at the bottom');
         newMessagesContainer.scrollTop = newMessagesContainer.scrollHeight;
       } else {
+        console.log('Restoring scroll position to', scrollPosition);
         newMessagesContainer.scrollTop = scrollPosition;
       }
     }
