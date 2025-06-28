@@ -829,7 +829,7 @@ export function createPostHeatmapPage(
         .select('id')
         .eq('post_id', postId)
         .eq('user_id', authState.currentUser.id)
-        .single();
+        .maybeSingle();
 
       if (existingLike) {
         // Unlike the post - remove the existing like

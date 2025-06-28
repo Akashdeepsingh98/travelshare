@@ -45,7 +45,7 @@ export function createPostCard(
         .from('profiles')
         .select('is_approved')
         .eq('id', authState.currentUser.id)
-        .single();
+        .maybeSingle();
       
       if (error) {
         console.error('Error checking approval status:', error);
@@ -73,7 +73,7 @@ export function createPostCard(
         .select('id')
         .eq('follower_id', authState.currentUser.id)
         .eq('following_id', post.user_id)
-        .single();
+        .maybeSingle();
       
       isFollowing = !!data;
       updatePostCard();
