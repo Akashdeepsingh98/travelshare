@@ -67,7 +67,7 @@ export function createGroupChatsTab(
               name,
               avatar_url
             ),
-            last_message:group_messages(
+            last_message:group_messages!fk_last_message(
               id,
               content,
               sender_id,
