@@ -19,12 +19,11 @@ import { formatItineraryAsPlainText } from './utils/formatters';
 import { supabase } from './lib/supabase';
 import { testSupabaseConnection, displayConnectionDiagnostics } from './utils/connection-test';
 
-type AppView = 'feed' | 'profile' | 'explore' | 'post-viewer' | 'following' | 'followers' | 'ai-chat' | 'about' | 'itineraries' | 'itinerary-detail' | 'heatmap';
+type AppView = 'feed' | 'profile' | 'explore' | 'post-viewer' | 'following' | 'followers' | 'ai-chat' | 'about' | 'heatmap';
 
 interface ViewData {
   userId?: string;
   userName?: string;
-  itineraryId?: string;
 }
 
 class TravelSocialApp {
@@ -76,9 +75,6 @@ class TravelSocialApp {
           break;
         case 'explore':
           this.navigateToExplore();
-          break;
-        case 'itineraries':
-          this.navigateToItineraries();
           break;
         case 'ai-chat':
           this.navigateToAIChat();
@@ -359,22 +355,6 @@ class TravelSocialApp {
     this.aiChatUserContext = null;
     this.render();
   }
-  
-  private navigateToItineraries() {
-    this.currentView = 'itineraries';
-    this.viewData = {};
-    this.aiChatContextPost = null;
-    this.aiChatUserContext = null;
-    this.render();
-  }
-  
-  private navigateToItineraryDetail(itineraryId: string) {
-    this.currentView = 'itinerary-detail';
-    this.viewData = { itineraryId };
-    this.aiChatContextPost = null;
-    this.aiChatUserContext = null;
-    this.render();
-  }
 
   private navigateToFollowing(userId: string, userName: string) {
     this.currentView = 'following';
@@ -406,36 +386,6 @@ class TravelSocialApp {
     this.currentView = 'explore';
     this.postViewerData = null;
     this.render();
-  }
-
-  private async handleShareItinerary(itineraryId: string) {
-    const itinerary = itineraries.find(i => i.id === itineraryId);
-    if (!itinerary) return;
-
-    try {
-      // Get itinerary items
-      const { data: items } = await supabase
-        .from('itinerary_items')
-        .select('*')
-        .eq('itinerary_id', itineraryId)
-        .order('day', { ascending: true })
-        .order('order', { ascending: true });
-      
-      // Create and show the share itinerary modal
-      const { createShareItineraryModal } = require('./components/SharePostModal');
-      const modal = createShareItineraryModal(
-        itinerary,
-        items || [],
-        () => {}, // onClose - no action needed
-        () => this.loadItineraries() // onSuccess - refresh itineraries
-      );
-      document.body.appendChild(modal);
-      
-      return;
-    } catch (error) {
-      console.error('Error preparing to share itinerary:', error);
-      // Fall back to the original behavior below
-    }
   }
 
   private render() {
@@ -471,7 +421,6 @@ class TravelSocialApp {
           () => this.navigateToFeed(),
           () => this.navigateToAIChat(),
           () => this.navigateToAbout(),
-          () => this.navigateToItineraries(),
           this.currentView
         );
         this.appContainer.appendChild(header);
@@ -482,35 +431,6 @@ class TravelSocialApp {
           (userId) => this.navigateToProfile(userId)
         );
         this.appContainer.appendChild(heatmapPage);
-      } else if (this.currentView === 'itineraries') {
-        // Itineraries page
-        const header = createHeader(
-          () => this.navigateToProfile(),
-          () => this.navigateToExplore(),
-          () => this.navigateToFeed(),
-          () => this.navigateToAIChat(),
-          () => this.navigateToAbout(),
-          () => this.navigateToItineraries(),
-          this.currentView
-        );
-        this.appContainer.appendChild(header);
-        
-        const itineraryPage = createItineraryPage(
-          undefined,
-          () => this.navigateToFeed(),
-          (userId) => this.navigateToProfile(userId),
-          () => this.showConnectionError()
-        );
-        this.appContainer.appendChild(itineraryPage);
-      } else if (this.currentView === 'itinerary-detail') {
-        // Itinerary detail page
-        const itineraryPage = createItineraryPage(
-          this.viewData.itineraryId,
-          () => this.navigateToItineraries(),
-          (userId) => this.navigateToProfile(userId),
-          () => this.showConnectionError()
-        );
-        this.appContainer.appendChild(itineraryPage);
       } else if (this.currentView === 'ai-chat') {
         // AI Chat page
         const aiPage = createAIPage(() => this.navigateToFeed(), this.aiChatContextPost, this.aiChatUserContext);
@@ -554,7 +474,6 @@ class TravelSocialApp {
           () => this.navigateToFeed(),
           () => this.navigateToAIChat(),
           () => this.navigateToAbout(),
-          () => this.navigateToItineraries(),
           this.currentView
         );
         this.appContainer.appendChild(header);
