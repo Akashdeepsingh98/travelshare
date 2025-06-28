@@ -3,8 +3,8 @@ import { authManager } from '../auth';
 import { supabase } from '../lib/supabase';
 import { showAuthModal } from './AuthModal';
 import { createGroupChatsTab } from './GroupChatsTab';
-import { createGroupChatsTab } from './GroupChatsTab';
 import { createGroupChatPage } from './GroupChatPage';
+import { createGroupChatModal } from './GroupChatModal';
 import { createPostCard } from './PostCard';
 
 export function createDirectMessagesPage(
@@ -1494,7 +1494,6 @@ export function createDirectMessagesPage(
     // New group button
     const newGroupBtn = container.querySelector('.new-group-btn') as HTMLButtonElement;
     newGroupBtn?.addEventListener('click', () => {
-      const { createGroupChatModal } = require('./GroupChatModal');
       const modal = createGroupChatModal(
         () => {}, // onClose - no action needed
         (groupId) => {
