@@ -841,10 +841,11 @@ export function createProfilePage(
   async function loadProfileData() {
     const authState = authManager.getAuthState();
     
+    const targetUserId = viewUserId || authState.currentUser?.id;
     
-    // Validate userId is a proper UUID before querying
-    if (!isValidUUID(userId)) {
-      console.error('Invalid UUID format:', userId);
+    // Validate targetUserId is a proper UUID before querying
+    if (targetUserId && !isValidUUID(targetUserId)) {
+      console.error('Invalid UUID format:', targetUserId);
       isLoading = false;
       renderErrorState('Invalid user ID format. Please check the URL and try again.');
       return;
@@ -859,7 +860,6 @@ export function createProfilePage(
       return;
     }
     
-    const targetUserId = viewUserId || authState.currentUser.id;
     isOwnProfile = targetUserId === authState.currentUser.id;
     
     try {
