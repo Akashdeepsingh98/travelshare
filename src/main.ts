@@ -525,6 +525,13 @@ class TravelSocialApp {
   }
 
   private render() {
+    // Clean up existing components before clearing DOM
+    Array.from(this.appContainer.children).forEach(child => {
+      if (child instanceof HTMLElement) {
+        child.dispatchEvent(new CustomEvent('remove'));
+      }
+    });
+    
     this.appContainer.innerHTML = '';
     
     if (this.currentView === 'post-viewer' && this.postViewerData) {
