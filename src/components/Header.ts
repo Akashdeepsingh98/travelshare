@@ -6,7 +6,8 @@ export function createHeader(
   onHomeClick?: () => void, 
   onAIChatClick?: () => void,
   onDirectMessagesClick?: () => void,
-  onCommunitiesClick?: () => void, 
+  onCommunitiesClick?: () => void,
+  onTravelGuidesClick?: () => void,
   onAboutClick?: () => void,
   onItinerariesClick?: () => void,
   currentView?: string
@@ -52,6 +53,10 @@ export function createHeader(
             <button class="nav-btn ${currentView === 'communities' ? 'active' : ''}" data-view="communities">
               <span class="nav-icon">🏘️</span>
               <span class="nav-text">Communities</span>
+            </button>
+            <button class="nav-btn ${currentView === 'travel-guides' ? 'active' : ''}" data-view="travel-guides">
+              <span class="nav-icon">🧭</span>
+              <span class="nav-text">Guides</span>
             </button>
             <button class="nav-btn ${currentView === 'itineraries' ? 'active' : ''}" data-view="itineraries">
               <span class="nav-icon">🗺️</span>
@@ -123,7 +128,9 @@ export function createHeader(
           } else if (view === 'direct-messages' && onDirectMessagesClick) {
             onDirectMessagesClick();
           } else if (view === 'communities' && onCommunitiesClick) {
-            onCommunitiesClick(); 
+            onCommunitiesClick();
+          } else if (view === 'travel-guides' && onTravelGuidesClick) {
+            onTravelGuidesClick();
           } else if (view === 'itineraries' && onItinerariesClick) {
             onItinerariesClick();
           } else if (view === 'about' && onAboutClick) {
@@ -171,6 +178,10 @@ export function createHeader(
               <span class="nav-icon">🏘️</span>
               <span class="nav-text">Communities</span>
             </button>
+            <button class="nav-btn ${currentView === 'travel-guides' ? 'active' : ''}" data-view="travel-guides">
+              <span class="nav-icon">🧭</span>
+              <span class="nav-text">Guides</span>
+            </button>
             <button class="nav-btn ${currentView === 'itineraries' ? 'active' : ''}" data-view="itineraries">
               <span class="nav-icon">🗺️</span>
               <span class="nav-text">Itineraries</span>
@@ -192,13 +203,20 @@ export function createHeader(
         }
       });
       
-      // About navigation for non-authenticated users
-      const aboutBtn = header.querySelector('[data-view="about"]') as HTMLButtonElement;
-      if (aboutBtn && onAboutClick) {
-        aboutBtn.addEventListener('click', () => {
-          onAboutClick();
+      // Navigation buttons for non-authenticated users
+      const navBtns = header.querySelectorAll('.nav-btn') as NodeListOf<HTMLButtonElement>;
+      navBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+          const view = btn.dataset.view;
+          if (view === 'about' && onAboutClick) {
+            onAboutClick();
+          } else if (view === 'travel-guides' && onTravelGuidesClick) {
+            onTravelGuidesClick();
+          } else if (view === 'itineraries' && onItinerariesClick) {
+            onItinerariesClick();
+          }
         });
-      }
+      });
     }
   }
   

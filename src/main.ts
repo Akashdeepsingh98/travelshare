@@ -19,13 +19,15 @@ import { createCommunitiesPage } from './components/CommunitiesPage';
 import { createCommunityDetailPage } from './components/CommunityDetailPage';
 import { createCreateCommunityModal } from './components/CreateCommunityModal';
 import { createSharePostModal } from './components/SharePostModal';
+import { createTravelGuidesPage } from './components/TravelGuidesPage';
+import { createTravelGuideDetail } from './components/TravelGuideDetail';
 import { formatItineraryAsPlainText } from './utils/formatters';
 import { supabase } from './lib/supabase';
 import { testSupabaseConnection, displayConnectionDiagnostics } from './utils/connection-test';
 import { createDirectMessagesPage } from './components/DirectMessagesPage';
 import { createShareToDMModal } from './components/ShareToDMModal';
 
-type AppView = 'feed' | 'profile' | 'explore' | 'post-viewer' | 'following' | 'followers' | 'ai-chat' | 'about' | 'heatmap' | 'itinerary-detail' | 'itineraries' | 'communities' | 'community-detail' | 'direct-messages';
+type AppView = 'feed' | 'profile' | 'explore' | 'post-viewer' | 'following' | 'followers' | 'ai-chat' | 'about' | 'heatmap' | 'itinerary-detail' | 'itineraries' | 'communities' | 'community-detail' | 'direct-messages' | 'travel-guides' | 'travel-guide-detail';
 
 interface ViewData {
   userId?: string;
@@ -33,6 +35,7 @@ interface ViewData {
   communityId?: string;
   itineraryId?: string;
   conversationId?: string;
+  guideId?: string;
 }
 
 class TravelSocialApp {
@@ -96,6 +99,9 @@ class TravelSocialApp {
           break;
         case 'direct-messages':
           this.navigateToDirectMessages();
+          break;
+        case 'travel-guides':
+          this.navigateToTravelGuides();
           break;
         case 'about':
           this.navigateToAbout();
@@ -397,6 +403,22 @@ class TravelSocialApp {
     this.render();
   }
 
+  private navigateToTravelGuides() {
+    this.currentView = 'travel-guides';
+    this.viewData = {};
+    this.aiChatContextPost = null;
+    this.aiChatUserContext = null;
+    this.render();
+  }
+
+  private navigateToTravelGuideDetail(guideId: string) {
+    this.currentView = 'travel-guide-detail';
+    this.viewData = { guideId };
+    this.aiChatContextPost = null;
+    this.aiChatUserContext = null;
+    this.render();
+  }
+
   private navigateToItineraries() {
     this.currentView = 'itineraries';
     this.viewData = {};
@@ -467,6 +489,39 @@ class TravelSocialApp {
     this.aiChatContextPost = null;
     this.aiChatUserContext = null;
     this.render();
+  }
+
+  private editTravelGuide(guideId: string) {
+    // For now, just navigate back to the guide detail
+    // In a future implementation, this could open an edit modal
+    alert('Guide editing will be implemented in a future update.');
+  }
+
+  private async deleteTravelGuide(guideId: string) {
+    try {
+      // First delete all guide content items
+      const { error: itemsError } = await supabase
+        .from('guide_content_items')
+        .delete()
+        .eq('guide_id', guideId);
+      
+      if (itemsError) throw itemsError;
+      
+      // Then delete the guide
+      const { error } = await supabase
+        .from('travel_guides')
+        .delete()
+        .eq('id', guideId);
+      
+      if (error) throw error;
+      
+      // Navigate back to guides list
+      this.navigateToTravelGuides();
+      
+    } catch (error) {
+      console.error('Error deleting travel guide:', error);
+      alert('Failed to delete travel guide. Please try again.');
+    }
   }
 
   private async handleShareItinerary(itineraryId: string) {
@@ -574,6 +629,7 @@ class TravelSocialApp {
           () => this.navigateToAIChat(),
           () => this.navigateToDirectMessages(),
           () => this.navigateToCommunities(),
+          () => this.navigateToTravelGuides(),
           () => this.navigateToItineraries(),
           () => this.navigateToAbout(),
           this.currentView
@@ -595,6 +651,7 @@ class TravelSocialApp {
           () => this.navigateToAIChat(),
           () => this.navigateToDirectMessages(),
           () => this.navigateToCommunities(),
+          () => this.navigateToTravelGuides(),
           () => this.navigateToItineraries(),
           () => this.navigateToAbout(),
           this.currentView
@@ -625,6 +682,7 @@ class TravelSocialApp {
           () => this.navigateToAIChat(),
           () => this.navigateToDirectMessages(),
           () => this.navigateToCommunities(),
+          () => this.navigateToTravelGuides(),
           () => this.navigateToItineraries(),
           () => this.navigateToAbout(),
           this.currentView
@@ -646,6 +704,7 @@ class TravelSocialApp {
           () => this.navigateToAIChat(),
           () => this.navigateToDirectMessages(),
           () => this.navigateToCommunities(),
+          () => this.navigateToTravelGuides(),
           () => this.navigateToItineraries(),
           () => this.navigateToAbout(),
           this.currentView
@@ -670,6 +729,40 @@ class TravelSocialApp {
           () => this.showConnectionError()
         );
         this.appContainer.appendChild(communityDetailPage);
+      } else if (this.currentView === 'travel-guides') {
+        // Travel Guides page
+        const header = createHeader(
+          () => this.navigateToProfile(),
+          () => this.navigateToExplore(),
+          () => this.navigateToFeed(),
+          () => this.navigateToAIChat(),
+          () => this.navigateToDirectMessages(),
+          () => this.navigateToCommunities(),
+          () => this.navigateToTravelGuides(),
+          () => this.navigateToItineraries(),
+          () => this.navigateToAbout(),
+          this.currentView
+        );
+        this.appContainer.appendChild(header);
+        
+        const travelGuidesPage = createTravelGuidesPage(
+          () => this.navigateToFeed(),
+          (guideId) => this.navigateToTravelGuideDetail(guideId),
+          (userId) => this.navigateToProfile(userId)
+        );
+        this.appContainer.appendChild(travelGuidesPage);
+      } else if (this.currentView === 'travel-guide-detail') {
+        // Travel Guide Detail page
+        const travelGuideDetail = createTravelGuideDetail(
+          this.viewData.guideId!,
+          () => this.navigateToTravelGuides(),
+          (post, allPosts) => this.openPostViewer(post, allPosts),
+          (itineraryId) => this.navigateToItineraryDetail(itineraryId),
+          (userId) => this.navigateToProfile(userId),
+          (guideId) => this.editTravelGuide(guideId),
+          (guideId) => this.deleteTravelGuide(guideId)
+        );
+        this.appContainer.appendChild(travelGuideDetail);
       } else if (this.currentView === 'ai-chat') {
         // AI Chat page
         const aiPage = createAIPage(() => this.navigateToFeed(), this.aiChatContextPost, this.aiChatUserContext);
@@ -714,6 +807,7 @@ class TravelSocialApp {
           () => this.navigateToAIChat(),
           () => this.navigateToDirectMessages(),
           () => this.navigateToCommunities(),
+          () => this.navigateToTravelGuides(),
           () => this.navigateToItineraries(),
           () => this.navigateToAbout(),
           this.currentView
@@ -737,6 +831,7 @@ class TravelSocialApp {
           () => this.navigateToAIChat(),
           () => this.navigateToDirectMessages(),
           () => this.navigateToCommunities(),
+          () => this.navigateToTravelGuides(),
           () => this.navigateToItineraries(),
           () => this.navigateToAbout(),
           this.currentView
