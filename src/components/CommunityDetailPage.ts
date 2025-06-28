@@ -19,6 +19,8 @@ export function createCommunityDetailPage(
   let isLoading = false;
   let isSearchingUsers = false;
   let searchResults: User[] = [];
+  let userSearchTimeout: NodeJS.Timeout | null = null;
+  let searchInput: HTMLInputElement | null = null;
   let userRole: 'admin' | 'member' | null = null;
   
   async function loadCommunityData() {
@@ -153,6 +155,371 @@ export function createCommunityDetailPage(
     }
   }
   
+  // Function to handle user search for adding members
+  async function handleSearchUsers(query: string) {
+    // Don't search if query is too short
+    if (query.length < 2) {
+      searchResults = [];
+      isSearchingUsers = false;
+      renderSearchResults();
+      return;
+    }
+    
+    isSearchingUsers = true;
+    renderSearchResults();
+    
+    try {
+      // Get existing member IDs to exclude from search
+      const existingMemberIds = members.map(m => m.user_id);
+      
+      // Search for users by name
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .ilike('name', `%${query}%`)
+        .not('id', 'in', `(${existingMemberIds.join(',')})`)
+        .limit(10);
+      
+      if (error) throw error;
+      
+      searchResults = data || [];
+    } catch (error) {
+      console.error('Error searching users:', error);
+      searchResults = [];
+    } finally {
+      isSearchingUsers = false;
+      renderSearchResults();
+    }
+  }
+  
+  // Function to render search results
+  function renderSearchResults() {
+    const resultsContainer = document.querySelector('.add-member-results');
+    if (!resultsContainer) return;
+    
+    if (isSearchingUsers) {
+      resultsContainer.innerHTML = `
+        <div class="search-loading">
+          <div class="loading-spinner"></div>
+          <p>Searching users...</p>
+        </div>
+      `;
+      resultsContainer.style.display = 'block';
+      return;
+    }
+    
+    if (!searchInput || searchInput.value.length < 2) {
+      resultsContainer.innerHTML = `
+        <div class="search-hint">
+          <p>Type at least 2 characters to search for users</p>
+        </div>
+      `;
+      resultsContainer.style.display = 'block';
+      return;
+    }
+    
+    if (searchResults.length === 0) {
+      resultsContainer.innerHTML = `
+        <div class="search-empty">
+          <p>No users found matching "${searchInput.value}"</p>
+        </div>
+      `;
+      resultsContainer.style.display = 'block';
+      return;
+    }
+    
+    resultsContainer.innerHTML = `
+      <div class="search-results-list">
+        ${searchResults.map(user => `
+          <div class="search-result-item" data-user-id="${user.id}">
+            <img src="${user.avatar_url || 'https://images.pexels.com/photos/1040880/pexels-photo-1040880.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&fit=crop'}" alt="${user.name}" class="result-avatar">
+            <div class="result-info">
+              <h4 class="result-name">${user.name}</h4>
+            </div>
+            <button class="add-user-btn" data-user-id="${user.id}">Add</button>
+          </div>
+        `).join('')}
+      </div>
+    `;
+    
+    resultsContainer.style.display = 'block';
+    
+    // Add event listeners for add buttons
+    const addButtons = resultsContainer.querySelectorAll('.add-user-btn');
+    addButtons.forEach(btn => {
+      btn.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        const userId = (btn as HTMLButtonElement).dataset.userId!;
+        await handleAddMember(userId);
+      });
+    });
+  }
+  
+  // Function to add a member to the community
+  async function handleAddMember(userId: string) {
+    if (!community) return;
+    
+    try {
+      const { error } = await supabase
+        .from('community_members')
+        .insert({
+          community_id: community.id,
+          user_id: userId,
+          role: 'member'
+        });
+      
+      if (error) throw error;
+      
+      // Close the modal
+      const modal = document.querySelector('.add-member-modal');
+      if (modal) {
+        modal.remove();
+      }
+      
+      // Reload community data
+      await loadCommunityData();
+      
+    } catch (error) {
+      console.error('Error adding member:', error);
+      alert('Failed to add member. Please try again.');
+    }
+  }
+  
+  // Function to show the add member modal
+  function showAddMemberModal() {
+    const modal = document.createElement('div');
+    modal.className = 'add-member-modal';
+    
+    modal.innerHTML = `
+      <div class="modal-backdrop"></div>
+      <div class="add-member-content">
+        <div class="add-member-header">
+          <h2>Add Member</h2>
+          <button class="modal-close">✕</button>
+        </div>
+        <div class="add-member-body">
+          <div class="add-member-search">
+            <input type="text" class="add-member-input" placeholder="Search for users by name...">
+          </div>
+          <div class="add-member-results"></div>
+        </div>
+      </div>
+    `;
+    
+    // Add styles
+    const style = document.createElement('style');
+    style.textContent = `
+      .add-member-modal {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.5);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 1000;
+        padding: 1rem;
+      }
+
+      .modal-backdrop {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        z-index: -1;
+      }
+
+      .add-member-content {
+        background: white;
+        border-radius: 1rem;
+        width: 100%;
+        max-width: 500px;
+        max-height: 90vh;
+        overflow-y: auto;
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+      }
+
+      .add-member-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 1.5rem;
+        border-bottom: 1px solid #e2e8f0;
+      }
+
+      .add-member-header h2 {
+        margin: 0;
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: #1e293b;
+      }
+
+      .modal-close {
+        background: none;
+        border: none;
+        font-size: 1.5rem;
+        cursor: pointer;
+        color: #64748b;
+        padding: 0.5rem;
+        border-radius: 0.5rem;
+        transition: all 0.2s;
+      }
+
+      .modal-close:hover {
+        background: #f1f5f9;
+        color: #334155;
+      }
+
+      .add-member-body {
+        padding: 1.5rem;
+      }
+
+      .add-member-search {
+        margin-bottom: 1rem;
+      }
+
+      .add-member-input {
+        width: 100%;
+        padding: 0.75rem 1rem;
+        border: 1px solid #e2e8f0;
+        border-radius: 0.5rem;
+        font-size: 0.875rem;
+      }
+
+      .add-member-input:focus {
+        outline: none;
+        border-color: #667eea;
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+      }
+
+      .add-member-results {
+        max-height: 300px;
+        overflow-y: auto;
+      }
+
+      .search-loading {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 2rem;
+        color: #64748b;
+      }
+
+      .search-loading .loading-spinner {
+        margin-bottom: 0.5rem;
+      }
+
+      .search-empty, .search-hint {
+        text-align: center;
+        padding: 2rem;
+        color: #64748b;
+      }
+
+      .search-results-list {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+      }
+
+      .search-result-item {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 0.75rem;
+        border: 1px solid #e2e8f0;
+        border-radius: 0.5rem;
+        transition: all 0.2s;
+      }
+
+      .search-result-item:hover {
+        background: #f8fafc;
+        border-color: #cbd5e1;
+      }
+
+      .result-avatar {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        object-fit: cover;
+      }
+
+      .result-info {
+        flex: 1;
+      }
+
+      .result-name {
+        font-weight: 600;
+        color: #1e293b;
+        font-size: 0.875rem;
+        margin: 0;
+      }
+
+      .add-user-btn {
+        background: #667eea;
+        color: white;
+        border: none;
+        padding: 0.5rem 0.75rem;
+        border-radius: 0.5rem;
+        cursor: pointer;
+        font-size: 0.75rem;
+        font-weight: 500;
+        transition: all 0.2s;
+      }
+
+      .add-user-btn:hover {
+        background: #5a67d8;
+        transform: translateY(-1px);
+      }
+    `;
+    
+    if (!document.head.querySelector('#add-member-modal-styles')) {
+      style.id = 'add-member-modal-styles';
+      document.head.appendChild(style);
+    }
+    
+    document.body.appendChild(modal);
+    
+    // Get elements
+    const closeBtn = modal.querySelector('.modal-close') as HTMLButtonElement;
+    searchInput = modal.querySelector('.add-member-input') as HTMLInputElement;
+    
+    // Close modal
+    closeBtn.addEventListener('click', () => {
+      modal.remove();
+      searchInput = null;
+    });
+    
+    // Close on backdrop click
+    const backdrop = modal.querySelector('.modal-backdrop') as HTMLElement;
+    backdrop.addEventListener('click', () => {
+      modal.remove();
+      searchInput = null;
+    });
+    
+    // Search input
+    searchInput.addEventListener('input', () => {
+      // Clear previous timeout
+      if (userSearchTimeout) {
+        clearTimeout(userSearchTimeout);
+      }
+      
+      // Set a new timeout to debounce the search
+      userSearchTimeout = setTimeout(() => {
+        handleSearchUsers(searchInput!.value.trim());
+      }, 300);
+    });
+    
+    // Initial search results (showing the hint)
+    renderSearchResults();
+    
+    // Focus the search input
+    searchInput.focus();
+  }
+  
   function renderCommunityDetailPage() {
     const authState = authManager.getAuthState();
     const isUserMember = userRole !== null;
@@ -223,48 +590,16 @@ export function createCommunityDetailPage(
               <div class="admin-actions">
                 <button class="edit-community-btn" data-community-id="${community.id}">
                   <span class="btn-icon">✏️</span>
-                  Edit Community
+                  Edit
                 </button>
                 <button class="manage-members-btn" data-community-id="${community.id}">
                   <span class="btn-icon">👥</span>
-                  Manage Members
+                  Manage
                 </button>
-                <div class="add-member-section">
-                  <button class="toggle-add-member-btn" data-community-id="${community.id}">
-                    <span class="btn-icon">➕</span>
-                    Add Member
-                  </button>
-                  <div class="user-search-container" style="display: none;">
-                    <div class="user-search-input-container">
-                      <input type="text" class="user-search-input" placeholder="Search for users...">
-                      <button class="close-search-btn">✕</button>
-                    </div>
-                    <div class="user-search-results">
-                      ${isSearchingUsers ? `
-                        <div class="user-search-loading">
-                          <div class="loading-spinner"></div>
-                          <span>Searching...</span>
-                        </div>
-                      ` : searchResults.length > 0 ? `
-                        <div class="user-search-list">
-                          ${searchResults.map(user => `
-                            <div class="user-search-item" data-user-id="${user.id}">
-                              <img src="${user.avatar_url || 'https://images.pexels.com/photos/1040880/pexels-photo-1040880.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&fit=crop'}" alt="${user.name}" class="user-search-avatar">
-                              <div class="user-search-info">
-                                <span class="user-search-name">${user.name}</span>
-                              </div>
-                              <button class="add-user-btn" data-user-id="${user.id}">Add</button>
-                            </div>
-                          `).join('')}
-                        </div>
-                      ` : `
-                        <div class="user-search-empty">
-                          <p>No users found. Try a different search term.</p>
-                        </div>
-                      `}
-                    </div>
-                  </div>
-                </div>
+                <button class="add-member-btn" data-community-id="${community.id}">
+                  <span class="btn-icon">➕</span>
+                  Add Member
+                </button>
               </div>
             ` : ''}
           </div>
@@ -547,7 +882,7 @@ export function createCommunityDetailPage(
         margin-top: 1.5rem;
       }
 
-      .edit-community-btn, .manage-members-btn {
+      .edit-community-btn, .manage-members-btn, .add-member-btn {
         display: flex;
         align-items: center;
         gap: 0.5rem;
@@ -561,7 +896,7 @@ export function createCommunityDetailPage(
         transition: all 0.2s;
       }
 
-      .edit-community-btn:hover, .manage-members-btn:hover {
+      .edit-community-btn:hover, .manage-members-btn:hover, .add-member-btn:hover {
         background: #e2e8f0;
       }
 
@@ -1161,63 +1496,16 @@ export function createCommunityDetailPage(
     const editBtn = container.querySelector('.edit-community-btn') as HTMLButtonElement;
     editBtn?.addEventListener('click', () => handleEditCommunity());
     
-    // Manage members button
+    // Manage members button - just switches to the members tab
     const manageBtn = container.querySelector('.manage-members-btn') as HTMLButtonElement;
     manageBtn?.addEventListener('click', () => {
       const membersTab = container.querySelector('.community-tab[data-tab="members"]') as HTMLButtonElement;
       membersTab?.click();
     });
     
-    // Toggle add member section
-    const toggleAddMemberBtn = container.querySelector('.toggle-add-member-btn') as HTMLButtonElement;
-    toggleAddMemberBtn?.addEventListener('click', () => {
-      const searchContainer = container.querySelector('.user-search-container') as HTMLElement;
-      if (searchContainer) {
-        const isVisible = searchContainer.style.display !== 'none';
-        searchContainer.style.display = isVisible ? 'none' : 'block';
-        
-        // Focus search input when showing
-        if (!isVisible) {
-          const searchInput = searchContainer.querySelector('.user-search-input') as HTMLInputElement;
-          searchInput?.focus();
-        }
-      }
-    });
-    
-    // Close search button
-    const closeSearchBtn = container.querySelector('.close-search-btn') as HTMLButtonElement;
-    closeSearchBtn?.addEventListener('click', () => {
-      const searchContainer = container.querySelector('.user-search-container') as HTMLElement;
-      if (searchContainer) {
-        searchContainer.style.display = 'none';
-      }
-    });
-    
-    // User search input
-    const searchInput = container.querySelector('.user-search-input') as HTMLInputElement;
-    let searchTimeout: NodeJS.Timeout;
-    searchInput?.addEventListener('input', () => {
-      clearTimeout(searchTimeout);
-      
-      // Show loading state
-      isSearchingUsers = true;
-      renderCommunityDetailPage();
-      
-      // Debounce search
-      searchTimeout = setTimeout(() => {
-        searchUsers(searchInput.value.trim());
-      }, 500);
-    });
-    
-    // Add user buttons
-    const addUserBtns = container.querySelectorAll('.add-user-btn');
-    addUserBtns.forEach(btn => {
-      btn.addEventListener('click', async (e) => {
-        e.stopPropagation();
-        const userId = (btn as HTMLButtonElement).dataset.userId!;
-        await handleAddMember(userId);
-      });
-    });
+    // Add member button
+    const addMemberBtn = container.querySelector('.add-member-btn') as HTMLButtonElement;
+    addMemberBtn?.addEventListener('click', () => showAddMemberModal());
     
     // Share post button
     const shareBtn = container.querySelector('.share-post-btn') as HTMLButtonElement;
@@ -1551,58 +1839,6 @@ export function createCommunityDetailPage(
     } finally {
       isSearchingUsers = false;
       renderCommunityDetailPage();
-    }
-  }
-  
-  // Add a user to the community
-  async function handleAddMember(userId: string) {
-    const authState = authManager.getAuthState();
-    if (!authState.isAuthenticated || !authState.currentUser) return;
-    
-    // Verify admin status
-    if (userRole !== 'admin') {
-      alert('Only community admins can add members');
-      return;
-    }
-    
-    try {
-      // Add the user as a member
-      const { error } = await supabase
-        .from('community_members')
-        .insert({
-          community_id: communityId,
-          user_id: userId,
-          role: 'member'
-        });
-      
-      if (error) {
-        // Handle duplicate member error
-        if (error.code === '23505') {
-          alert('This user is already a member of the community');
-        } else {
-          throw error;
-        }
-      } else {
-        // Success - reload community data
-        await loadCommunityData();
-        
-        // Clear search
-        const searchInput = container.querySelector('.user-search-input') as HTMLInputElement;
-        if (searchInput) {
-          searchInput.value = '';
-        }
-        searchResults = [];
-        
-        // Hide search container
-        const searchContainer = container.querySelector('.user-search-container') as HTMLElement;
-        if (searchContainer) {
-          searchContainer.style.display = 'none';
-        }
-      }
-      
-    } catch (error) {
-      console.error('Error adding member:', error);
-      alert('Failed to add member. Please try again.');
     }
   }
   
