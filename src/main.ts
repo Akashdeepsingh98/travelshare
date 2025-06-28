@@ -40,6 +40,10 @@ interface ViewData {
 
 class TravelSocialApp {
   private posts: Post[] = [];
+  private postsLoading: boolean = false;
+  private hasMorePosts: boolean = true;
+  private lastLoadedPostTimestamp: string | null = null;
+  private postsPerPage: number = 10;
   private appContainer: HTMLElement;
   private currentView: AppView = 'feed';
   private postViewerData: { post: Post; allPosts: Post[] } | null = null;
@@ -58,12 +62,15 @@ class TravelSocialApp {
     this.setupAuthModal();
     this.setupBoltBadge();
     this.setupHashNavigation();
+    this.postsLoading = false;
+    this.hasMorePosts = true;
+    this.lastLoadedPostTimestamp = null;
     this.render();
-    this.loadPosts();
+    this.loadPosts(true);
     
     // Listen for auth changes to reload posts
     authManager.onAuthChange(() => {
-      this.loadPosts();
+      this.loadPosts(true);
     });
   }
 
@@ -128,8 +135,21 @@ class TravelSocialApp {
     }
   }
 
-  private async loadPosts() {
+  private async loadPosts(isInitialLoad: boolean = false, loadMore: boolean = false) {
     try {
+      if (isInitialLoad) {
+        this.posts = [];
+        this.lastLoadedPostTimestamp = null;
+        this.hasMorePosts = true;
+      }
+      
+      if (this.postsLoading) return;
+      this.postsLoading = true;
+      
+      if (this.currentView === 'feed') {
+        this.renderPosts(loadMore);
+      }
+      
       const authState = authManager.getAuthState();
       
       let query = supabase
@@ -142,7 +162,13 @@ class TravelSocialApp {
             user:profiles(*)
           )
         `)
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .limit(this.postsPerPage);
+        
+      // If loading more, add a filter to get posts older than the last loaded post
+      if (loadMore && this.lastLoadedPostTimestamp) {
+        query = query.lt('created_at', this.lastLoadedPostTimestamp);
+      }
 
       // If user is authenticated, load posts from followed users for home feed
       if (authState.isAuthenticated && authState.currentUser && this.currentView === 'feed') {
@@ -165,7 +191,7 @@ class TravelSocialApp {
         }
       }
 
-      const { data: posts, error } = await query;
+      const { data: newPosts, error } = await query;
 
       if (error) {
         console.error('Error fetching posts:', error);
@@ -185,6 +211,13 @@ class TravelSocialApp {
         return;
       }
 
+      // Check if there are more posts to load
+      this.hasMorePosts = newPosts && newPosts.length === this.postsPerPage;
+      
+      // Update the timestamp of the last loaded post for pagination
+      if (newPosts && newPosts.length > 0) {
+        this.lastLoadedPostTimestamp = newPosts[newPosts.length - 1].created_at;
+      }
       // If user is authenticated, check which posts they've liked
       if (authState.isAuthenticated && authState.currentUser) {
         const { data: likes } = await supabase
@@ -194,19 +227,25 @@ class TravelSocialApp {
 
         const likedPostIds = new Set(likes?.map(like => like.post_id) || []);
 
-        this.posts = posts.map(post => ({
-          ...post,
-          user_has_liked: likedPostIds.has(post.id)
-        }));
+        const processedPosts = newPosts.map(post => ({
+            ...post,
+            user_has_liked: likedPostIds.has(post.id)
+          }));
+          
+        // Append new posts to existing posts if loading more
+        this.posts = loadMore ? [...this.posts, ...processedPosts] : processedPosts;
       } else {
-        this.posts = posts.map(post => ({
-          ...post,
-          user_has_liked: false
-        }));
+        const processedPosts = newPosts.map(post => ({
+            ...post,
+            user_has_liked: false
+          }));
+          
+        // Append new posts to existing posts if loading more
+        this.posts = loadMore ? [...this.posts, ...processedPosts] : processedPosts;
       }
 
       if (this.currentView === 'feed') {
-        this.renderPosts();
+        this.renderPosts(loadMore);
       }
     } catch (error) {
       console.error('Error loading posts:', error);
@@ -228,6 +267,17 @@ class TravelSocialApp {
         this.showGenericError(`An unexpected error occurred: ${error?.message || 'Unknown error'}. Please try again.`);
       }
     }
+    finally {
+      this.postsLoading = false;
+      if (this.currentView === 'feed') {
+        this.renderPosts(loadMore);
+      }
+    }
+  }
+  
+  private loadMorePosts() {
+    if (!this.hasMorePosts || this.postsLoading) return;
+    this.loadPosts(false, true);
   }
 
   private async showConnectionError() {
@@ -355,8 +405,8 @@ class TravelSocialApp {
     this.viewData = {};
     this.aiChatContextPost = null;
     this.aiChatUserContext = null;
+    this.loadPosts(true);
     this.render();
-    this.loadPosts();
   }
 
   private navigateToExplore() {
@@ -851,24 +901,38 @@ class TravelSocialApp {
         
         // Posts feed
         const feedSection = document.createElement('section');
-        feedSection.className = 'posts-feed';
+        feedSection.className = 'posts-feed-container';
         feedSection.id = 'posts-feed';
         
         main.appendChild(feedSection);
         this.appContainer.appendChild(main);
         
-        this.renderPosts();
+        this.renderPosts(false);
       }
     }
   }
 
-  private renderPosts() {
-    const feedSection = document.querySelector('#posts-feed') as HTMLElement;
+  private renderPosts(append: boolean = false) {
+    const feedSection = document.getElementById('posts-feed') as HTMLElement;
     if (!feedSection) return;
 
-    feedSection.innerHTML = '';
+    // If not appending, clear the feed section
+    if (!append) {
+      feedSection.innerHTML = '';
+    }
     
-    if (this.posts.length === 0) {
+    // Remove existing load more button and loading indicator if present
+    const existingLoadMoreBtn = feedSection.querySelector('.load-more-container');
+    if (existingLoadMoreBtn) {
+      existingLoadMoreBtn.remove();
+    }
+    
+    const existingLoadingIndicator = feedSection.querySelector('.posts-loading-more');
+    if (existingLoadingIndicator) {
+      existingLoadingIndicator.remove();
+    }
+    
+    if (this.posts.length === 0 && !this.postsLoading) {
       const authState = authManager.getAuthState();
       if (authState.isAuthenticated) {
         feedSection.innerHTML = `
@@ -888,7 +952,12 @@ class TravelSocialApp {
       return;
     }
     
-    this.posts.forEach(post => {
+    // If appending, only render the new posts
+    const postsToRender = append ? 
+      this.posts.slice(-(Math.min(this.posts.length, this.postsPerPage))) : 
+      this.posts;
+    
+    postsToRender.forEach(post => {
       const postCard = createPostCard(
         post,
         (postId) => this.handleLike(postId),
@@ -899,7 +968,7 @@ class TravelSocialApp {
         (userId) => this.navigateToProfile(userId),
         false, // Not own profile
         undefined,
-        (post) => this.navigateToAIChat(post),
+        (post) => this.navigateToAIChat(post), 
         (post) => this.handleSharePostToDM(post) // Add handler for sharing to DM
       );
       
@@ -915,14 +984,46 @@ class TravelSocialApp {
         } else {
           // Share to community
           const postToShare = this.posts.find(p => p.id === postId);
-          if (postToShare) {
-            this.openSharePostModal(postToShare);
+          if (this.currentView === 'feed') {            
+            // Find the post card and update just the comments section
+            const postCard = document.querySelector(`[data-post-id="${post.id}"]`);
+            if (postCard) {
+              const commentsSection = postCard.querySelector('.comments-list');
+              if (commentsSection) {
+                const commentHTML = createCommentHTML(data, (userId) => this.navigateToProfile(userId));
+                commentsSection.innerHTML += commentHTML;
+              }
+            }
           }
         }
       });
       
       feedSection.appendChild(postCard);
     });
+    
+    // Add loading indicator if posts are being loaded
+    if (this.postsLoading) {
+      const loadingIndicator = document.createElement('div');
+      loadingIndicator.className = 'posts-loading-more';
+      loadingIndicator.innerHTML = `
+        <div class="loading-spinner"></div>
+        <p>Loading more posts...</p>
+      `;
+      feedSection.appendChild(loadingIndicator);
+    }
+    
+    // Add "Load More" button if there are more posts to load
+    if (this.hasMorePosts && !this.postsLoading) {
+      const loadMoreContainer = document.createElement('div');
+      loadMoreContainer.className = 'load-more-container';
+      loadMoreContainer.innerHTML = `
+        <button class="load-more-btn">Load More</button>
+      `;
+      feedSection.appendChild(loadMoreContainer);
+      
+      const loadMoreBtn = loadMoreContainer.querySelector('.load-more-btn') as HTMLButtonElement;
+      loadMoreBtn.addEventListener('click', () => this.loadMorePosts());
+    }
   }
 
   private handleCreatePost(post: Post) {
@@ -962,7 +1063,7 @@ class TravelSocialApp {
       }
       
       if (this.currentView === 'feed') {
-        this.renderPosts();
+        this.renderPosts(false);
       }
     } catch (error) {
       console.error('Error handling like:', error);
@@ -1016,7 +1117,7 @@ class TravelSocialApp {
       
       // Reload posts to include new followed user's posts
       if (this.currentView === 'feed') {
-        this.loadPosts();
+        this.loadPosts(true);
       }
     } catch (error) {
       console.error('Error following user:', error);
@@ -1036,7 +1137,7 @@ class TravelSocialApp {
       
       // Reload posts to exclude unfollowed user's posts
       if (this.currentView === 'feed') {
-        this.loadPosts();
+        this.loadPosts(true);
       }
     } catch (error) {
       console.error('Error unfollowing user:', error);
@@ -1045,4 +1146,37 @@ class TravelSocialApp {
 }
 
 // Initialize the app
-new TravelSocialApp();
+const app = new TravelSocialApp();
+
+// Helper function to create comment HTML (copied from PostCard component)
+function createCommentHTML(comment: Comment, onUserClick?: (userId: string) => void): string {
+  const timeAgo = getTimeAgo(new Date(comment.created_at));
+  const userAvatarUrl = comment.user?.avatar_url || 'https://images.pexels.com/photos/1040880/pexels-photo-1040880.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&fit=crop';
+  const userName = comment.user?.name || 'Unknown User';
+  
+  return `
+    <div class="comment">
+      <div class="comment-user-clickable" ${onUserClick ? 'style="cursor: pointer;" data-user-id="' + comment.user_id + '"' : ''}>
+        <img src="${userAvatarUrl}" alt="${userName}" class="user-avatar-small">
+      </div>
+      <div class="comment-content">
+        <div class="comment-header">
+          <span class="comment-user ${onUserClick ? 'clickable' : ''}" ${onUserClick ? 'data-user-id="' + comment.user_id + '"' : ''}>${userName}</span>
+          <span class="comment-time">${timeAgo}</span>
+        </div>
+        <p class="comment-text">${comment.content}</p>
+      </div>
+    </div>
+  `;
+}
+
+// Helper function to get time ago (copied from PostCard component)
+function getTimeAgo(date: Date): string {
+  const now = new Date();
+  const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
+  
+  if (diffInSeconds < 60) return 'Just now';
+  if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)}m ago`;
+  if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)}h ago`;
+  return `${Math.floor(diffInSeconds / 86400)}d ago`;
+}

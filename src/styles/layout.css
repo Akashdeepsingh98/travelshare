@@ -176,10 +176,45 @@
 }
 
 /* Posts feed */
-.posts-feed {
+.posts-feed-container {
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
+}
+
+.load-more-container {
+  display: flex;
+  justify-content: center;
+  margin: 1rem 0 2rem;
+}
+
+.load-more-btn {
+  background: #667eea;
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+.load-more-btn:hover {
+  background: #5a67d8;
+  transform: translateY(-1px);
+}
+
+.posts-loading-more {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  color: #64748b;
+}
+
+.posts-loading-more .loading-spinner {
+  margin-bottom: 0.5rem;
 }
 
 .connection-diagnostics {
