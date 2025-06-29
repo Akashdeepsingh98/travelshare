@@ -47,25 +47,3 @@ If you're using a different development server or port, make sure to add those U
 
 ## Production Deployment
 When you deploy your app to production, remember to add your production domain to the CORS configuration in the same way.
-
-## Troubleshooting Authentication Issues
-
-### Invalid Refresh Token Error
-If you see "Invalid Refresh Token: Refresh Token Not Found" errors:
-
-1. **Automatic Fix**: The application will attempt to clear corrupted session data automatically
-2. **Manual Fix** (if automatic doesn't work):
-   - Open browser DevTools (F12)
-   - Go to Application/Storage tab
-   - Clear all Local Storage and Session Storage for this site
-   - Perform a hard refresh: **Ctrl+F5** (Windows/Linux) or **Cmd+Shift+R** (Mac)
-
-### Why This Happens
-- Browser stored an invalid or expired authentication token
-- Supabase server no longer recognizes the stored session
-- Can occur after server maintenance or configuration changes
-
-### Prevention
-- Avoid manually editing browser storage
-- Use the app's logout function instead of clearing storage manually
-- Keep your browser updated to handle authentication properly

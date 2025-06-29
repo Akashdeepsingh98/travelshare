@@ -63,11 +63,15 @@ class AuthManager {
     if (error.message && (
       error.message.includes('Invalid Refresh Token') ||
       error.message.includes('refresh_token_not_found') ||
-      error.message.includes('Refresh Token Not Found') ||
-      error.message.includes('refresh_token_not_found')
+      error.message.includes('Refresh Token Not Found')
     )) {
       console.log('Invalid refresh token detected, clearing session...');
-      await this.clearCorruptedSession();
+      try {
+        // Clear the invalid session
+        await supabase.auth.signOut();
+      } catch (signOutError) {
+        console.error('Error signing out:', signOutError);
+      }
     }
     
     this.authState = {
@@ -76,61 +80,6 @@ class AuthManager {
       loading: false
     };
     this.notifyListeners();
-  }
-
-  private async clearCorruptedSession() {
-    try {
-      console.log('🧹 Clearing corrupted authentication session...');
-      
-      // Force sign out to clear server-side session
-      try {
-        // Clear the invalid session
-        await supabase.auth.signOut();
-      } catch (signOutError) {
-        console.error('Error signing out:', signOutError);
-      }
-      
-      // Clear local storage items related to Supabase auth
-      const keysToRemove = [];
-      for (let i = 0; i < localStorage.length; i++) {
-        const key = localStorage.key(i);
-        if (key && key.startsWith('sb-')) {
-          keysToRemove.push(key);
-        }
-      }
-      
-      keysToRemove.forEach(key => {
-        localStorage.removeItem(key);
-        console.log(`Removed corrupted auth data: ${key}`);
-      });
-      
-      // Also clear session storage
-      const sessionKeysToRemove = [];
-      for (let i = 0; i < sessionStorage.length; i++) {
-        const key = sessionStorage.key(i);
-        if (key && key.startsWith('sb-')) {
-          sessionKeysToRemove.push(key);
-        }
-      }
-      
-      sessionKeysToRemove.forEach(key => {
-        sessionStorage.removeItem(key);
-        console.log(`Removed corrupted session data: ${key}`);
-      });
-      
-      console.log('✅ Corrupted session cleared successfully');
-      console.log('💡 If you continue to see authentication issues, please:');
-      console.log('   1. Clear all site data for this domain in your browser');
-      console.log('   2. Perform a hard refresh (Ctrl+F5 or Cmd+Shift+R)');
-      
-    } catch (error) {
-      console.error('Error clearing corrupted session:', error);
-      console.log('⚠️  Manual intervention may be required:');
-      console.log('   1. Open browser DevTools (F12)');
-      console.log('   2. Go to Application/Storage tab');
-      console.log('   3. Clear Local Storage and Session Storage for this site');
-      console.log('   4. Refresh the page');
-    }
   }
 
   private async handleConnectionError(error: any) {
@@ -184,13 +133,16 @@ class AuthManager {
       (error.message && (
         error.message.includes('Invalid Refresh Token') ||
         error.message.includes('refresh_token_not_found') ||
-        error.message.includes('Refresh Token Not Found') ||
-        error.message.includes('refresh_token_not_found')
+        error.message.includes('Refresh Token Not Found')
       )) ||
       (error.code === 'refresh_token_not_found')
     )) {
       console.log('Invalid refresh token detected in connection error, clearing session...');
-      await this.clearCorruptedSession();
+      try {
+        await supabase.auth.signOut();
+      } catch (signOutError) {
+        console.error('Error signing out:', signOutError);
+      }
     }
     
     this.authState = {
@@ -286,11 +238,14 @@ class AuthManager {
         if (error.message && (
           error.message.includes('Invalid Refresh Token') ||
           error.message.includes('refresh_token_not_found') ||
-          error.message.includes('Refresh Token Not Found') ||
-          error.message.includes('refresh_token_not_found')
+          error.message.includes('Refresh Token Not Found')
         )) {
           console.log('Invalid refresh token during login, clearing session...');
-          await this.clearCorruptedSession();
+          try {
+            await supabase.auth.signOut();
+          } catch (signOutError) {
+            console.error('Error signing out during login:', signOutError);
+          }
         }
         
         return { success: false, error: error.message };
