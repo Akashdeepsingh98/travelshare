@@ -797,9 +797,9 @@ export function createExplorePage(
     isLoading = true;
     
     try {
-      // Create a timeout promise that rejects after 15 seconds
+      // Create a timeout promise that rejects after 60 seconds
       const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error('Request timed out after 30 seconds')), 30000);
+        setTimeout(() => reject(new Error('Request timed out after 60 seconds')), 60000);
       });
       
       const authState = authManager.getAuthState();
@@ -818,7 +818,7 @@ export function createExplorePage(
           `)
           .order('created_at', { ascending: false }),
         timeoutPromise.then(() => {
-          throw new Error('Request timed out after 30 seconds');
+          throw new Error('Request timed out after 60 seconds');
         })
       ]);
 
@@ -832,7 +832,7 @@ export function createExplorePage(
             .select('post_id')
             .eq('user_id', authState.currentUser.id),
           timeoutPromise.then(() => {
-            // Return empty data if timed out
+            // Return empty data if likes query timed out
             return { data: [] };
           })
         ]);
@@ -960,9 +960,9 @@ export function createExplorePage(
     }
     
     try {
-      // Create a timeout promise that rejects after 10 seconds
+      // Create a timeout promise that rejects after 30 seconds
       const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error('Search request timed out after 10 seconds')), 10000);
+        setTimeout(() => reject(new Error('Search request timed out after 30 seconds')), 30000);
       });
       const { data: users, error } = await Promise.race([
         supabase
@@ -972,7 +972,7 @@ export function createExplorePage(
           .ilike('name', `%${query}%`)
           .limit(10),
         timeoutPromise.then(() => {
-          throw new Error('Search request timed out after 10 seconds');
+          throw new Error('Search request timed out after 30 seconds');
         })
       ]);
       
@@ -984,7 +984,7 @@ export function createExplorePage(
       
       filteredProfiles = profiles || [];
     } catch (error) {
-      console.error('Error searching users:', error.message);
+      console.error('Error searching users:', error);
       filteredProfiles = [];
     }
   }
