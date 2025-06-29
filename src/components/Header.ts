@@ -108,7 +108,7 @@ export function createHeader(
       navBtns.forEach(btn => {
         btn.addEventListener('click', () => {
           const view = btn.dataset.view;
-          
+
           if (view === 'feed' && onHomeClick) {
             onHomeClick(true); // Always force reload when clicking Home
           } else if (view === 'explore' && onExploreClick) {

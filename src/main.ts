@@ -48,22 +48,22 @@ function initApp() {
   document.body.appendChild(boltBadge);
 
   // Parse the initial hash
-  parseHash();
+  parseHash(false);
 
   // Listen for hash changes
-  window.addEventListener('hashchange', parseHash);
+  window.addEventListener('hashchange', () => parseHash(true));
 
   // Listen for auth changes
   authManager.onAuthChange(() => {
-    renderApp();
+    renderApp(false);
   });
 
   // Initial render
-  renderApp();
+  renderApp(false);
 }
 
 // Parse the URL hash to determine the current view
-function parseHash() {
+function parseHash(fromHashChange: boolean = false) {
   const hash = window.location.hash.substring(1);
   
   if (!hash) {
@@ -74,7 +74,7 @@ function parseHash() {
     currentGuideId = null;
     currentItineraryId = null;
     currentConversationId = null;
-    renderApp();
+    renderApp(fromHashChange);
     return;
   }
 
@@ -136,7 +136,7 @@ function parseHash() {
       currentConversationId = null;
       break;
   }
-  renderApp();
+  renderApp(fromHashChange);
 }
 
 // Navigate to a specific view
@@ -146,12 +146,18 @@ function navigateTo(view: string, id?: string, forceReload: boolean = false) {
     hash += `/${id}`;
   }
   
-  if (forceReload) {
-    // If force reload is requested, update the hash and then force a render
-    window.location.hash = hash;
+  // Check if we're navigating to the same view
+  const currentHash = window.location.hash.substring(1);
+  const isSameView = currentHash === hash;
+  
+  // Update the hash (this will trigger hashchange event if hash is different)
+  window.location.hash = hash;
+  
+  // If we're navigating to the same view and force reload is requested,
+  // we need to manually trigger the render since hashchange won't fire
+  if (isSameView && forceReload) {
+    console.log('Force reloading same view:', view);
     renderApp(true);
-  } else {
-    window.location.hash = hash;
   }
 }
 
@@ -242,12 +248,15 @@ function renderFeedPage(container: HTMLElement, forceReload: boolean = false) {
 
 // Load posts for the feed
 async function loadPosts(container: HTMLElement, userId?: string, forceReload: boolean = false) {
+  // Show loading state immediately
   container.innerHTML = `
     <div class="posts-loading">
       <div class="loading-spinner"></div>
       <p>Loading posts...</p>
     </div>
   `;
+  
+  console.log('Loading posts with forceReload:', forceReload);
 
   try {
     // Create a timeout promise that rejects after 30 seconds
@@ -342,7 +351,7 @@ async function loadPosts(container: HTMLElement, userId?: string, forceReload: b
       posts.forEach(post => {
         const postCard = createPostCard(
           post,
-          handleCommentPost,
+          handleCommentPost, // Use the comment handler
           handleFollowUser,
           handleUnfollowUser,
           true, // Show follow button
@@ -528,7 +537,7 @@ async function renderPostPage(container: HTMLElement) {
       post,
       [post], // Array with just this post
       () => navigateTo('feed'),
-      handleCommentPost,
+      handleCommentPost, // Use the comment handler
       handleFollowUser,
       handleUnfollowUser,
       (post) => navigateTo('ai-chat'),
