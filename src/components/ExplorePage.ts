@@ -7,7 +7,8 @@ import { displayConnectionDiagnostics } from '../utils/connection-test';
 export function createExplorePage(
   onPostSelect: (post: Post, allPosts: Post[]) => void,
   onNavigateBack: () => void,
-  onUserClick?: (userId: string) => void
+  onUserClick?: (userId: string) => void,
+  forceReload: boolean = false
 ): HTMLElement {
   const container = document.createElement('div');
   container.className = 'explore-page';
@@ -793,7 +794,7 @@ export function createExplorePage(
   let locationStatus: 'idle' | 'loading' | 'success' | 'error' = 'idle';
   
   async function loadExplorePosts() {
-    if (isLoading) return;
+    if (isLoading && !forceReload) return;
     isLoading = true;
     
     try {

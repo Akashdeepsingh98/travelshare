@@ -140,43 +140,31 @@ function parseHash() {
 }
 
 // Navigate to a specific view
-function navigateTo(view: string, id?: string) {
-  const previousView = currentView;
-  const previousId = view === 'profile' ? currentUserId : 
-                    view === 'post' ? currentPostId : 
-                    view === 'communities' ? currentCommunityId : 
-                    view === 'travel-guides' ? currentGuideId : 
-                    view === 'itineraries' ? currentItineraryId : 
-                    view === 'messages' ? currentConversationId : null;
-
+function navigateTo(view: string, id?: string, forceReload: boolean = false) {
   let hash = view;
   if (id) {
     hash += `/${id}`;
   }
   
-  // If navigating to the same view with the same ID, force a reload
-  if (view === previousView && id === previousId) {
-    // Set the hash to a temporary value and then back to force a reload
-    window.location.hash = '';
-    setTimeout(() => {
-      window.location.hash = hash;
-      renderApp(); // Force immediate re-render
-    }, 0);
+  if (forceReload) {
+    // If force reload is requested, update the hash and then force a render
+    window.location.hash = hash;
+    renderApp(true);
   } else {
     window.location.hash = hash;
   }
 }
 
 // Render the application based on the current view
-async function renderApp() {
+async function renderApp(forceReload: boolean = false) {
   // Clear the app container
   appContainer.innerHTML = '';
 
   // Create and append the header
   const header = createHeader(
     () => navigateTo('profile'), // Profile click
-    () => navigateTo('explore'), // Explore click
-    () => navigateTo('feed'), // Home click
+    (forceReload) => navigateTo('explore', undefined, forceReload), // Explore click
+    (forceReload) => navigateTo('feed', undefined, forceReload), // Home click
     () => navigateTo('ai-chat'), // AI chat click
     () => navigateTo('messages'), // Direct messages click
     () => navigateTo('communities'), // Communities click
@@ -195,7 +183,7 @@ async function renderApp() {
   // Render the appropriate view
   switch (currentView) {
     case 'feed':
-      renderFeedPage(mainContent);
+      renderFeedPage(mainContent, forceReload);
       break;
     case 'profile':
       renderProfilePage(mainContent);
@@ -204,7 +192,7 @@ async function renderApp() {
       renderPostPage(mainContent);
       break;
     case 'explore':
-      renderExplorePage(mainContent);
+      renderExplorePage(mainContent, forceReload);
       break;
     case 'ai-chat':
       renderAIChatPage(mainContent);
@@ -234,7 +222,7 @@ async function renderApp() {
 }
 
 // Render the feed page
-function renderFeedPage(container: HTMLElement) {
+function renderFeedPage(container: HTMLElement, forceReload: boolean = false) {
   // Create post form
   const createPostSection = document.createElement('div');
   createPostSection.className = 'create-post-section';
@@ -249,11 +237,11 @@ function renderFeedPage(container: HTMLElement) {
   container.appendChild(postsFeedContainer);
 
   // Load posts
-  loadPosts(postsFeedContainer);
+  loadPosts(postsFeedContainer, undefined, forceReload);
 }
 
 // Load posts for the feed
-async function loadPosts(container: HTMLElement, userId?: string) {
+async function loadPosts(container: HTMLElement, userId?: string, forceReload: boolean = false) {
   container.innerHTML = `
     <div class="posts-loading">
       <div class="loading-spinner"></div>
@@ -571,11 +559,12 @@ async function renderPostPage(container: HTMLElement) {
 }
 
 // Render the explore page
-function renderExplorePage(container: HTMLElement) {
+function renderExplorePage(container: HTMLElement, forceReload: boolean = false) {
   const explorePage = createExplorePage(
     (post, allPosts) => handleViewPost(post.id, allPosts),
     () => navigateTo('feed'),
-    (userId) => navigateTo('profile', userId)
+    (userId) => navigateTo('profile', userId),
+    forceReload
   );
 
   container.appendChild(explorePage);

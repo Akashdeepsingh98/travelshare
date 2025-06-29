@@ -2,8 +2,8 @@ import { authManager } from '../auth';
 
 export function createHeader(
   onProfileClick?: () => void, 
-  onExploreClick?: () => void, 
-  onHomeClick?: () => void, 
+  onExploreClick?: (forceReload?: boolean) => void, 
+  onHomeClick?: (forceReload?: boolean) => void, 
   onAIChatClick?: () => void,
   onDirectMessagesClick?: () => void,
   onCommunitiesClick?: () => void,
@@ -107,11 +107,13 @@ export function createHeader(
       // Navigation buttons
       navBtns.forEach(btn => {
         btn.addEventListener('click', () => {
-          const view = btn.dataset.view;
+          const view = btn.dataset.view!;
+          const isCurrentView = view === currentView;
+          
           if (view === 'feed' && onHomeClick) {
-            onHomeClick();
+            onHomeClick(isCurrentView);
           } else if (view === 'explore' && onExploreClick) {
-            onExploreClick();
+            onExploreClick(isCurrentView);
           } else if (view === 'heatmap' && onExploreClick) {
             // Navigate to heatmap using explore click handler
             window.location.hash = 'heatmap';
