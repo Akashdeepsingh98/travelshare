@@ -902,8 +902,7 @@ export function createExplorePage(
     let postsToFilter = allPosts;
     
     // Apply nearby filter first if enabled
-    if (nearbySearchEnabled && userLocation) {
-      postsToFilter = allPosts.filter(post => {
+          undefined, // No like handler needed
         if (!post.latitude || !post.longitude) return false;
         
         const distance = calculateDistance(

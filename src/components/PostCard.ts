@@ -4,8 +4,8 @@ import { showAuthModal } from './AuthModal';
 import { supabase } from '../lib/supabase';
 
 export function createPostCard(
-  post: Post, 
-  onComment: (postId: string, comment: string) => void,
+  post: Post,
+  onLike?: (postId: string) => void,
   onFollow?: (userId: string) => void,
   onUnfollow?: (userId: string) => void,
   showFollowButton: boolean = false,
@@ -365,27 +365,74 @@ export function createPostCard(
               return;
             }
             
-            submitComment();
+            await submitComment();
           }
         });
         
-        commentSubmitBtn.addEventListener('click', async () => {
+        commentSubmitBtn.addEventListener('click', () => {
           // Check if user is approved
-          const isApproved = await checkUserApprovalStatus();
-          if (!isApproved) {
-            alert('Your account needs to be approved before you can comment. Please wait for admin approval.');
-            return;
-          }
-          
-          submitComment();
+          checkUserApprovalStatus().then(isApproved => {
+            if (!isApproved) {
+              alert('Your account needs to be approved before you can comment. Please wait for admin approval.');
+              return;
+            }
+            
+            submitComment();
+          });
         });
         
-        function submitComment() {
+        async function submitComment() {
           const commentText = commentInput.value.trim();
           if (commentText) {
-            onComment(postData.id, commentText);
-            commentInput.value = '';
-            commentSubmitBtn.disabled = true;
+            try {
+              const authState = authManager.getAuthState();
+              if (!authState.isAuthenticated || !authState.currentUser) return;
+              
+              // Disable the button while submitting
+              commentSubmitBtn.disabled = true;
+              
+              // Insert the comment directly
+              const { data, error } = await supabase
+                .from('comments')
+                .insert({
+                  post_id: postData.id,
+                  user_id: authState.currentUser.id,
+                  content: commentText
+                })
+                .select(`
+                  *,
+                  user:profiles(*)
+                `)
+                .single();
+              
+              if (error) {
+                console.error('Error adding comment:', error);
+                alert('Failed to add comment. Please try again.');
+                commentSubmitBtn.disabled = false;
+                return;
+              }
+              
+              // Add the new comment to the post data
+              if (!postData.comments) {
+                postData.comments = [];
+              }
+              
+              postData.comments.push(data);
+              
+              // Clear the input
+              commentInput.value = '';
+              commentSubmitBtn.disabled = true;
+              
+              // Re-render the comments section
+              const commentsList = card.querySelector('.comments-list');
+              if (commentsList) {
+                commentsList.innerHTML = (postData.comments || []).map(comment => createCommentHTML(comment, onUserClick)).join('');
+              }
+            } catch (error) {
+              console.error('Error submitting comment:', error);
+              alert('Failed to add comment. Please try again.');
+              commentSubmitBtn.disabled = false;
+            }
           }
         }
       }
@@ -523,7 +570,7 @@ export function createPostCard(
   // Public method to update post data
   card.updatePostData = (newPostData: Post) => {
     postData = { ...newPostData };
-    updateLikeButtonUI();
+    updatePostCard();
   };
   
   // Load follow status if needed

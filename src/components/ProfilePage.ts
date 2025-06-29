@@ -1389,7 +1389,7 @@ export function createProfilePage(
     // Render itineraries tab content
     if (activeTab === 'itineraries') {
       const itinerariesContainer = document.getElementById('itineraries-container');
-      if (itinerariesContainer) {
+          undefined, // No onLike handler needed, handled internally
         itinerariesContainer.innerHTML = '';
         const itineraryList = createItineraryList(
           profileUser.id,

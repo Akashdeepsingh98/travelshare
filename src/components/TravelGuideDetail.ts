@@ -642,8 +642,7 @@ export function createTravelGuideDetail(
         const post = item.post_data;
         const postCard = createPostCard(
           post,
-          () => {}, // No like handler needed
-          () => {}, // No comment handler needed
+          undefined, // No like handler needed
           undefined, // No follow handler needed
           undefined, // No unfollow handler needed
           false, // Don't show follow button
