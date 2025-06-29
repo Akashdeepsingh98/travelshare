@@ -92,6 +92,13 @@ function parseHash() {
       break;
     case 'explore':
       currentView = 'explore';
+      // Reset all IDs to ensure a fresh load
+      currentUserId = null;
+      currentPostId = null;
+      currentCommunityId = null;
+      currentGuideId = null;
+      currentItineraryId = null;
+      currentConversationId = null;
       break;
     case 'ai-chat':
       currentView = 'ai-chat';
@@ -120,6 +127,13 @@ function parseHash() {
       break;
     default:
       currentView = 'feed';
+      // Reset all IDs to ensure a fresh load for the feed view too
+      currentUserId = null;
+      currentPostId = null;
+      currentCommunityId = null;
+      currentGuideId = null;
+      currentItineraryId = null;
+      currentConversationId = null;
       break;
   }
   renderApp();
