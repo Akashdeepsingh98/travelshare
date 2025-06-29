@@ -229,6 +229,11 @@ async function loadPosts(container: HTMLElement, userId?: string) {
   `;
 
   try {
+    // Create a timeout promise that rejects after 15 seconds
+    const timeoutPromise = new Promise((_, reject) => {
+      setTimeout(() => reject(new Error('Request timed out after 15 seconds')), 15000);
+    });
+
     // Build the query
     let query = supabase
       .from('posts')
@@ -247,17 +252,30 @@ async function loadPosts(container: HTMLElement, userId?: string) {
       query = query.eq('user_id', userId);
     }
 
-    const { data: posts, error } = await query;
+    // Race the query against the timeout
+    const { data: posts, error } = await Promise.race([
+      query,
+      timeoutPromise.then(() => {
+        throw new Error('Request timed out after 15 seconds');
+      })
+    ]);
 
     if (error) throw error;
 
     // Check if user has liked each post
     const authState = authManager.getAuthState();
     if (authState.isAuthenticated && authState.currentUser) {
-      const { data: likes } = await supabase
-        .from('post_likes')
-        .select('post_id')
-        .eq('user_id', authState.currentUser.id);
+      // Race the likes query against a timeout
+      const { data: likes } = await Promise.race([
+        supabase
+          .from('post_likes')
+          .select('post_id')
+          .eq('user_id', authState.currentUser.id),
+        timeoutPromise.then(() => {
+          // Return empty data if timed out
+          return { data: [] };
+        })
+      ]);
 
       const likedPostIds = new Set(likes?.map(like => like.post_id) || []);
 
@@ -349,7 +367,9 @@ async function loadPosts(container: HTMLElement, userId?: string) {
         <div class="error-content">
           <div class="error-icon">⚠️</div>
           <h3>Error Loading Posts</h3>
-          <p>We couldn't load the posts. Please check your connection and try again.</p>
+          <p>${error.message.includes('timed out') 
+              ? 'Request timed out. The server is taking too long to respond.' 
+              : 'We couldn\'t load the posts. Please check your connection and try again.'}</p>
           <button class="retry-btn">Retry</button>
         </div>
       </div>

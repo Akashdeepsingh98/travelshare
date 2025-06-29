@@ -796,29 +796,45 @@ export function createExplorePage(
     isLoading = true;
     
     try {
+      // Create a timeout promise that rejects after 15 seconds
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('Request timed out after 15 seconds')), 15000);
+      });
+      
       const authState = authManager.getAuthState();
       
       // Get all posts with user profiles and comments
-      const { data: posts, error } = await supabase
-        .from('posts')
-        .select(`
-          *,
-          user:profiles(*),
-          comments(
+      const { data: posts, error } = await Promise.race([
+        supabase
+          .from('posts')
+          .select(`
             *,
-            user:profiles(*)
-          )
-        `)
-        .order('created_at', { ascending: false });
+            user:profiles(*),
+            comments(
+              *,
+              user:profiles(*)
+            )
+          `)
+          .order('created_at', { ascending: false }),
+        timeoutPromise.then(() => {
+          throw new Error('Request timed out after 15 seconds');
+        })
+      ]);
 
       if (error) throw error;
 
       // If user is authenticated, check which posts they've liked
       if (authState.isAuthenticated && authState.currentUser) {
-        const { data: likes } = await supabase
-          .from('post_likes')
-          .select('post_id')
-          .eq('user_id', authState.currentUser.id);
+        const { data: likes } = await Promise.race([
+          supabase
+            .from('post_likes')
+            .select('post_id')
+            .eq('user_id', authState.currentUser.id),
+          timeoutPromise.then(() => {
+            // Return empty data if timed out
+            return { data: [] };
+          })
+        ]);
 
         const likedPostIds = new Set(likes?.map(like => like.post_id) || []);
 
@@ -931,11 +947,21 @@ export function createExplorePage(
     }
     
     try {
-      const { data: profiles, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .ilike('name', `%${query}%`)
-        .limit(10);
+      // Create a timeout promise that rejects after 10 seconds
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('Search request timed out after 10 seconds')), 10000);
+      });
+      const { data: users, error } = await Promise.race([
+        supabase
+          .from('profiles')
+          .select('*')
+          .neq('id', authState.currentUser.id)
+          .ilike('name', `%${query}%`)
+          .limit(10),
+        timeoutPromise.then(() => {
+          throw new Error('Search request timed out after 10 seconds');
+        })
+      ]);
       
       if (error) {
         console.error('Error searching profiles:', error);
@@ -945,7 +971,7 @@ export function createExplorePage(
       
       filteredProfiles = profiles || [];
     } catch (error) {
-      console.error('Error searching profiles:', error);
+      console.error('Error searching users:', error.message);
       filteredProfiles = [];
     }
   }
@@ -1336,7 +1362,7 @@ export function createExplorePage(
         </div>
         
         <div class="explore-error">
-          <p>Unable to load posts. Please try again.</p>
+          <p>Unable to load posts. ${allPostsWithCoords.length === 0 ? 'The server is taking too long to respond or there was a connection issue.' : 'Please try again.'}</p>
           <button class="retry-btn">Retry</button>
         </div>
       </div>
