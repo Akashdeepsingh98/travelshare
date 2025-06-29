@@ -799,7 +799,7 @@ export function createExplorePage(
     try {
       // Create a timeout promise that rejects after 15 seconds
       const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error('Request timed out after 15 seconds')), 15000);
+        setTimeout(() => reject(new Error('Request timed out after 30 seconds')), 30000);
       });
       
       const authState = authManager.getAuthState();
@@ -818,7 +818,7 @@ export function createExplorePage(
           `)
           .order('created_at', { ascending: false }),
         timeoutPromise.then(() => {
-          throw new Error('Request timed out after 15 seconds');
+          throw new Error('Request timed out after 30 seconds');
         })
       ]);
 
