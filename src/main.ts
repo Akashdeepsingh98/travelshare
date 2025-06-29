@@ -229,9 +229,9 @@ async function loadPosts(container: HTMLElement, userId?: string) {
   `;
 
   try {
-    // Create a timeout promise that rejects after 15 seconds
+    // Create a timeout promise that rejects after 30 seconds
     const timeoutPromise = new Promise((_, reject) => {
-      setTimeout(() => reject(new Error('Request timed out after 15 seconds')), 15000);
+      setTimeout(() => reject(new Error('Request timed out after 30 seconds')), 30000);
     });
 
     // Build the query
@@ -253,35 +253,45 @@ async function loadPosts(container: HTMLElement, userId?: string) {
     }
 
     // Race the query against the timeout
-    const { data: posts, error } = await Promise.race([
+    const result = await Promise.race([
       query,
-      timeoutPromise.then(() => {
-        throw new Error('Request timed out after 15 seconds');
-      })
+      timeoutPromise
     ]);
+
+    const { data: posts, error } = result;
 
     if (error) throw error;
 
     // Check if user has liked each post
     const authState = authManager.getAuthState();
     if (authState.isAuthenticated && authState.currentUser) {
-      // Race the likes query against a timeout
-      const { data: likes } = await Promise.race([
-        supabase
-          .from('post_likes')
-          .select('post_id')
-          .eq('user_id', authState.currentUser.id),
-        timeoutPromise.then(() => {
-          // Return empty data if timed out
-          return { data: [] };
-        })
-      ]);
+      try {
+        // Create a shorter timeout for the likes query
+        const likesTimeoutPromise = new Promise((_, reject) => {
+          setTimeout(() => reject(new Error('Likes query timed out')), 10000);
+        });
 
-      const likedPostIds = new Set(likes?.map(like => like.post_id) || []);
+        const likesResult = await Promise.race([
+          supabase
+            .from('post_likes')
+            .select('post_id')
+            .eq('user_id', authState.currentUser.id),
+          likesTimeoutPromise
+        ]);
 
-      posts.forEach(post => {
-        post.user_has_liked = likedPostIds.has(post.id);
-      });
+        const { data: likes } = likesResult;
+        const likedPostIds = new Set(likes?.map(like => like.post_id) || []);
+
+        posts.forEach(post => {
+          post.user_has_liked = likedPostIds.has(post.id);
+        });
+      } catch (likesError) {
+        console.warn('Failed to load likes data:', likesError);
+        // Continue without likes data
+        posts.forEach(post => {
+          post.user_has_liked = false;
+        });
+      }
     }
 
     // Render posts
@@ -362,18 +372,46 @@ async function loadPosts(container: HTMLElement, userId?: string) {
     }
   } catch (error) {
     console.error('Error loading posts:', error);
+    
+    // Check if this is a CORS or network connectivity issue
+    const isCorsOrNetworkError = error.message.includes('timed out') || 
+                                 error.message.includes('Failed to fetch') ||
+                                 error.message.includes('Network') ||
+                                 error.name === 'TypeError';
+    
     container.innerHTML = `
       <div class="error-message">
         <div class="error-content">
           <div class="error-icon">⚠️</div>
-          <h3>Error Loading Posts</h3>
-          <p>${error.message.includes('timed out') 
-              ? 'Request timed out. The server is taking too long to respond.' 
-              : 'We couldn\'t load the posts. Please check your connection and try again.'}</p>
+          <h3>${isCorsOrNetworkError ? 'Connection Error' : 'Error Loading Posts'}</h3>
+          <p>${isCorsOrNetworkError 
+              ? 'Unable to connect to the server. This is likely a CORS configuration issue. Please check the browser console for setup instructions.' 
+              : 'We couldn\'t load the posts. Please try again.'}</p>
+          ${isCorsOrNetworkError ? '<p><small>Check the browser console for detailed setup instructions.</small></p>' : ''}
           <button class="retry-btn">Retry</button>
         </div>
       </div>
     `;
+
+    // Log CORS setup instructions if it's a network/CORS error
+    if (isCorsOrNetworkError) {
+      console.error('🚨 CORS Configuration Required');
+      console.error('');
+      console.error('This error indicates your Supabase project needs CORS configuration.');
+      console.error('');
+      console.error('📋 Steps to fix:');
+      console.error('1. Go to https://supabase.com/dashboard');
+      console.error('2. Select your project');
+      console.error('3. Go to Settings → API');
+      console.error('4. Under "Configuration", find "CORS"');
+      console.error(`5. Add these URLs to allowed origins:`);
+      console.error(`   - ${window.location.origin}`);
+      console.error(`   - http://localhost:5173`);
+      console.error(`   - https://localhost:5173`);
+      console.error('6. Save changes and refresh this page');
+      console.error('');
+      console.error('📖 For detailed instructions, see CORS_SETUP_GUIDE.md');
+    }
 
     // Add event listener to retry button
     const retryBtn = container.querySelector('.retry-btn');
