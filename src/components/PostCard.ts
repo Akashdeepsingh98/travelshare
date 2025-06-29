@@ -5,7 +5,6 @@ import { supabase } from '../lib/supabase';
 
 export function createPostCard(
   post: Post, 
-  onLike: (postId: string) => void,
   onComment: (postId: string, comment: string) => void,
   onFollow?: (userId: string) => void,
   onUnfollow?: (userId: string) => void,
@@ -18,19 +17,21 @@ export function createPostCard(
 ): HTMLElement {
   const card = document.createElement('div');
   card.className = 'post-card';
-  
+
   let isFollowing = false;
+  // Create a local copy of the post data that we can update
+  let postData = { ...post };
   
   // Get media items from post
   function getMediaItems(): MediaItem[] {
-    if (post.media_urls && post.media_types) {
-      return post.media_urls.map((url, index) => ({
-        url,
-        type: (post.media_types![index] as 'image' | 'video') || 'image'
+    if (postData.media_urls && postData.media_types) {
+      return postData.media_urls.map((url, index) => ({
+        url, 
+        type: (postData.media_types![index] as 'image' | 'video') || 'image'
       }));
-    } else if (post.image_url) {
+    } else if (postData.image_url) {
       // Backward compatibility
-      return [{ url: post.image_url, type: 'image' }];
+      return [{ url: postData.image_url, type: 'image' }];
     }
     return [];
   }
@@ -84,14 +85,100 @@ export function createPostCard(
     }
   }
   
+  // Update like button UI based on current state
+  function updateLikeButtonUI() {
+    const likeBtn = card.querySelector('.like-btn') as HTMLButtonElement;
+    if (!likeBtn) return;
+    
+    const isLiked = postData.user_has_liked || false;
+    const iconSpan = likeBtn.querySelector('.icon') as HTMLElement;
+    const countSpan = likeBtn.querySelector('.count') as HTMLElement;
+    
+    // Update icon
+    if (iconSpan) {
+      iconSpan.textContent = isLiked ? '❤️' : '🤍';
+    }
+    
+    // Update count
+    if (countSpan) {
+      countSpan.textContent = `${postData.likes_count || 0}`;
+    }
+    
+    // Update button class
+    likeBtn.classList.toggle('liked', isLiked);
+  }
+  
+  // Handle like/unlike with local UI update
+  async function handleLikeToggle() {
+    const authState = authManager.getAuthState();
+    if (!authState.isAuthenticated) {
+      showAuthModal();
+      return;
+    }
+    
+    // Check if user is approved
+    const isApproved = await checkUserApprovalStatus();
+    if (!isApproved) {
+      alert('Your account needs to be approved before you can like posts. Please wait for admin approval.');
+      return;
+    }
+    
+    try {
+      const userId = authState.currentUser!.id;
+      
+      // Check if already liked
+      const { data: existingLike } = await supabase
+        .from('post_likes')
+        .select('id')
+        .eq('post_id', postData.id)
+        .eq('user_id', userId)
+        .maybeSingle();
+      
+      if (existingLike) {
+        // Unlike
+        const { error } = await supabase
+          .from('post_likes')
+          .delete()
+          .eq('post_id', postData.id)
+          .eq('user_id', userId);
+        
+        if (error) throw error;
+        
+        // Update local state
+        postData.user_has_liked = false;
+        postData.likes_count = Math.max(0, (postData.likes_count || 0) - 1);
+      } else {
+        // Like
+        const { error } = await supabase
+          .from('post_likes')
+          .insert({
+            post_id: postData.id,
+            user_id: userId
+          });
+        
+        if (error) throw error;
+        
+        // Update local state
+        postData.user_has_liked = true;
+        postData.likes_count = (postData.likes_count || 0) + 1;
+      }
+      
+      // Update UI
+      updateLikeButtonUI();
+      
+    } catch (error) {
+      console.error('Error toggling like:', error);
+      alert('Failed to update like status. Please try again.');
+    }
+  }
+  
   function updatePostCard() {
     const authState = authManager.getAuthState();
     const currentUser = authState.currentUser;
-    const isLiked = post.user_has_liked || false;
-    const timeAgo = getTimeAgo(new Date(post.created_at));
-    const userAvatarUrl = post.user?.avatar_url || 'https://images.pexels.com/photos/1040880/pexels-photo-1040880.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&fit=crop';
-    const userName = post.user?.name || 'Unknown User';
-    const isOwnPost = currentUser?.id === post.user_id;
+    const timeAgo = getTimeAgo(new Date(postData.created_at));
+    const userAvatarUrl = postData.user?.avatar_url || 'https://images.pexels.com/photos/1040880/pexels-photo-1040880.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&fit=crop';
+    const userName = postData.user?.name || 'Unknown User';
+    const isOwnPost = currentUser?.id === postData.user_id;
     const mediaItems = getMediaItems();
     
     card.innerHTML = `
@@ -99,19 +186,19 @@ export function createPostCard(
         <div class="post-user-clickable" ${onUserClick ? 'style="cursor: pointer;"' : ''}>
           <img src="${userAvatarUrl}" alt="${userName}" class="user-avatar">
           <div class="post-user-info">
-            <h3 class="user-name">${userName}</h3>
-            <p class="post-location">📍 ${post.location}</p>
+            <h3 class="user-name">${userName}</h3> 
+            <p class="post-location">📍 ${postData.location}</p>
             <p class="post-time">${timeAgo}</p>
           </div>
         </div>
         <div class="post-header-actions">
-          ${showFollowButton && !isOwnPost && authState.isAuthenticated && onFollow ? `
-            <button class="follow-btn ${isFollowing ? 'following' : ''}" data-user-id="${post.user_id}">
+          ${showFollowButton && !isOwnPost && authState.isAuthenticated && onFollow ? ` 
+            <button class="follow-btn ${isFollowing ? 'following' : ''}" data-user-id="${postData.user_id}">
               ${isFollowing ? 'Following' : 'Follow'}
             </button>
           ` : ''}
           ${isOwnProfile && isOwnPost && onDelete ? `
-            <button class="delete-post-btn" title="Delete post">
+            <button class="delete-post-btn" title="Delete post"> 
               <span class="delete-icon">🗑️</span>
             </button>
           ` : ''}
@@ -119,7 +206,7 @@ export function createPostCard(
       </div>
       
       <div class="post-content">
-        <p>${post.content}</p>
+        <p>${postData.content}</p>
       </div>
       
       
@@ -130,22 +217,22 @@ export function createPostCard(
       ` : ''}
       
       <div class="post-actions">
-        <button class="action-btn like-btn ${isLiked ? 'liked' : ''}" data-post-id="${post.id}">
-          <span class="icon">${isLiked ? '❤️' : '🤍'}</span>
-          <span class="count">${post.likes_count || 0}</span>
+        <button class="action-btn like-btn" data-post-id="${postData.id}">
+          <span class="icon">${postData.user_has_liked ? '❤️' : '🤍'}</span>
+          <span class="count">${postData.likes_count || 0}</span>
         </button>
         <button class="action-btn comment-btn">
           <span class="icon">💬</span>
-          <span class="count">${post.comments?.length || 0}</span>
+          <span class="count">${postData.comments?.length || 0}</span>
         </button>
-        ${authState.isAuthenticated && onShareToDM ? `
-          <button class="action-btn share-dm-btn" data-post-id="${post.id}">
+        ${authState.isAuthenticated && onShareToDM ? ` 
+          <button class="action-btn share-dm-btn" data-post-id="${postData.id}">
             <span class="icon">✉️</span>
             <span class="text">Message</span>
           </button>
         ` : ''}
-        ${authState.isAuthenticated && onAskAI ? `
-          <button class="action-btn ask-ai-btn" data-post-id="${post.id}">
+        ${authState.isAuthenticated && onAskAI ? ` 
+          <button class="action-btn ask-ai-btn" data-post-id="${postData.id}">
             <span class="icon">🤖</span>
             <span class="text">Ask AI</span>
           </button>
@@ -154,7 +241,7 @@ export function createPostCard(
       
       <div class="comments-section">
         <div class="comments-list">
-          ${(post.comments || []).map(comment => createCommentHTML(comment, onUserClick)).join('')}
+          ${(postData.comments || []).map(comment => createCommentHTML(comment, onUserClick)).join('')}
         </div>
         ${authState.isAuthenticated && currentUser ? `
           <div class="add-comment">
@@ -176,38 +263,27 @@ export function createPostCard(
     if (mediaItems.length > 1) {
       setupMediaCarousel(card, mediaItems);
     }
+
+    // Initialize the like button UI
+    updateLikeButtonUI();
     
     // User click functionality
     if (onUserClick) {
       const userClickable = card.querySelector('.post-user-clickable') as HTMLElement;
       userClickable.addEventListener('click', () => {
-        onUserClick(post.user_id);
+        onUserClick(postData.user_id);
       });
     }
     
-    // Like functionality with approval check
+    // Like button click handler
     const likeBtn = card.querySelector('.like-btn') as HTMLButtonElement;
-    likeBtn.addEventListener('click', async () => {
-      if (!authState.isAuthenticated) {
-        showAuthModal();
-        return;
-      }
-      
-      // Check if user is approved
-      const isApproved = await checkUserApprovalStatus();
-      if (!isApproved) {
-        alert('Your account needs to be approved before you can like posts. Please wait for admin approval.');
-        return;
-      }
-      
-      onLike(post.id);
-    });
+    likeBtn.addEventListener('click', handleLikeToggle);
     
     // Delete functionality
     const deleteBtn = card.querySelector('.delete-post-btn') as HTMLButtonElement;
     if (deleteBtn && onDelete) {
       deleteBtn.addEventListener('click', () => {
-        onDelete(post.id);
+        onDelete(postData.id);
       });
     }
     
@@ -250,7 +326,7 @@ export function createPostCard(
         // which will open the share to DM modal
         const event = new CustomEvent('share-post', { 
           detail: { 
-            postId: post.id,
+            postId: postData.id,
             target: 'dm'
           } 
         });
@@ -266,7 +342,7 @@ export function createPostCard(
           showAuthModal();
           return;
         }
-        onAskAI(post);
+        onAskAI(postData);
       });
     }
     
@@ -307,7 +383,7 @@ export function createPostCard(
         function submitComment() {
           const commentText = commentInput.value.trim();
           if (commentText) {
-            onComment(post.id, commentText);
+            onComment(postData.id, commentText);
             commentInput.value = '';
             commentSubmitBtn.disabled = true;
           }
@@ -443,6 +519,12 @@ export function createPostCard(
   
   // Initial render
   updatePostCard();
+  
+  // Public method to update post data
+  card.updatePostData = (newPostData: Post) => {
+    postData = { ...newPostData };
+    updateLikeButtonUI();
+  };
   
   // Load follow status if needed
   if (showFollowButton) {

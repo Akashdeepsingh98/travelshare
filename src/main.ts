@@ -335,7 +335,6 @@ async function loadPosts(container: HTMLElement, userId?: string) {
       posts.forEach(post => {
         const postCard = createPostCard(
           post,
-          handleLikePost,
           handleCommentPost,
           handleFollowUser,
           handleUnfollowUser,
@@ -522,7 +521,6 @@ async function renderPostPage(container: HTMLElement) {
       post,
       [post], // Array with just this post
       () => navigateTo('feed'),
-      handleLikePost,
       handleCommentPost,
       handleFollowUser,
       handleUnfollowUser,
@@ -675,63 +673,9 @@ function renderAboutPage(container: HTMLElement) {
 }
 
 // Event handlers
-function onPostCreate(post: Post) {
+function onPostCreate(post: Post) { 
   // Refresh the feed
   renderApp();
-}
-
-function handleLikePost(postId: string) {
-  const authState = authManager.getAuthState();
-  if (!authState.isAuthenticated) {
-    const authModal = document.querySelector('.auth-modal') as HTMLElement;
-    if (authModal) {
-      authModal.classList.add('active');
-      document.body.style.overflow = 'hidden';
-    }
-    return;
-  }
-
-  // Toggle like
-  const userId = authState.currentUser!.id;
-  
-  // Check if already liked
-  supabase
-    .from('post_likes')
-    .select('id')
-    .eq('post_id', postId)
-    .eq('user_id', userId)
-    .maybeSingle()
-    .then(({ data: existingLike, error }) => {
-      if (error) {
-        console.error('Error checking like status:', error);
-        return;
-      }
-
-      if (existingLike) {
-        // Unlike
-        supabase
-          .from('post_likes')
-          .delete()
-          .eq('post_id', postId)
-          .eq('user_id', userId)
-          .then(({ error }) => {
-            if (error) console.error('Error unliking post:', error);
-            else renderApp(); // Refresh UI after successful unlike
-          });
-      } else {
-        // Like
-        supabase
-          .from('post_likes')
-          .insert({
-            post_id: postId,
-            user_id: userId
-          })
-          .then(({ error }) => {
-            if (error) console.error('Error liking post:', error);
-            else renderApp(); // Refresh UI after successful like
-          });
-      }
-    });
 }
 
 function handleCommentPost(postId: string, comment: string) {
