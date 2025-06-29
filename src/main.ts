@@ -23,6 +23,7 @@ import { createMiniAppManager } from './components/MiniAppManager';
 import { createMiniAppViewer } from './components/MiniAppViewer';
 import { createCreateCommunityModal } from './components/CreateCommunityModal';
 import { Post, User } from './types';
+import { testSupabaseConnection, displayConnectionDiagnostics } from './utils/connection-test';
 import { supabase } from './lib/supabase';
 
 // Main application container
@@ -221,6 +222,54 @@ function renderFeedPage(container: HTMLElement) {
 
 // Load posts for the feed
 async function loadPosts(container: HTMLElement, userId?: string) {
+  // Check for CORS issues before loading posts
+  try {
+    const testResult = await testSupabaseConnection();
+    if (!testResult.success) {
+      container.innerHTML = `
+        <div class="cors-error">
+          <div class="error-content">
+            <div class="error-icon">⚠️</div>
+            <h3>Connection Error</h3>
+            <p>Unable to connect to Supabase. This is likely due to a CORS configuration issue.</p>
+            
+            <div class="setup-steps">
+              <h4>Quick Fix (2-3 minutes):</h4>
+              <ol>
+                <li>Go to <a href="https://supabase.com/dashboard" target="_blank">Supabase Dashboard</a></li>
+                <li>Select your project</li>
+                <li>Go to <strong>Settings → API</strong></li>
+                <li>Scroll to <strong>CORS</strong> section</li>
+                <li>Add <code>${window.location.origin}</code> to allowed origins</li>
+                <li>Save changes and refresh this page</li>
+              </ol>
+            </div>
+            
+            <div class="current-config">
+              <p>Current URL: <code>${window.location.origin}</code></p>
+              <p>Supabase URL: <code>${import.meta.env.VITE_SUPABASE_URL || 'Not configured'}</code></p>
+            </div>
+            
+            <div class="error-actions">
+              <a href="CORS_SETUP_GUIDE.md" target="_blank" class="setup-guide-btn">View Complete Setup Guide</a>
+              <button class="retry-btn">Retry Connection</button>
+            </div>
+          </div>
+        </div>
+      `;
+      
+      // Add event listener to retry button
+      const retryBtn = container.querySelector('.retry-btn');
+      if (retryBtn) {
+        retryBtn.addEventListener('click', () => loadPosts(container, userId));
+      }
+      return;
+    }
+  } catch (testError) {
+    console.error('Failed to run connection test:', testError);
+    // Continue with normal loading even if test fails
+  }
+
   container.innerHTML = `
     <div class="posts-loading">
       <div class="loading-spinner"></div>
@@ -345,11 +394,26 @@ async function loadPosts(container: HTMLElement, userId?: string) {
   } catch (error) {
     console.error('Error loading posts:', error);
     container.innerHTML = `
-      <div class="error-message">
+      <div class="error-message ${error.message?.includes('Failed to fetch') ? 'cors-error' : ''}">
         <div class="error-content">
           <div class="error-icon">⚠️</div>
-          <h3>Error Loading Posts</h3>
-          <p>We couldn't load the posts. Please check your connection and try again.</p>
+          <h3>${error.message?.includes('Failed to fetch') ? 'Connection Error' : 'Error Loading Posts'}</h3>
+          <p>${error.message?.includes('Failed to fetch') 
+            ? 'Unable to connect to Supabase. This is likely due to a CORS configuration issue.' 
+            : 'We couldn\'t load the posts. Please check your connection and try again.'}</p>
+          ${error.message?.includes('Failed to fetch') ? `
+          <div class="cors-solution">
+            <h4>Quick Fix:</h4>
+            <ol>
+              <li>Go to <a href="https://supabase.com/dashboard" target="_blank">Supabase Dashboard</a></li>
+              <li>Select your project</li>
+              <li>Go to <strong>Settings → API</strong></li>
+              <li>Under CORS, add <code>${window.location.origin}</code> to allowed origins</li>
+              <li>Save changes and refresh this page</li>
+            </ol>
+            <p>See <a href="CORS_SETUP_GUIDE.md" target="_blank">CORS Setup Guide</a> for more details.</p>
+          </div>
+          ` : ''}
           <button class="retry-btn">Retry</button>
         </div>
       </div>
@@ -791,6 +855,84 @@ function handleShareToDM(post: Post) {
   );
   document.body.appendChild(modal);
 }
+
+// Add a global error handler to catch and handle CORS and auth errors
+window.addEventListener('unhandledrejection', async (event) => {
+  const error = event.reason;
+  
+  // Check if this is a CORS error
+  if (error instanceof TypeError && 
+      (error.message.includes('Failed to fetch') || 
+       error.message.includes('NetworkError'))) {
+    
+    console.error('Unhandled CORS/Network Error:', error);
+    
+    // Try to test the connection
+    try {
+      const testResult = await testSupabaseConnection();
+      if (!testResult.success) {
+        console.error('Connection test failed:', testResult.error);
+        console.error('This is likely a CORS configuration issue. Please check CORS_SETUP_GUIDE.md');
+      }
+    } catch (testError) {
+      console.error('Failed to run connection test:', testError);
+    }
+  }
+  
+  // Check if this is an auth error
+  if (error && typeof error === 'object' && 
+      error.message && (
+        error.message.includes('Invalid Refresh Token') ||
+        error.message.includes('refresh_token_not_found') ||
+        error.message.includes('Refresh Token Not Found')
+      )) {
+    
+    console.error('Unhandled Auth Error:', error);
+    console.log('This appears to be an authentication token issue. The app will attempt to clear the corrupted session.');
+    
+    // Try to clear the session
+    try {
+      // Force sign out
+      await supabase.auth.signOut();
+      
+      // Clear local storage items related to Supabase auth
+      const keysToRemove = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && key.startsWith('sb-')) {
+          keysToRemove.push(key);
+        }
+      }
+      
+      keysToRemove.forEach(key => {
+        localStorage.removeItem(key);
+        console.log(`Removed corrupted auth data: ${key}`);
+      });
+      
+      // Also clear session storage
+      const sessionKeysToRemove = [];
+      for (let i = 0; i < sessionStorage.length; i++) {
+        const key = sessionStorage.key(i);
+        if (key && key.startsWith('sb-')) {
+          sessionKeysToRemove.push(key);
+        }
+      }
+      
+      sessionKeysToRemove.forEach(key => {
+        sessionStorage.removeItem(key);
+        console.log(`Removed corrupted session data: ${key}`);
+      });
+      
+      console.log('Session cleared. Refreshing page in 2 seconds...');
+      setTimeout(() => {
+        window.location.reload();
+      }, 2000);
+      
+    } catch (clearError) {
+      console.error('Error clearing session:', clearError);
+    }
+  }
+});
 
 // Initialize the app when the DOM is loaded
 document.addEventListener('DOMContentLoaded', initApp);
