@@ -716,6 +716,7 @@ function handleLikePost(postId: string) {
           .eq('user_id', userId)
           .then(({ error }) => {
             if (error) console.error('Error unliking post:', error);
+            else renderApp(); // Refresh UI after successful unlike
           });
       } else {
         // Like
@@ -727,6 +728,7 @@ function handleLikePost(postId: string) {
           })
           .then(({ error }) => {
             if (error) console.error('Error liking post:', error);
+            else renderApp(); // Refresh UI after successful like
           });
       }
     });
