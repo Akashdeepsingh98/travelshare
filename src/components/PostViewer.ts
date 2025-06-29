@@ -7,6 +7,7 @@ export function createPostViewer(
   initialPost: Post,
   allPosts: Post[],
   onClose: () => void,
+  onComment: (postId: string, comment: string) => void,
   onFollow: (userId: string) => void,
   onUnfollow: (userId: string) => void,
   onAskAI?: (post: Post) => void,
@@ -307,70 +308,18 @@ export function createPostViewer(
         
         commentInput.addEventListener('keypress', (e) => {
           if (e.key === 'Enter' && commentInput.value.trim()) {
-            submitComment().catch(error => {
-              console.error('Error submitting comment:', error);
-            });
+            submitComment();
           }
         });
         
-        commentSubmitBtn.addEventListener('click', () => {
-          submitComment().catch(error => {
-            console.error('Error submitting comment:', error);
-          });
-        });
+        commentSubmitBtn.addEventListener('click', submitComment);
         
-        async function submitComment() {
+        function submitComment() {
           const commentText = commentInput.value.trim();
           if (commentText) {
-            try {
-              const authState = authManager.getAuthState();
-              if (!authState.isAuthenticated || !authState.currentUser) return;
-              
-              // Disable the button while submitting
-              commentSubmitBtn.disabled = true;
-              
-              // Insert the comment directly
-              const { data, error } = await supabase
-                .from('comments')
-                .insert({
-                  post_id: currentPost.id,
-                  user_id: authState.currentUser.id,
-                  content: commentText
-                })
-                .select(`
-                  *,
-                  user:profiles(*)
-                `)
-                .single();
-              
-              if (error) {
-                console.error('Error adding comment:', error);
-                alert('Failed to add comment. Please try again.');
-                commentSubmitBtn.disabled = false;
-                return;
-              }
-              
-              // Add the new comment to the post data
-              if (!currentPost.comments) {
-                currentPost.comments = [];
-              }
-              
-              currentPost.comments.push(data);
-              
-              // Clear the input
-              commentInput.value = '';
-              commentSubmitBtn.disabled = true;
-              
-              // Re-render the comments section
-              const commentsList = container.querySelector('.comments-list');
-              if (commentsList) {
-                commentsList.innerHTML = (currentPost.comments || []).map(comment => createCommentHTML(comment)).join('');
-              }
-            } catch (error) {
-              console.error('Error submitting comment:', error);
-              alert('Failed to add comment. Please try again.');
-              commentSubmitBtn.disabled = false;
-            }
+            onComment(currentPost.id, commentText);
+            commentInput.value = '';
+            commentSubmitBtn.disabled = true;
           }
         }
       }

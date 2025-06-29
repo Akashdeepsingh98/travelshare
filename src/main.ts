@@ -335,7 +335,7 @@ async function loadPosts(container: HTMLElement, userId?: string) {
       posts.forEach(post => {
         const postCard = createPostCard(
           post,
-          undefined, // No onLike handler needed, handled internally
+          handleCommentPost,
           handleFollowUser,
           handleUnfollowUser,
           true, // Show follow button
@@ -521,6 +521,7 @@ async function renderPostPage(container: HTMLElement) {
       post,
       [post], // Array with just this post
       () => navigateTo('feed'),
+      handleCommentPost,
       handleFollowUser,
       handleUnfollowUser,
       (post) => navigateTo('ai-chat'),
@@ -675,6 +676,38 @@ function renderAboutPage(container: HTMLElement) {
 function onPostCreate(post: Post) { 
   // Refresh the feed
   renderApp();
+}
+
+function handleCommentPost(postId: string, comment: string) {
+  const authState = authManager.getAuthState();
+  if (!authState.isAuthenticated) {
+    const authModal = document.querySelector('.auth-modal') as HTMLElement;
+    if (authModal) {
+      authModal.classList.add('active');
+      document.body.style.overflow = 'hidden';
+    }
+    return;
+  }
+
+  // Add comment
+  const userId = authState.currentUser!.id;
+  
+  supabase
+    .from('comments')
+    .insert({
+      post_id: postId,
+      user_id: userId,
+      content: comment
+    })
+    .then(({ error }) => {
+      if (error) {
+        console.error('Error adding comment:', error);
+        return;
+      }
+      
+      // Refresh the view
+      renderApp();
+    });
 }
 
 function handleFollowUser(userId: string) {
