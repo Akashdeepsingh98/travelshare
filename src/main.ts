@@ -141,11 +141,30 @@ function parseHash() {
 
 // Navigate to a specific view
 function navigateTo(view: string, id?: string) {
+  const previousView = currentView;
+  const previousId = view === 'profile' ? currentUserId : 
+                    view === 'post' ? currentPostId : 
+                    view === 'communities' ? currentCommunityId : 
+                    view === 'travel-guides' ? currentGuideId : 
+                    view === 'itineraries' ? currentItineraryId : 
+                    view === 'messages' ? currentConversationId : null;
+
   let hash = view;
   if (id) {
     hash += `/${id}`;
   }
-  window.location.hash = hash;
+  
+  // If navigating to the same view with the same ID, force a reload
+  if (view === previousView && id === previousId) {
+    // Set the hash to a temporary value and then back to force a reload
+    window.location.hash = '';
+    setTimeout(() => {
+      window.location.hash = hash;
+      renderApp(); // Force immediate re-render
+    }, 0);
+  } else {
+    window.location.hash = hash;
+  }
 }
 
 // Render the application based on the current view
