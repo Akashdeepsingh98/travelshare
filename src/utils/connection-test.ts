@@ -20,47 +20,30 @@ export async function testSupabaseConnection(): Promise<{
       }
     };
   }
-  
   console.log('🔍 Testing Supabase Connection...');
   console.log('URL:', supabaseUrl);
   console.log('Anon Key (first 20 chars):', anonKey?.substring(0, 20) + '...');
 
   try {
-    // Test 1: Basic URL accessibility
-    console.log('Test 1: Testing basic URL accessibility...');
-    let basicResponse: Response;
     try {
-      basicResponse = await Promise.race([
+      // Test 1: Basic URL accessibility
+      console.log('Test 1: Testing basic URL accessibility...');
+      const basicResponse = await Promise.race([
         fetch(supabaseUrl, {
           method: 'GET',
           mode: 'cors'
         }),
-        new Promise<Response>((_, reject) => 
+        new Promise((_, reject) => 
           setTimeout(() => reject(new Error('Request timeout after 10 seconds')), 10000)
         )
-      ]);
+      ]) as Response;
       
       console.log('Basic fetch response status:', basicResponse.status);
       console.log('Basic fetch response headers:', Object.fromEntries(basicResponse.headers.entries()));
-    } catch (basicError) {
-      console.error('Basic URL test failed:', basicError);
-      return {
-        success: false,
-        error: 'Cannot reach Supabase servers. This is likely a CORS configuration issue.',
-        details: {
-          testStage: 'basic_url',
-          errorType: basicError?.constructor?.name || 'Unknown',
-          errorMessage: basicError?.message || 'Unknown error',
-          timestamp: new Date().toISOString()
-        }
-      };
-    }
 
-    // Test 2: Test REST API endpoint
-    console.log('Test 2: Testing REST API endpoint...');
-    let restResponse: Response;
-    try {
-      restResponse = await Promise.race([
+      // Test 2: Test REST API endpoint with timeout
+      console.log('Test 2: Testing REST API endpoint...');
+      const restResponse = await Promise.race([
         fetch(`${supabaseUrl}/rest/v1/`, {
           method: 'GET',
           headers: {
@@ -70,33 +53,17 @@ export async function testSupabaseConnection(): Promise<{
           },
           mode: 'cors'
         }),
-        new Promise<Response>((_, reject) => 
+        new Promise((_, reject) => 
           setTimeout(() => reject(new Error('REST API request timeout after 10 seconds')), 10000)
         )
-      ]);
+      ]) as Response;
 
       console.log('REST API response status:', restResponse.status);
       console.log('REST API response headers:', Object.fromEntries(restResponse.headers.entries()));
-    } catch (restError) {
-      console.error('REST API test failed:', restError);
-      return {
-        success: false,
-        error: 'Cannot access Supabase REST API. This is likely a CORS configuration issue.',
-        details: {
-          testStage: 'rest_api',
-          errorType: restError?.constructor?.name || 'Unknown',
-          errorMessage: restError?.message || 'Unknown error',
-          basicStatus: basicResponse?.status,
-          timestamp: new Date().toISOString()
-        }
-      };
-    }
 
-    // Test 3: Test a simple query
-    console.log('Test 3: Testing simple query...');
-    let queryResponse: Response;
-    try {
-      queryResponse = await Promise.race([
+      // Test 3: Test a simple query with timeout
+      console.log('Test 3: Testing simple query...');
+      const queryResponse = await Promise.race([
         fetch(`${supabaseUrl}/rest/v1/profiles?select=count`, {
           method: 'GET',
           headers: {
@@ -107,10 +74,10 @@ export async function testSupabaseConnection(): Promise<{
           },
           mode: 'cors'
         }),
-        new Promise<Response>((_, reject) => 
+        new Promise((_, reject) => 
           setTimeout(() => reject(new Error('Query request timeout after 10 seconds')), 10000)
         )
-      ]);
+      ]) as Response;
 
       console.log('Query response status:', queryResponse.status);
       
@@ -118,28 +85,36 @@ export async function testSupabaseConnection(): Promise<{
         const data = await queryResponse.text();
         console.log('Query response data:', data);
       }
-    } catch (queryError) {
-      console.error('Query test failed:', queryError);
-      // Query failure is not critical if basic and REST API work
-      queryResponse = { status: 0, ok: false } as Response;
-    }
 
-    // Determine overall success
-    const isSuccess = basicResponse.ok && restResponse.ok;
+      // Determine overall success
+      const isSuccess = basicResponse.ok && restResponse.ok;
 
-    return {
-      success: isSuccess,
-      error: isSuccess ? undefined : 'Some connection tests failed. Check the details below.',
-      details: {
-        basicStatus: basicResponse.status,
-        restStatus: restResponse.status,
-        queryStatus: queryResponse?.status || 0,
-        basicOk: basicResponse.ok,
-        restOk: restResponse.ok,
-        queryOk: queryResponse?.ok || false,
-        timestamp: new Date().toISOString()
+      return {
+        success: isSuccess,
+        error: isSuccess ? undefined : 'Some connection tests failed. Check the details below.',
+        details: {
+          basicStatus: basicResponse.status,
+          restStatus: restResponse.status,
+          queryStatus: queryResponse.status,
+          basicOk: basicResponse.ok,
+          restOk: restResponse.ok,
+          queryOk: queryResponse.ok
+        }
+      };
+    } catch (fetchError) {
+      // Handle fetch errors separately
+      console.error('Fetch error during connection test:', fetchError);
+      
+      return {
+        success: false,
+        error: fetchError.message || 'Failed to connect to Supabase',
+        details: {
+          errorType: 'FetchError',
+          message: fetchError.message,
+          timestamp: new Date().toISOString()
+        }
       }
-    };
+    }
 
   } catch (error) {
     console.error('❌ Connection test failed:', error);
