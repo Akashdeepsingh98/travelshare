@@ -7,7 +7,6 @@ export function createPostViewer(
   initialPost: Post,
   allPosts: Post[],
   onClose: () => void,
-  onLike: (postId: string) => void,
   onComment: (postId: string, comment: string) => void,
   onFollow: (userId: string) => void,
   onUnfollow: (userId: string) => void,
@@ -21,6 +20,7 @@ export function createPostViewer(
   let currentPost = allPosts[currentPostIndex];
   let userFollowStatus: { [key: string]: boolean } = {};
   let currentMediaIndex = 0;
+  let postCards: {[id: string]: HTMLElement & {updatePostData?: (post: Post) => void}} = {};
   
   // Get media items from post
   function getMediaItems(post: Post): MediaItem[] {
@@ -223,7 +223,6 @@ export function createPostViewer(
         showAuthModal();
         return;
       }
-      onLike(currentPost.id);
       // Update local state
       currentPost.user_has_liked = !currentPost.user_has_liked;
       currentPost.likes_count += currentPost.user_has_liked ? 1 : -1;
