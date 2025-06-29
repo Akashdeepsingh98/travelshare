@@ -107,13 +107,12 @@ export function createHeader(
       // Navigation buttons
       navBtns.forEach(btn => {
         btn.addEventListener('click', () => {
-          const view = btn.dataset.view!;
-          const isCurrentView = view === currentView;
+          const view = btn.dataset.view;
           
           if (view === 'feed' && onHomeClick) {
-            onHomeClick(isCurrentView);
+            onHomeClick(true); // Always force reload when clicking Home
           } else if (view === 'explore' && onExploreClick) {
-            onExploreClick(isCurrentView);
+            onExploreClick(true); // Always force reload when clicking Explore
           } else if (view === 'heatmap' && onExploreClick) {
             // Navigate to heatmap using explore click handler
             window.location.hash = 'heatmap';
