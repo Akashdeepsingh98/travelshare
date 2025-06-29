@@ -1916,3 +1916,4 @@ export function createProfilePage(
   });
   
   return container;
+}
