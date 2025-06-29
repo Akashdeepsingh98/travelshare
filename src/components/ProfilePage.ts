@@ -1017,11 +1017,7 @@ export function createProfilePage(
         const { data: likes } = await supabase
           .from('post_likes')
           .select('post_id')
-          .eq
-      }
-    }
-  }
-}('user_id', authState.currentUser.id);
+          .eq('user_id', authState.currentUser.id);
 
         const likedPostIds = new Set(likes?.map(like => like.post_id) || []);
 
