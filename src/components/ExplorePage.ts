@@ -2,6 +2,7 @@ import { Post, User } from '../types';
 import { authManager } from '../auth';
 import { supabase } from '../lib/supabase';
 import { getCurrentPosition, calculateDistance, formatDistance, GeolocationPosition } from '../utils/geolocation';
+import { displayConnectionDiagnostics } from '../utils/connection-test';
 
 export function createExplorePage(
   onPostSelect: (post: Post, allPosts: Post[]) => void,
@@ -853,6 +854,18 @@ export function createExplorePage(
       renderExplorePage();
     } catch (error) {
       console.error('Error loading explore posts:', error);
+      
+      // Check if this is a network-related error and provide diagnostics
+      if (error instanceof TypeError || 
+          (error instanceof Error && (
+            error.message.includes('Failed to fetch') ||
+            error.message.includes('timed out') ||
+            error.message.includes('Network request failed')
+          ))) {
+        console.log('Network connectivity issue detected. Running connection diagnostics...');
+        displayConnectionDiagnostics();
+      }
+      
       renderErrorState();
     } finally {
       isLoading = false;
@@ -1362,7 +1375,7 @@ export function createExplorePage(
         </div>
         
         <div class="explore-error">
-          <p>Unable to load posts. ${allPostsWithCoords.length === 0 ? 'The server is taking too long to respond or there was a connection issue.' : 'Please try again.'}</p>
+          <p>Unable to load posts. ${allPosts.length === 0 ? 'The server is taking too long to respond or there was a connection issue.' : 'Please try again.'}</p>
           <button class="retry-btn">Retry</button>
         </div>
       </div>
