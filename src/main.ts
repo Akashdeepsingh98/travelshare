@@ -64,6 +64,7 @@ function initApp() {
 
 // Handle visibility change to detect when the app comes back into focus
 document.addEventListener('visibilitychange', () => {
+  console.log(`[DEBUG] Visibility changed to: ${document.visibilityState}`);
   if (document.visibilityState === 'visible') {
     console.log('App visibility restored - refreshing state');
 
@@ -74,8 +75,15 @@ document.addEventListener('visibilitychange', () => {
 
     // Re-establish Supabase connection if needed
     const authState = authManager.getAuthState();
+    console.log(`[DEBUG] Auth state when visibility restored:`, { 
+      isAuthenticated: authState.isAuthenticated,
+      hasCurrentUser: !!authState.currentUser,
+      loading: authState.loading
+    });
+    
     if (authState.isAuthenticated) {
       // Refresh the current user data
+      console.log('[DEBUG] Refreshing current user data');
       authManager.refreshCurrentUser();
     }
   }
@@ -182,6 +190,8 @@ function navigateTo(view: string, id?: string, forceReload: boolean = false) {
 
 // Render the application based on the current view
 async function renderApp(forceReload: boolean = false) {
+  console.log(`[DEBUG] renderApp called with forceReload=${forceReload}`);
+  
   // Clear the app container
   appContainer.innerHTML = '';
 
@@ -267,6 +277,8 @@ function renderFeedPage(container: HTMLElement, forceReload: boolean = false) {
 
 // Load posts for the feed
 async function loadPosts(container: HTMLElement, userId?: string, forceReload: boolean = false) {
+  console.log(`[DEBUG] loadPosts called with userId=${userId}, forceReload=${forceReload}`);
+  
   // Show loading state immediately
   container.innerHTML = `
     <div class="posts-loading">
@@ -278,11 +290,13 @@ async function loadPosts(container: HTMLElement, userId?: string, forceReload: b
   console.log('Loading posts with forceReload:', forceReload);
 
   try {
+    console.log('[DEBUG] About to create timeout promise for posts query');
     // Create a timeout promise that rejects after 30 seconds
     const timeoutPromise = new Promise((_, reject) => {
       setTimeout(() => reject(new Error('Request timed out after 30 seconds')), 30000);
     });
 
+    console.log('[DEBUG] Building Supabase query for posts');
     // Build the query
     let query = supabase
       .from('posts')
@@ -299,13 +313,16 @@ async function loadPosts(container: HTMLElement, userId?: string, forceReload: b
     // If userId is provided, filter by that user
     if (userId) {
       query = query.eq('user_id', userId);
+      console.log(`[DEBUG] Filtering posts by user_id: ${userId}`);
     }
 
+    console.log('[DEBUG] About to execute Supabase query for posts');
     // Race the query against the timeout
     const result = await Promise.race([
       query,
       timeoutPromise
     ]);
+    console.log('[DEBUG] Supabase query completed');
 
     const { data: posts, error } = result;
 
@@ -314,12 +331,14 @@ async function loadPosts(container: HTMLElement, userId?: string, forceReload: b
     // Check if user has liked each post
     const authState = authManager.getAuthState();
     if (authState.isAuthenticated && authState.currentUser) {
+      console.log('[DEBUG] User is authenticated, checking liked posts');
       try {
         // Create a shorter timeout for the likes query
         const likesTimeoutPromise = new Promise((_, reject) => {
           setTimeout(() => reject(new Error('Likes query timed out')), 10000);
         });
 
+        console.log('[DEBUG] About to execute Supabase query for post likes');
         const likesResult = await Promise.race([
           supabase
             .from('post_likes')
@@ -329,6 +348,7 @@ async function loadPosts(container: HTMLElement, userId?: string, forceReload: b
         ]);
 
         const { data: likes } = likesResult;
+        console.log(`[DEBUG] Received ${likes?.length || 0} liked posts`);
         const likedPostIds = new Set(likes?.map(like => like.post_id) || []);
 
         posts.forEach(post => {
@@ -344,6 +364,7 @@ async function loadPosts(container: HTMLElement, userId?: string, forceReload: b
     }
 
     // Render posts
+    console.log(`[DEBUG] Rendering ${posts.length} posts`);
     if (posts.length === 0) {
       container.innerHTML = `
         <div class="empty-feed">
@@ -420,6 +441,11 @@ async function loadPosts(container: HTMLElement, userId?: string, forceReload: b
     }
   } catch (error) {
     console.error('Error loading posts:', error);
+    console.log('[DEBUG] Error details:', {
+      name: error.name,
+      message: error.message,
+      stack: error.stack
+    });
     
     // Check if this is a CORS or network connectivity issue
     const isCorsOrNetworkError = error.message.includes('timed out') || 
