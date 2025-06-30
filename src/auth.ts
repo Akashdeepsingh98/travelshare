@@ -2,6 +2,26 @@ import { supabase } from './lib/supabase';
 import { User, AuthState } from './types';
 import { testSupabaseConnection, displayConnectionDiagnostics } from './utils/connection-test';
 
+//import { supabase } from './lib/supabase'; // Your supabase client
+
+async function fetchViaCorsProxy(url, options) {
+  const { data, error } = await supabase.functions.invoke('cors-proxy', {
+    body: { url, options }
+  });
+
+  if (error) {
+    throw new Error(`CORS Proxy Error: ${error.message}`);
+  }
+
+  // The 'data' from the function is the raw response from the target API.
+  // You need to manually construct a Response object to handle it like a normal fetch.
+  // Note: This is a simplified example. Body might be text, blob, etc.
+  return new Response(JSON.stringify(data), {
+    status: 200, // This is tricky, the actual status is not easily available here
+    headers: { 'Content-Type': 'application/json' }
+  });
+}
+
 class AuthManager {
   private authState: AuthState = {
     isAuthenticated: false,
