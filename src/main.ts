@@ -66,20 +66,17 @@ function initApp() {
 document.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'visible') {
     console.log('App visibility restored - refreshing state');
-    
+
+
+
     // Force a refresh of the app state
     renderApp(true);
-    
+
     // Re-establish Supabase connection if needed
     const authState = authManager.getAuthState();
     if (authState.isAuthenticated) {
       // Refresh the current user data
       authManager.refreshCurrentUser();
-      
-      // Ping Supabase to ensure connection is active
-      supabase.auth.getSession().catch(error => {
-        console.warn('Error refreshing Supabase session:', error);
-      });
     }
   }
 });
