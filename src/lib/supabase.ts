@@ -3,12 +3,6 @@ import { createClient } from '@supabase/supabase-js'
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  'Access-Control-Allow-Methods': 'POST, GET, OPTIONS, PUT, DELETE',
-}
-
 console.log('[DEBUG] Initializing Supabase client with:', { 
   hasUrl: !!supabaseUrl, 
   hasKey: !!supabaseAnonKey,
@@ -29,11 +23,7 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   global: {
     fetch: (...args) => {
       console.log('[DEBUG] Supabase fetch called with URL:', args[0]);
-      return fetch(...args, {
-        headers: {
-          ...corsHeaders
-        }
-      });
+      return fetch(...args);
     }
   }
 })

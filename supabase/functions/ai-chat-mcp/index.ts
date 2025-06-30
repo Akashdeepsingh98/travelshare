@@ -599,10 +599,7 @@ async function queryMCPServer(server: MCPServer, toolName: string, question: str
 
     const response = await fetch(server.endpoint, {
       method: 'POST',
-      headers: {
-        ...corsHeaders,
-        ...headers
-      },
+      headers,
       body: JSON.stringify(mcpRequest),
       signal: AbortSignal.timeout(10000) // 10 second timeout
     })
@@ -832,9 +829,7 @@ async function analyzeRelevantImages(posts: any[], question: string, apiKey: str
         if (!imageUrl) continue
 
         // Fetch image data
-        const imageResponse = await fetch(imageUrl, {
-          headers: corsHeaders
-        })
+        const imageResponse = await fetch(imageUrl)
         if (!imageResponse.ok) continue
 
         const imageBuffer = await imageResponse.arrayBuffer()

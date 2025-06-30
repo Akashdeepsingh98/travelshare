@@ -1,8 +1,3 @@
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  'Access-Control-Allow-Methods': 'POST, GET, OPTIONS, PUT, DELETE',
-}
 export interface GeolocationPosition {
   latitude: number;
   longitude: number;
@@ -102,8 +97,7 @@ export async function reverseGeocode(lat: number, lng: number): Promise<string> 
       `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&addressdetails=1`,
       {
         headers: {
-          'User-Agent': 'TravelShare App',
-          ...corsHeaders
+          'User-Agent': 'TravelShare App'
         }
       }
     );

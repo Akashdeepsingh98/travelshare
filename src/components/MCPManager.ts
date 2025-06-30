@@ -473,11 +473,7 @@ export function createMCPManager(onClose: () => void): HTMLElement {
     
     testBtn.textContent = 'Testing...';
     testBtn.disabled = true;
-    const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  'Access-Control-Allow-Methods': 'POST, GET, OPTIONS, PUT, DELETE',
-};
+    
     try {
       // Test MCP server connection
       const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/mcp-test`, {
@@ -485,7 +481,6 @@ export function createMCPManager(onClose: () => void): HTMLElement {
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
-          ...corsHeaders
         },
         body: JSON.stringify({
           endpoint: server.endpoint,

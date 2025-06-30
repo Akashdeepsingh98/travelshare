@@ -315,9 +315,7 @@ async function analyzeRelevantImages(posts: any[], question: string, apiKey: str
         if (!imageUrl) continue
 
         // Fetch image data
-        const imageResponse = await fetch(imageUrl, {
-          headers: corsHeaders
-        })
+        const imageResponse = await fetch(imageUrl)
         if (!imageResponse.ok) continue
 
         const imageBuffer = await imageResponse.arrayBuffer()
