@@ -194,7 +194,7 @@ export function createAIPage(
                 <span class="capability-tag">📊 Community Data</span>
                 <span class="capability-tag">📷 Photo Analysis</span>
                 <span class="capability-tag">💡 Smart Recommendations</span>
-                <span class="capability-tag">🔌 Community MCP Integrations</span>
+                <span class="capability-tag">🔌 MCP Integration</span>
               </div>
             </div>
           </div>
@@ -228,7 +228,7 @@ export function createAIPage(
               <div class="chat-disclaimer">
                 <span class="disclaimer-icon">🔒</span>
                 <span class="disclaimer-text">
-                  Powered by Google Gemini AI with Vision • Analyzes community photos • Using real travel data • Accesses community-shared business data via MCP • Responses are AI-generated
+                  Powered by Google Gemini AI with Vision • Analyzes community photos • Using real travel data • MCP-enabled for business data • Responses are AI-generated
                 </span>
               </div>
             </div>
