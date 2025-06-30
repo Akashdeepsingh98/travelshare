@@ -209,27 +209,8 @@ class AuthManager {
   }
 
   async refreshCurrentUser(): Promise<void> {
-    const { data: { session }, error } = await supabase.auth.getSession();
-
-    if (error) {
-      console.error('Error refreshing session in refreshCurrentUser:', error);
-      await this.handleAuthError(error);
-      return;
-    }
-
-    if (session) {
-      // Session exists, ensure our user state is up-to-date.
-      // This will fetch the profile.
-      await this.setCurrentUser(session.user.id);
-    } else if (this.authState.isAuthenticated) {
-      // No session, but we thought we were logged in.
-      // This means the session has expired and couldn't be refreshed.
-      this.authState = {
-        isAuthenticated: false,
-        currentUser: null,
-        loading: false,
-      };
-      this.notifyListeners();
+    if (this.authState.currentUser) {
+      await this.setCurrentUser(this.authState.currentUser.id);
     }
   }
 
