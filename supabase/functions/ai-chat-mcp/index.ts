@@ -79,14 +79,19 @@ Deno.serve(async (req) => {
     // Get user's active MCP servers if userId is provided
     let mcpServers: MCPServer[] = []
     if (userId) {
-      const { data: servers, error: serversError } = await supabaseClient
-        .from('mcp_servers')
-        .select('*')
-        .eq('user_id', userId)
-        .eq('is_active', true)
+      // Get all active MCP servers, not just the user's
+      try {
+        const { data: servers, error: serversError } = await supabaseClient
+          .from('mcp_servers')
+          .select('*')
+          .eq('is_active', true)
 
-      if (!serversError && servers) {
-        mcpServers = servers
+        if (!serversError && servers) {
+          mcpServers = servers
+        }
+      } catch (mcpError) {
+        console.error('Error fetching MCP servers:', mcpError)
+        // Continue without MCP data if there's an error
       }
     }
 
