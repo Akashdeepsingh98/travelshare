@@ -154,13 +154,22 @@ class AuthManager {
   }
 
   private async setCurrentUser(userId: string) {
+    console.log(`[DEBUG] setCurrentUser called with userId: ${userId}`);
     try {
+      console.log('[DEBUG] Fetching user profile from Supabase');
       const { data: profile, error } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', userId)
         .single();
 
+      console.log('[DEBUG] Profile fetch result:', { 
+        success: !error, 
+        hasData: !!profile,
+        errorCode: error?.code,
+        errorMessage: error?.message
+      });
+      
       if (error) {
         console.error('Error fetching user profile:', error);
         
@@ -188,10 +197,20 @@ class AuthManager {
         },
         loading: false
       };
+      console.log('[DEBUG] Auth state updated with user profile:', {
+        id: profile.id,
+        name: profile.name,
+        hasAvatar: !!profile.avatar_url
+      });
       
       this.notifyListeners();
     } catch (error) {
       console.error('Error fetching user profile:', error);
+      console.log('[DEBUG] Error details:', {
+        name: error.name,
+        message: error.message,
+        stack: error.stack
+      });
       
       // Handle connection errors gracefully
       if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
@@ -210,6 +229,7 @@ class AuthManager {
 
   async refreshCurrentUser(): Promise<void> {
     if (this.authState.currentUser) {
+      console.log(`[DEBUG] refreshCurrentUser called for user ID: ${this.authState.currentUser.id}`);
       await this.setCurrentUser(this.authState.currentUser.id);
     }
   }
@@ -310,6 +330,7 @@ class AuthManager {
   }
 
   private notifyListeners(): void {
+    console.log(`[DEBUG] Notifying ${this.listeners.length} auth state listeners`);
     this.listeners.forEach(callback => callback(this.getAuthState()));
   }
 }

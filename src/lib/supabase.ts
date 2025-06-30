@@ -3,11 +3,38 @@ import { createClient } from '@supabase/supabase-js'
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
 
+console.log('[DEBUG] Initializing Supabase client with:', { 
+  hasUrl: !!supabaseUrl, 
+  hasKey: !!supabaseAnonKey,
+  urlLength: supabaseUrl?.length || 0,
+  keyLength: supabaseAnonKey?.length || 0
+});
+
 if (!supabaseUrl || !supabaseAnonKey) {
   throw new Error('Missing Supabase environment variables. Please connect to Supabase first.')
 }
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey)
+export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+  auth: {
+    persistSession: true,
+    autoRefreshToken: true,
+    detectSessionInUrl: true
+  },
+  global: {
+    fetch: (...args) => {
+      console.log('[DEBUG] Supabase fetch called with URL:', args[0]);
+      return fetch(...args);
+    }
+  }
+})
+
+// Add debug listener for auth state changes
+supabase.auth.onAuthStateChange((event, session) => {
+  console.log(`[DEBUG] Supabase auth state changed: ${event}`, { 
+    hasSession: !!session,
+    userId: session?.user?.id
+  });
+});
 
 export type Database = {
   public: {
