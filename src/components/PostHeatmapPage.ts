@@ -8,13 +8,6 @@ import { calculateDistance, formatDistance, reverseGeocode } from '../utils/geol
 import { Post } from '../types';
 import { authManager } from '../auth';
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  'Access-Control-Allow-Methods': 'POST, GET, OPTIONS, PUT, DELETE',
-}
-
-
 export function createPostHeatmapPage(
   onNavigateBack: () => void,
   onUserClick?: (userId: string) => void
@@ -420,8 +413,7 @@ export function createPostHeatmapPage(
         `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=5&addressdetails=1`,
         {
           headers: {
-            'User-Agent': 'TravelShare App',
-            ...corsHeaders
+            'User-Agent': 'TravelShare App'
           }
         }
       );
@@ -549,8 +541,7 @@ export function createPostHeatmapPage(
         `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=1&addressdetails=1`,
         {
           headers: {
-            'User-Agent': 'TravelShare App',
-            ...corsHeaders
+            'User-Agent': 'TravelShare App'
           }
         }
       );
