@@ -68,6 +68,11 @@ export function createLocationSelector(
   let searchTimeout: NodeJS.Timeout | null = null;
   let userLocation: [number, number] | null = null;
   
+  const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Methods': 'POST, GET, OPTIONS, PUT, DELETE',
+}
   // Nominatim geocoding service (OpenStreetMap)
   async function searchLocations(query: string): Promise<any[]> {
     if (query.length < 3) return [];
@@ -77,7 +82,8 @@ export function createLocationSelector(
         `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=5&addressdetails=1`,
         {
           headers: {
-            'User-Agent': 'TravelShare App'
+            'User-Agent': 'TravelShare App',
+            ...corsHeaders
           }
         }
       );
@@ -99,7 +105,8 @@ export function createLocationSelector(
         `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&addressdetails=1`,
         {
           headers: {
-            'User-Agent': 'TravelShare App'
+            'User-Agent': 'TravelShare App',
+            ...corsHeaders
           }
         }
       );

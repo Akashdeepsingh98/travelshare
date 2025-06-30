@@ -74,7 +74,10 @@ Deno.serve(async (req) => {
 
     const response = await fetch(endpoint, {
       method: 'POST',
-      headers,
+      headers: {
+        ...corsHeaders,
+        ...headers
+      },
       body: JSON.stringify(mcpRequest),
       signal: AbortSignal.timeout(10000) // 10 second timeout
     })
@@ -125,7 +128,10 @@ Deno.serve(async (req) => {
         console.log('Fetching tools list...')
         const toolsResponse = await fetch(endpoint, {
           method: 'POST',
-          headers,
+          headers: {
+            ...corsHeaders,
+            ...headers
+          },
           body: JSON.stringify({
             method: 'tools/list',
             params: {}

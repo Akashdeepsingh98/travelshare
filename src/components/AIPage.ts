@@ -8,7 +8,11 @@ interface ChatMessage {
   content: string;
   timestamp: Date;
 }
-
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Methods': 'POST, GET, OPTIONS, PUT, DELETE',
+}
 export function createAIPage(
   onNavigateBack: () => void, 
   postContext?: Post | null,
@@ -326,6 +330,7 @@ export function createAIPage(
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+          ...corsHeaders
         },
         body: JSON.stringify(requestBody)
       });

@@ -1,4 +1,9 @@
 // Connection testing utility
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Methods': 'POST, GET, OPTIONS, PUT, DELETE',
+}
 export async function testSupabaseConnection(): Promise<{
   success: boolean;
   error?: string;
@@ -30,7 +35,8 @@ export async function testSupabaseConnection(): Promise<{
     const basicResponse = await Promise.race([
       fetch(supabaseUrl, {
         method: 'GET',
-        mode: 'cors'
+        mode: 'cors',
+        headers: corsHeaders
       }),
       new Promise((_, reject) => 
         setTimeout(() => reject(new Error('Request timeout after 10 seconds')), 10000)
@@ -46,6 +52,7 @@ export async function testSupabaseConnection(): Promise<{
       fetch(`${supabaseUrl}/rest/v1/`, {
         method: 'GET',
         headers: {
+          ...corsHeaders,
           'apikey': anonKey,
           'Authorization': `Bearer ${anonKey}`,
           'Content-Type': 'application/json'
@@ -66,6 +73,7 @@ export async function testSupabaseConnection(): Promise<{
       fetch(`${supabaseUrl}/rest/v1/profiles?select=count`, {
         method: 'GET',
         headers: {
+          ...corsHeaders,
           'apikey': anonKey,
           'Authorization': `Bearer ${anonKey}`,
           'Content-Type': 'application/json',
