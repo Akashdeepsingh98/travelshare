@@ -228,29 +228,21 @@ class AuthManager {
   }
 
   async refreshCurrentUser(): Promise<void> {
-    console.log('[Auth] Attempting to refresh current user session...');
-    
-    // Use refreshSession() to force a token refresh
-    const { data, error } = await supabase.auth.refreshSession();
+    const { data: { session }, error } = await supabase.auth.getSession();
 
     if (error) {
-      console.error('Error refreshing session:', error.message);
-      // If refresh fails, it likely means the refresh token is invalid or expired.
-      // In this case, we should sign the user out.
+      console.error('Error refreshing session in refreshCurrentUser:', error);
       await this.handleAuthError(error);
       return;
     }
 
-    const { session } = data;
-
     if (session) {
-      console.log('[Auth] Session refreshed successfully.');
-      // Session is valid, ensure user profile is loaded.
+      // Session exists, ensure our user state is up-to-date.
+      // This will fetch the profile.
       await this.setCurrentUser(session.user.id);
     } else if (this.authState.isAuthenticated) {
-      // No session returned, but we previously thought we were authenticated.
-      // This indicates the session has definitively ended.
-      console.log('[Auth] No session found after refresh, logging out.');
+      // No session, but we thought we were logged in.
+      // This means the session has expired and couldn't be refreshed.
       this.authState = {
         isAuthenticated: false,
         currentUser: null,
