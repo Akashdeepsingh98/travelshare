@@ -22,8 +22,8 @@ import { createMCPManager } from './components/MCPManager';
 import { createMiniAppManager } from './components/MiniAppManager';
 import { createMiniAppViewer } from './components/MiniAppViewer';
 import { createCreateCommunityModal } from './components/CreateCommunityModal';
-import { Post, User } from './types';
 import { supabase } from './lib/supabase';
+import { Post, User } from './types';
 
 // Main application container
 const appContainer = document.getElementById('app') as HTMLElement;
@@ -61,6 +61,28 @@ function initApp() {
   // Initial render
   renderApp(false);
 }
+
+// Handle visibility change to detect when the app comes back into focus
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') {
+    console.log('App visibility restored - refreshing state');
+    
+    // Force a refresh of the app state
+    renderApp(true);
+    
+    // Re-establish Supabase connection if needed
+    const authState = authManager.getAuthState();
+    if (authState.isAuthenticated) {
+      // Refresh the current user data
+      authManager.refreshCurrentUser();
+      
+      // Ping Supabase to ensure connection is active
+      supabase.auth.getSession().catch(error => {
+        console.warn('Error refreshing Supabase session:', error);
+      });
+    }
+  }
+});
 
 // Parse the URL hash to determine the current view
 function parseHash(fromHashChange: boolean = false) {
